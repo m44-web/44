@@ -40,6 +40,7 @@ function GuardLocationView({ guardId }: { guardId: string }) {
           latitude: pos.coords.latitude,
           longitude: pos.coords.longitude,
           accuracy: pos.coords.accuracy,
+          speed: pos.coords.speed,
           timestamp: now,
           type: "manual",
         });
@@ -217,7 +218,25 @@ function AdminLocationView() {
                     位置: {loc.latitude.toFixed(4)}, {loc.longitude.toFixed(4)}
                     <span className="ml-1 text-text-secondary/60">(精度 {Math.round(loc.accuracy)}m)</span>
                   </p>
-                  <p>送信時刻: {new Date(loc.timestamp).toLocaleString("ja-JP")}</p>
+                  <div className="flex items-center gap-3">
+                    <span>送信: {new Date(loc.timestamp).toLocaleString("ja-JP")}</span>
+                    {loc.speed != null && loc.speed >= 0 && (
+                      <span className={`font-medium ${loc.speed * 3.6 > 60 ? "text-danger" : loc.speed * 3.6 > 5 ? "text-warning" : "text-success"}`}>
+                        速度: {(loc.speed * 3.6).toFixed(0)}km/h
+                        {loc.speed * 3.6 > 5 ? " (移動中)" : " (停止)"}
+                      </span>
+                    )}
+                    <span>{loc.type === "clock_in" ? "上番時" : loc.type === "clock_out" ? "下番時" : loc.type === "manual" ? "手動" : ""}</span>
+                  </div>
+                  <a
+                    href={`https://www.google.com/maps?q=${loc.latitude},${loc.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent hover:underline inline-flex items-center gap-1 mt-0.5"
+                  >
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                    Google Mapで見る
+                  </a>
                 </>
               ) : (
                 <p className="text-warning">位置情報未送信</p>

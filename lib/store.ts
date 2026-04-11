@@ -1,8 +1,8 @@
 "use client";
 
-import type { Guard, Site, Shift, AttendanceRecord, User, EquipmentItem, EquipmentLending, DailyReport, LocationLog, ShiftRequest } from "./types";
+import type { Guard, Site, Shift, AttendanceRecord, User, EquipmentItem, EquipmentLending, DailyReport, LocationLog, ShiftRequest, ChatMessage, HandoverNote } from "./types";
 
-const DATA_VERSION = "5";
+const DATA_VERSION = "6";
 
 const STORAGE_KEYS = {
   version: "lsecurity_version",
@@ -17,6 +17,8 @@ const STORAGE_KEYS = {
   reports: "lsecurity_reports",
   locations: "lsecurity_locations",
   shiftRequests: "lsecurity_shift_requests",
+  chat: "lsecurity_chat",
+  handover: "lsecurity_handover",
 } as const;
 
 function generateId(): string {
@@ -189,6 +191,17 @@ const SEED_SHIFT_REQUESTS: ShiftRequest[] = [
 ];
 
 // --- Initialize ---
+const SEED_CHAT: ChatMessage[] = [
+  { id: "ch1", senderId: "u1", senderName: "管理者", senderRole: "admin", receiverId: null, channel: "general", content: "本日の新宿駅前現場は大型車搬入があるため注意してください。", timestamp: daysFromNow(-1) + "T08:00:00" },
+  { id: "ch2", senderId: "u2", senderName: "田中 太郎", senderRole: "guard", receiverId: null, channel: "general", content: "了解しました。", timestamp: daysFromNow(-1) + "T08:05:00" },
+  { id: "ch3", senderId: "u1", senderName: "管理者", senderRole: "admin", receiverId: null, channel: "general", content: "明日のABCモール夜勤は2名体制です。鈴木さんと田中さんよろしくお願いします。", timestamp: todayStr() + "T09:00:00" },
+];
+
+const SEED_HANDOVER: HandoverNote[] = [
+  { id: "h1", siteId: "s1", guardId: "g1", guardName: "田中 太郎", date: daysFromNow(-1), content: "正面入口のセンサーが反応しやすくなっています。管理事務所に報告済み。駐車場B区画のライト交換予定（来週）。", createdAt: daysFromNow(-1) + "T18:00:00" },
+  { id: "h2", siteId: "s2", guardId: "g3", guardName: "佐藤 次郎", date: daysFromNow(-1), content: "午後から大型車両搬入3回あり。明日も同様の予定。歩行者誘導のポイントは北側交差点。", createdAt: daysFromNow(-1) + "T17:00:00" },
+];
+
 function seedAll(): void {
   setItem(STORAGE_KEYS.users, SEED_USERS);
   setItem(STORAGE_KEYS.guards, SEED_GUARDS);
@@ -199,6 +212,8 @@ function seedAll(): void {
   setItem(STORAGE_KEYS.lending, SEED_LENDING);
   setItem(STORAGE_KEYS.reports, SEED_REPORTS);
   setItem(STORAGE_KEYS.shiftRequests, SEED_SHIFT_REQUESTS);
+  setItem(STORAGE_KEYS.chat, SEED_CHAT);
+  setItem(STORAGE_KEYS.handover, SEED_HANDOVER);
   localStorage.setItem(STORAGE_KEYS.version, DATA_VERSION);
 }
 
@@ -430,7 +445,7 @@ export function addShiftRequest(req: Omit<ShiftRequest, "id" | "createdAt">): Sh
   setItem(STORAGE_KEYS.shiftRequests, requests);
   return newReq;
 }
-export function updateShiftRequest(id: string, updates: Partial<ShiftRequest>): void {
+export function updateShiftRequest(id: string, updates: Partial<ShiftRequest>, assignSiteId?: string): void {
   const requests = getShiftRequests();
   const request = requests.find((r) => r.id === id);
   const updated = requests.map((r) => (r.id === id ? { ...r, ...updates } : r));
@@ -441,13 +456,56 @@ export function updateShiftRequest(id: string, updates: Partial<ShiftRequest>): 
     const isNight = request.startTime >= "17:00" || request.endTime <= "08:00";
     addShift({
       guardId: request.guardId,
-      siteId: "",
+      siteId: assignSiteId ?? "",
       date: request.date,
       startTime: request.startTime,
       endTime: request.endTime,
       shiftType: isNight ? "night" : "day",
       status: "scheduled",
-      notes: "シフト希望より自動作成",
+      notes: assignSiteId ? "シフト希望より作成" : "シフト希望より作成（現場未割当）",
     });
   }
+}
+
+// --- Chat ---
+export function getChatMessages(): ChatMessage[] {
+  return getItem<ChatMessage[]>(STORAGE_KEYS.chat, []);
+}
+export function getChatGeneral(): ChatMessage[] {
+  return getChatMessages().filter((m) => m.channel === "general").sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+}
+export function getChatDirect(userId1: string, userId2: string): ChatMessage[] {
+  return getChatMessages().filter((m) =>
+    m.channel === "direct" &&
+    ((m.senderId === userId1 && m.receiverId === userId2) ||
+     (m.senderId === userId2 && m.receiverId === userId1))
+  ).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+}
+export function addChatMessage(msg: Omit<ChatMessage, "id" | "timestamp">): ChatMessage {
+  const messages = getChatMessages();
+  const newMsg: ChatMessage = { ...msg, id: generateId(), timestamp: new Date().toISOString() };
+  messages.push(newMsg);
+  const trimmed = messages.slice(-500);
+  setItem(STORAGE_KEYS.chat, trimmed);
+  return newMsg;
+}
+
+// --- Handover Notes ---
+export function getHandoverNotes(): HandoverNote[] {
+  return getItem<HandoverNote[]>(STORAGE_KEYS.handover, []);
+}
+export function getHandoverBySite(siteId: string): HandoverNote[] {
+  return getHandoverNotes().filter((h) => h.siteId === siteId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+export function addHandoverNote(note: Omit<HandoverNote, "id" | "createdAt">): HandoverNote {
+  const notes = getHandoverNotes();
+  const newNote: HandoverNote = { ...note, id: generateId(), createdAt: new Date().toISOString() };
+  notes.push(newNote);
+  setItem(STORAGE_KEYS.handover, notes);
+  return newNote;
+}
+
+// --- Location history for a guard ---
+export function getLocationsByGuard(guardId: string): LocationLog[] {
+  return getLocations().filter((l) => l.guardId === guardId).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 }

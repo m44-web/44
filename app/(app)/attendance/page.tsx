@@ -197,6 +197,7 @@ function GuardAttendance({ guardId }: { guardId?: string }) {
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
             accuracy: pos.coords.accuracy,
+            speed: pos.coords.speed,
             timestamp: new Date().toISOString(),
             type,
           });
@@ -224,19 +225,19 @@ function GuardAttendance({ guardId }: { guardId?: string }) {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">しゅったいきん</h1>
+      <h1 className="text-2xl font-bold">出退勤</h1>
 
       {/* Big clock display */}
       <div className="text-center py-4">
-        <p className="text-sm text-text-secondary">いまの じかん</p>
+        <p className="text-sm text-text-secondary">現在時刻</p>
         <p className="text-6xl font-bold font-mono text-accent mt-2">{currentTime}</p>
         <p className="text-sm text-text-secondary mt-2">{todayStr()}</p>
       </div>
 
       {shifts.length === 0 ? (
         <Card className="text-center !py-8">
-          <p className="text-lg text-text-secondary">きょうの シフトは ありません</p>
-          <p className="text-sm text-text-secondary mt-1">おやすみです！</p>
+          <p className="text-lg text-text-secondary">本日のシフトはありません</p>
+          <p className="text-sm text-text-secondary mt-1">お休みです！ゆっくり休んでください</p>
         </Card>
       ) : (
         <div className="space-y-4">
@@ -252,7 +253,7 @@ function GuardAttendance({ guardId }: { guardId?: string }) {
                     <span className={`text-xs px-2.5 py-1 rounded-full font-bold ${
                       isNight ? "bg-purple-500/10 text-purple-400" : "bg-warning/10 text-warning"
                     }`}>
-                      {isNight ? "やきん" : "にっきん"}
+                      {isNight ? "夜勤" : "日勤"}
                     </span>
                   </div>
                   <p className="font-bold text-text-primary text-xl">{site?.name ?? "—"}</p>
@@ -262,7 +263,7 @@ function GuardAttendance({ guardId }: { guardId?: string }) {
 
                 {att?.status === "completed" ? (
                   <div className="text-center py-5 rounded-xl bg-success/10 space-y-2">
-                    <p className="text-success font-bold text-xl">おつかれさま！</p>
+                    <p className="text-success font-bold text-xl">お疲れ様でした！</p>
                     <p className="text-base text-text-secondary font-mono">
                       {att.clockIn} → {att.clockOut}
                     </p>
@@ -271,19 +272,19 @@ function GuardAttendance({ guardId }: { guardId?: string }) {
                       const [oh, om] = att.clockOut!.split(":").map(Number);
                       let h = oh - ih + (om - im) / 60;
                       if (h < 0) h += 24;
-                      return <p className="text-sm text-text-secondary">{h.toFixed(1)}じかん はたらきました</p>;
+                      return <p className="text-sm text-text-secondary">{h.toFixed(1)}時間 勤務完了</p>;
                     })()}
                   </div>
                 ) : att?.status === "on_duty" ? (
                   <div className="space-y-3">
                     <div className="text-center py-3 rounded-xl bg-success/10">
-                      <p className="text-success font-medium text-base">しゅっきんずみ：{att.clockIn}</p>
+                      <p className="text-success font-medium text-base">出勤済み：{att.clockIn}</p>
                     </div>
                     <button
                       onClick={() => handleClockOut(shift.id)}
                       className="w-full py-6 rounded-2xl bg-danger text-white font-bold text-xl hover:bg-red-600 transition-all cursor-pointer active:scale-[0.97]"
                     >
-                      たいきんする
+                      退勤する（下番報告）
                     </button>
                   </div>
                 ) : (
@@ -291,7 +292,7 @@ function GuardAttendance({ guardId }: { guardId?: string }) {
                     onClick={() => handleClockIn(shift.id)}
                     className="w-full py-6 rounded-2xl bg-accent text-white font-bold text-xl hover:bg-accent-dark transition-all cursor-pointer active:scale-[0.97]"
                   >
-                    しゅっきんする
+                    出勤する（上番報告）
                   </button>
                 )}
               </Card>
@@ -303,7 +304,7 @@ function GuardAttendance({ guardId }: { guardId?: string }) {
       {/* Recent history */}
       {allAttendance.length > 0 && (
         <div>
-          <h2 className="text-base font-bold text-text-primary mb-3">さいきんの きろく</h2>
+          <h2 className="text-base font-bold text-text-primary mb-3">最近の記録</h2>
           <div className="space-y-2">
             {allAttendance.map((att) => {
               const site = sites.find((s) => s.id === att.siteId);
@@ -319,7 +320,7 @@ function GuardAttendance({ guardId }: { guardId?: string }) {
                       att.status === "completed" ? "bg-success/10 text-success" :
                       att.status === "on_duty" ? "bg-accent/10 text-accent" : "bg-sub-bg text-text-secondary"
                     }`}>
-                      {att.status === "completed" ? "おわり" : att.status === "on_duty" ? "きんむちゅう" : "みしゅっきん"}
+                      {att.status === "completed" ? "完了" : att.status === "on_duty" ? "勤務中" : "未出勤"}
                     </span>
                   </div>
                 </Card>
@@ -329,7 +330,7 @@ function GuardAttendance({ guardId }: { guardId?: string }) {
         </div>
       )}
 
-      <p className="text-xs text-text-secondary text-center">しゅったいきん のとき GPS じょうほうが じどうで おくられます</p>
+      <p className="text-xs text-text-secondary text-center">出退勤時にGPS位置情報が自動送信されます</p>
     </div>
   );
 }

@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 const adminNav = [
   { href: "/dashboard", label: "ホーム", icon: "home" },
   { href: "/shifts", label: "シフト", icon: "calendar" },
-  { href: "/shift-requests", label: "希望", icon: "calendarCheck" },
+  { href: "/chat", label: "チャット", icon: "chat" },
   { href: "/reports", label: "日報", icon: "file" },
   { href: "/locations", label: "位置", icon: "mapPin" },
 ] as const;
@@ -16,8 +16,8 @@ const guardNav = [
   { href: "/dashboard", label: "ホーム", icon: "home" },
   { href: "/shifts", label: "シフト", icon: "calendar" },
   { href: "/attendance", label: "出退勤", icon: "clock" },
-  { href: "/reports", label: "日報", icon: "file" },
-  { href: "/salary", label: "給与", icon: "yen" },
+  { href: "/chat", label: "チャット", icon: "chat" },
+  { href: "/handover", label: "引継ぎ", icon: "clipboard" },
 ] as const;
 
 const icons: Record<string, (active: boolean) => React.ReactNode> = {
@@ -90,6 +90,19 @@ const icons: Record<string, (active: boolean) => React.ReactNode> = {
       <line x1="8" y1="2" x2="8" y2="6" />
       <line x1="3" y1="10" x2="21" y2="10" />
       <path d="M9 16l2 2 4-4" />
+    </svg>
+  ),
+  clipboard: (active) => (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+      <rect x="8" y="2" width="8" height="4" rx="1" />
+      <line x1="8" y1="12" x2="16" y2="12" />
+      <line x1="8" y1="16" x2="16" y2="16" />
+    </svg>
+  ),
+  chat: (active) => (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </svg>
   ),
 };

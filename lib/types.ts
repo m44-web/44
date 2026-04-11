@@ -181,8 +181,30 @@ export type LocationLog = {
   latitude: number;
   longitude: number;
   accuracy: number;
+  speed: number | null;
   timestamp: string;
   type: "clock_in" | "clock_out" | "periodic" | "manual";
+};
+
+export type ChatMessage = {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderRole: UserRole;
+  receiverId: string | null;
+  channel: "general" | "direct";
+  content: string;
+  timestamp: string;
+};
+
+export type HandoverNote = {
+  id: string;
+  siteId: string;
+  guardId: string;
+  guardName: string;
+  date: string;
+  content: string;
+  createdAt: string;
 };
 
 export type ShiftRequest = {

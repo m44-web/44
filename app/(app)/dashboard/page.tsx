@@ -57,6 +57,7 @@ function AdminDashboard({ data }: { data: {
   lending: EquipmentLending[]; reports: DailyReport[]; shiftRequests: ShiftRequest[];
   locations: LocationLog[];
 }}) {
+  const [weekOffset, setWeekOffset] = useState(0);
   const { guards, sites, shifts, todayShifts, todayAttendance, lending, reports, shiftRequests, locations } = data;
   const today = todayStr();
   const thisMonth = today.slice(0, 7);
@@ -72,14 +73,15 @@ function AdminDashboard({ data }: { data: {
   const thisMonthShifts = shifts.filter((s) => s.date.startsWith(thisMonth) && s.status !== "cancelled");
   const completedMonthShifts = thisMonthShifts.filter((s) => s.status === "completed");
 
-  // Upcoming week shifts
+  // Week shifts with navigation
   const weekDates: string[] = [];
   for (let i = 0; i < 7; i++) {
     const d = new Date();
-    d.setDate(d.getDate() + i);
+    d.setDate(d.getDate() + i + weekOffset * 7);
     weekDates.push(d.toISOString().split("T")[0]);
   }
   const weekShifts = shifts.filter((s) => weekDates.includes(s.date) && s.status !== "cancelled");
+  const weekLabel = weekOffset === 0 ? "今週" : weekOffset === 1 ? "来週" : weekOffset === -1 ? "先週" : `${weekOffset > 0 ? "+" : ""}${weekOffset}週`;
 
   // Guards without location
   const guardsWithTodayShift = new Set(todayShifts.map((s) => s.guardId));
@@ -167,7 +169,20 @@ function AdminDashboard({ data }: { data: {
 
       {/* Week overview */}
       <div>
-        <h2 className="text-sm font-semibold text-text-secondary mb-2">今週のシフト概要</h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-semibold text-text-secondary">{weekLabel}のシフト概要</h2>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setWeekOffset((w) => w - 1)} className="p-1.5 rounded-lg hover:bg-sub-bg text-text-secondary hover:text-text-primary transition-colors cursor-pointer">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
+            </button>
+            {weekOffset !== 0 && (
+              <button onClick={() => setWeekOffset(0)} className="px-2 py-1 text-xs rounded-lg hover:bg-sub-bg text-accent cursor-pointer">今週</button>
+            )}
+            <button onClick={() => setWeekOffset((w) => w + 1)} className="p-1.5 rounded-lg hover:bg-sub-bg text-text-secondary hover:text-text-primary transition-colors cursor-pointer">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
+            </button>
+          </div>
+        </div>
         <Card>
           <div className="grid grid-cols-7 gap-1">
             {weekDates.map((date) => {
@@ -288,10 +303,20 @@ function GuardDashboard({ guardId, data }: { guardId: string; data: {
 
   return (
     <div className="space-y-5">
-      {/* Big greeting */}
+      {/* Big greeting with encouraging message */}
       <div className="text-center py-2">
-        <p className="text-lg text-text-secondary">おつかれさまです</p>
+        <p className="text-lg text-text-secondary">お疲れ様です</p>
         <h1 className="text-3xl font-bold mt-1">{guard?.name ?? ""}さん</h1>
+        <p className="text-sm text-accent mt-2">
+          {(() => {
+            const hour = new Date().getHours();
+            if (hour < 6) return "深夜の勤務、本当にありがとうございます！";
+            if (hour < 10) return "今日も一日、安全第一で頑張りましょう！";
+            if (hour < 14) return "午前中の勤務お疲れ様です。この調子で！";
+            if (hour < 18) return "午後も引き続き、頼りにしています！";
+            return "夜間の警備、いつもありがとうございます！";
+          })()}
+        </p>
       </div>
 
       {/* Alert - big and obvious */}
@@ -303,7 +328,7 @@ function GuardDashboard({ guardId, data }: { guardId: string; data: {
             </div>
             <div>
               <p className="text-base font-bold text-warning">来週のシフト希望</p>
-              <p className="text-sm text-text-secondary">まだ出していません。タップして提出!</p>
+              <p className="text-sm text-text-secondary">まだ提出されていません。タップして提出！</p>
             </div>
           </div>
         </Link>
@@ -311,14 +336,14 @@ function GuardDashboard({ guardId, data }: { guardId: string; data: {
 
       {/* Today's shift - BIG and clear */}
       <div>
-        <h2 className="text-xl font-bold mb-3">きょうの仕事</h2>
+        <h2 className="text-xl font-bold mb-3">本日の勤務</h2>
         {myTodayShifts.length === 0 ? (
           <div className="bg-card-bg border border-border rounded-2xl p-8 text-center">
             <div className="w-16 h-16 mx-auto rounded-full bg-sub-bg flex items-center justify-center mb-3">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-secondary"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
             </div>
-            <p className="text-lg text-text-secondary">きょうは休みです</p>
-            <p className="text-sm text-text-secondary/60 mt-1">ゆっくり休んでください</p>
+            <p className="text-lg text-text-secondary">本日は休日です</p>
+            <p className="text-sm text-text-secondary/60 mt-1">しっかり休んで、次の勤務に備えましょう！</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -339,9 +364,9 @@ function GuardDashboard({ guardId, data }: { guardId: string; data: {
                       att?.status === "completed" ? "bg-accent/10 text-accent" :
                       "bg-warning/10 text-warning"
                     }`}>
-                      {att?.status === "on_duty" ? "いま勤務中" :
-                       att?.status === "completed" ? "おつかれさま!" :
-                       "まだ出勤していません"}
+                      {att?.status === "on_duty" ? "勤務中" :
+                       att?.status === "completed" ? "勤務完了！お疲れ様です" :
+                       "未出勤"}
                     </span>
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                       isNight ? "bg-purple-500/10 text-purple-400" : "bg-warning/10 text-warning"
@@ -396,10 +421,49 @@ function GuardDashboard({ guardId, data }: { guardId: string; data: {
         </div>
       </Link>
 
-      {/* Upcoming shifts - simple list */}
+      {/* Previous day confirmation */}
+      {(() => {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yStr = yesterday.toISOString().split("T")[0];
+        const yShifts = myShifts.filter((s) => s.date === yStr && s.status !== "cancelled");
+        const yAtt = data.allAttendance.filter((a) => a.guardId === guardId && a.date === yStr);
+        if (yShifts.length === 0) return null;
+        const allCompleted = yShifts.every((s) => yAtt.some((a) => a.shiftId === s.id && a.status === "completed"));
+        if (allCompleted) {
+          return (
+            <div className="bg-success/5 border border-success/20 rounded-2xl p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center shrink-0">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-success"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-success">昨日の勤務完了</p>
+                  <p className="text-xs text-text-secondary">{yStr} — {yShifts.length}件のシフトすべて完了しました</p>
+                </div>
+              </div>
+            </div>
+          );
+        }
+        return (
+          <div className="bg-warning/5 border border-warning/20 rounded-2xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center shrink-0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-warning"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-warning">昨日の勤務確認</p>
+                <p className="text-xs text-text-secondary">{yStr} — 未完了のシフトがあります。管制に連絡してください</p>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Upcoming shifts */}
       {myUpcoming.length > 0 && (
         <div>
-          <h2 className="text-lg font-bold mb-2">つぎのシフト</h2>
+          <h2 className="text-lg font-bold mb-2">次のシフト</h2>
           <div className="space-y-2">
             {myUpcoming.map((shift) => {
               const site = sites.find((s) => s.id === shift.siteId);
@@ -437,7 +501,7 @@ function GuardDashboard({ guardId, data }: { guardId: string; data: {
           </div>
           <div className="flex-1">
             <p className="font-bold text-text-primary">日報を書く</p>
-            <p className="text-xs text-text-secondary">きょうの報告を提出</p>
+            <p className="text-xs text-text-secondary">本日の報告を提出</p>
           </div>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-secondary"><polyline points="9 18 15 12 9 6" /></svg>
         </Link>
@@ -458,8 +522,8 @@ function GuardDashboard({ guardId, data }: { guardId: string; data: {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-success"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
           </div>
           <div className="flex-1">
-            <p className="font-bold text-text-primary">いまの場所を送る</p>
-            <p className="text-xs text-text-secondary">GPS位置を管理者に送信</p>
+            <p className="font-bold text-text-primary">現在地を送信</p>
+            <p className="text-xs text-text-secondary">GPS位置情報を管制に送信</p>
           </div>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-secondary"><polyline points="9 18 15 12 9 6" /></svg>
         </Link>
