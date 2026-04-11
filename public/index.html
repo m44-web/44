@@ -4468,6 +4468,11 @@ if(sr){
     dt.addEventListener('change',function(){if(typeof render==='function')render();});
   }
 }
+/* 日付入力追加後にヘッダー高さを再計算 */
+setTimeout(function(){
+  if(typeof setListTop==='function')setListTop();
+  if(typeof fixListHeight==='function')fixListHeight();
+},300);
 
 /* render内フィルター拡張（vdをラップ） */
 var _origRender = window.render;
@@ -4577,8 +4582,8 @@ function renderTasksUX(){
   });
   if(tasks.length>8){var m=document.createElement('div');m.textContent='他 '+(tasks.length-8)+'件...';m.style.cssText='font-size:10px;color:#9b9a97;text-align:center;padding:4px';bd.appendChild(m);}
   sec.appendChild(bd);
-  var filters=document.getElementById('filters');
-  if(filters&&filters.parentNode)filters.parentNode.insertBefore(sec,filters);
+  var listEl=document.getElementById('list');
+  if(listEl)listEl.insertBefore(sec,listEl.firstChild);
 }
 
 /* ── 5. モバイル対応CSS ── */
