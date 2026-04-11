@@ -20,6 +20,7 @@ export type Guard = {
   licenses: string[];
   skillLevel: SkillLevel;
   experienceYears: number;
+  hourlyRate: number;
   notes: string;
   status: "active" | "inactive";
   createdAt: string;
@@ -126,6 +127,50 @@ export const CONDITION_LABELS: Record<EquipmentLending["condition"], string> = {
   good: "良好",
   damaged: "破損",
   lost: "紛失",
+};
+
+export type DailyReport = {
+  id: string;
+  guardId: string;
+  shiftId: string;
+  siteId: string;
+  date: string;
+  content: string;
+  attachments: { name: string; dataUrl: string }[];
+  submittedAt: string;
+};
+
+export type LocationLog = {
+  id: string;
+  guardId: string;
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  timestamp: string;
+  type: "clock_in" | "clock_out" | "periodic" | "manual";
+};
+
+export type ShiftRequest = {
+  id: string;
+  guardId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  notes: string;
+  status: "pending" | "approved" | "rejected";
+  createdAt: string;
+};
+
+export const SHIFT_REQUEST_STATUS_LABELS: Record<ShiftRequest["status"], string> = {
+  pending: "申請中",
+  approved: "承認",
+  rejected: "却下",
+};
+
+export const SHIFT_REQUEST_STATUS_COLORS: Record<ShiftRequest["status"], string> = {
+  pending: "bg-warning/10 text-warning",
+  approved: "bg-success/10 text-success",
+  rejected: "bg-danger/10 text-danger",
 };
 
 export const CERTIFICATION_OPTIONS = [

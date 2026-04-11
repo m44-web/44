@@ -1,6 +1,6 @@
 "use client";
 
-import type { Guard, Site, Shift, AttendanceRecord, User, EquipmentItem, EquipmentLending } from "./types";
+import type { Guard, Site, Shift, AttendanceRecord, User, EquipmentItem, EquipmentLending, DailyReport, LocationLog, ShiftRequest } from "./types";
 
 const STORAGE_KEYS = {
   users: "lsecurity_users",
@@ -11,6 +11,9 @@ const STORAGE_KEYS = {
   currentUser: "lsecurity_current_user",
   equipment: "lsecurity_equipment",
   lending: "lsecurity_lending",
+  reports: "lsecurity_reports",
+  locations: "lsecurity_locations",
+  shiftRequests: "lsecurity_shift_requests",
 } as const;
 
 function generateId(): string {
@@ -44,31 +47,31 @@ const SEED_GUARDS: Guard[] = [
     id: "g1", name: "田中 太郎", nameKana: "タナカ タロウ", phone: "090-1234-5678",
     email: "tanaka@lsecurity.jp", certifications: ["施設警備業務検定2級", "交通誘導警備業務検定2級"],
     licenses: ["普通自動車免許", "救急救命講習修了"], skillLevel: "advanced", experienceYears: 8,
-    notes: "夜勤対応可", status: "active", createdAt: "2025-01-15",
+    hourlyRate: 1200, notes: "夜勤対応可", status: "active", createdAt: "2025-01-15",
   },
   {
     id: "g2", name: "鈴木 花子", nameKana: "スズキ ハナコ", phone: "090-2345-6789",
     email: "suzuki@lsecurity.jp", certifications: ["施設警備業務検定1級"],
     licenses: ["普通自動車免許", "防火管理者", "上級救命講習修了"], skillLevel: "expert", experienceYears: 15,
-    notes: "指導員としても活動", status: "active", createdAt: "2025-02-01",
+    hourlyRate: 1500, notes: "指導員としても活動", status: "active", createdAt: "2025-02-01",
   },
   {
     id: "g3", name: "佐藤 次郎", nameKana: "サトウ ジロウ", phone: "090-3456-7890",
     email: "sato@lsecurity.jp", certifications: ["交通誘導警備業務検定1級", "雑踏警備業務検定2級"],
     licenses: ["普通自動車免許", "中型自動車免許"], skillLevel: "advanced", experienceYears: 5,
-    notes: "", status: "active", createdAt: "2025-03-10",
+    hourlyRate: 1200, notes: "", status: "active", createdAt: "2025-03-10",
   },
   {
     id: "g4", name: "高橋 美咲", nameKana: "タカハシ ミサキ", phone: "090-4567-8901",
     email: "takahashi@lsecurity.jp", certifications: ["施設警備業務検定2級"],
     licenses: ["普通自動車免許"], skillLevel: "intermediate", experienceYears: 2,
-    notes: "", status: "active", createdAt: "2025-04-01",
+    hourlyRate: 1100, notes: "", status: "active", createdAt: "2025-04-01",
   },
   {
     id: "g5", name: "渡辺 健一", nameKana: "ワタナベ ケンイチ", phone: "090-5678-9012",
     email: "watanabe@lsecurity.jp", certifications: [],
     licenses: [], skillLevel: "beginner", experienceYears: 0,
-    notes: "研修中", status: "inactive", createdAt: "2024-11-20",
+    hourlyRate: 1000, notes: "研修中", status: "inactive", createdAt: "2024-11-20",
   },
 ];
 
@@ -144,6 +147,31 @@ const SEED_LENDING: EquipmentLending[] = [
   { id: "l9", equipmentId: "eq2", guardId: "g4", quantity: 1, lentDate: "2025-04-01", returnDate: null, condition: "good", notes: "" },
 ];
 
+const SEED_REPORTS: DailyReport[] = [
+  {
+    id: "r1", guardId: "g1", shiftId: "sh1", siteId: "s1", date: daysFromNow(-1),
+    content: "施設内巡回を実施。異常なし。正面入口付近で不審者対応1件（退去済み）。駐車場のライト1箇所切れ、管理事務所に報告済み。",
+    attachments: [], submittedAt: daysFromNow(-1) + "T18:30:00",
+  },
+  {
+    id: "r2", guardId: "g2", shiftId: "sh2", siteId: "s1", date: daysFromNow(-1),
+    content: "夜間巡回完了。22時頃、駐車場B区画で車上荒らし未遂あり。警察に通報し対応完了。防犯カメラ映像を保存済み。",
+    attachments: [], submittedAt: daysFromNow(-1) + "T06:15:00",
+  },
+  {
+    id: "r3", guardId: "g3", shiftId: "sh3", siteId: "s2", date: daysFromNow(-2),
+    content: "交通誘導業務。大型車両搬入3回対応。歩行者誘導特に問題なし。午後から雨のため視認性に注意して業務遂行。",
+    attachments: [], submittedAt: daysFromNow(-2) + "T17:10:00",
+  },
+];
+
+const SEED_SHIFT_REQUESTS: ShiftRequest[] = [
+  { id: "sr1", guardId: "g1", date: daysFromNow(7), startTime: "09:00", endTime: "18:00", notes: "日勤希望", status: "pending", createdAt: todayStr() },
+  { id: "sr2", guardId: "g1", date: daysFromNow(8), startTime: "09:00", endTime: "18:00", notes: "", status: "pending", createdAt: todayStr() },
+  { id: "sr3", guardId: "g2", date: daysFromNow(7), startTime: "18:00", endTime: "06:00", notes: "夜勤可能", status: "approved", createdAt: daysFromNow(-1) },
+  { id: "sr4", guardId: "g4", date: daysFromNow(9), startTime: "08:00", endTime: "17:00", notes: "", status: "pending", createdAt: todayStr() },
+];
+
 // --- Initialize ---
 export function initializeStore(): void {
   if (typeof window === "undefined") return;
@@ -155,6 +183,8 @@ export function initializeStore(): void {
   setItem(STORAGE_KEYS.attendance, SEED_ATTENDANCE);
   setItem(STORAGE_KEYS.equipment, SEED_EQUIPMENT);
   setItem(STORAGE_KEYS.lending, SEED_LENDING);
+  setItem(STORAGE_KEYS.reports, SEED_REPORTS);
+  setItem(STORAGE_KEYS.shiftRequests, SEED_SHIFT_REQUESTS);
 }
 
 // --- Auth ---
@@ -309,4 +339,66 @@ export function returnLending(id: string): void {
     l.id === id ? { ...l, returnDate: todayStr() } : l
   );
   setItem(STORAGE_KEYS.lending, items);
+}
+
+// --- Daily Reports ---
+export function getReports(): DailyReport[] {
+  return getItem<DailyReport[]>(STORAGE_KEYS.reports, []);
+}
+export function getReportsByGuard(guardId: string): DailyReport[] {
+  return getReports().filter((r) => r.guardId === guardId).sort((a, b) => b.date.localeCompare(a.date));
+}
+export function getReportsByDate(date: string): DailyReport[] {
+  return getReports().filter((r) => r.date === date);
+}
+export function addReport(report: Omit<DailyReport, "id">): DailyReport {
+  const reports = getReports();
+  const newReport: DailyReport = { ...report, id: generateId() };
+  reports.push(newReport);
+  setItem(STORAGE_KEYS.reports, reports);
+  return newReport;
+}
+
+// --- Location Logs ---
+export function getLocations(): LocationLog[] {
+  return getItem<LocationLog[]>(STORAGE_KEYS.locations, []);
+}
+export function getLatestLocations(): LocationLog[] {
+  const all = getLocations();
+  const latest = new Map<string, LocationLog>();
+  for (const loc of all) {
+    const existing = latest.get(loc.guardId);
+    if (!existing || loc.timestamp > existing.timestamp) {
+      latest.set(loc.guardId, loc);
+    }
+  }
+  return Array.from(latest.values());
+}
+export function addLocation(loc: Omit<LocationLog, "id">): LocationLog {
+  const locations = getLocations();
+  const newLoc: LocationLog = { ...loc, id: generateId() };
+  locations.push(newLoc);
+  // Keep only last 200 entries to avoid localStorage overflow
+  const trimmed = locations.slice(-200);
+  setItem(STORAGE_KEYS.locations, trimmed);
+  return newLoc;
+}
+
+// --- Shift Requests ---
+export function getShiftRequests(): ShiftRequest[] {
+  return getItem<ShiftRequest[]>(STORAGE_KEYS.shiftRequests, []);
+}
+export function getShiftRequestsByGuard(guardId: string): ShiftRequest[] {
+  return getShiftRequests().filter((r) => r.guardId === guardId).sort((a, b) => a.date.localeCompare(b.date));
+}
+export function addShiftRequest(req: Omit<ShiftRequest, "id" | "createdAt">): ShiftRequest {
+  const requests = getShiftRequests();
+  const newReq: ShiftRequest = { ...req, id: generateId(), createdAt: todayStr() };
+  requests.push(newReq);
+  setItem(STORAGE_KEYS.shiftRequests, requests);
+  return newReq;
+}
+export function updateShiftRequest(id: string, updates: Partial<ShiftRequest>): void {
+  const requests = getShiftRequests().map((r) => (r.id === id ? { ...r, ...updates } : r));
+  setItem(STORAGE_KEYS.shiftRequests, requests);
 }

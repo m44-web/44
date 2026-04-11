@@ -13,6 +13,7 @@ export type GuardFormValues = {
   licenses: string[];
   skillLevel: SkillLevel;
   experienceYears: number;
+  hourlyRate: number;
   notes: string;
 };
 
@@ -34,6 +35,7 @@ export function GuardForm({ onSubmit, defaultValues }: GuardFormProps) {
   const [licenses, setLicenses] = useState<string[]>(defaultValues?.licenses ?? []);
   const [skillLevel, setSkillLevel] = useState<SkillLevel>(defaultValues?.skillLevel ?? "beginner");
   const [experienceYears, setExperienceYears] = useState(defaultValues?.experienceYears ?? 0);
+  const [hourlyRate, setHourlyRate] = useState(defaultValues?.hourlyRate ?? 1000);
   const [notes, setNotes] = useState(defaultValues?.notes ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -50,7 +52,7 @@ export function GuardForm({ onSubmit, defaultValues }: GuardFormProps) {
     }
     onSubmit({
       name: name.trim(), nameKana: nameKana.trim(), phone: phone.trim(), email: email.trim(),
-      certifications: certs, licenses, skillLevel, experienceYears, notes: notes.trim(),
+      certifications: certs, licenses, skillLevel, experienceYears, hourlyRate, notes: notes.trim(),
     });
   }
 
@@ -101,6 +103,11 @@ export function GuardForm({ onSubmit, defaultValues }: GuardFormProps) {
           <label htmlFor="experienceYears" className={labelClasses}>経験年数</label>
           <input id="experienceYears" type="number" min="0" max="50" value={experienceYears} onChange={(e) => setExperienceYears(Number(e.target.value))} className={inputClasses} />
         </div>
+      </div>
+
+      <div>
+        <label htmlFor="hourlyRate" className={labelClasses}>時給（円）</label>
+        <input id="hourlyRate" type="number" min="0" step="50" value={hourlyRate} onChange={(e) => setHourlyRate(Number(e.target.value))} className={inputClasses} />
       </div>
 
       {/* Certifications */}

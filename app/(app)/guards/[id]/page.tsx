@@ -61,7 +61,7 @@ export default function GuardDetailPage() {
           defaultValues={{
             name: guard.name, nameKana: guard.nameKana, phone: guard.phone, email: guard.email,
             certifications: guard.certifications, licenses: guard.licenses,
-            skillLevel: guard.skillLevel, experienceYears: guard.experienceYears, notes: guard.notes,
+            skillLevel: guard.skillLevel, experienceYears: guard.experienceYears, hourlyRate: guard.hourlyRate, notes: guard.notes,
           }}
         />
       </div>

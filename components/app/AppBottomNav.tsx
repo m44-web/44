@@ -6,16 +6,18 @@ import { useAuth } from "@/lib/auth-context";
 
 const adminNav = [
   { href: "/dashboard", label: "ホーム", icon: "home" },
-  { href: "/guards", label: "警備員", icon: "users" },
   { href: "/shifts", label: "シフト", icon: "calendar" },
-  { href: "/attendance", label: "勤怠", icon: "clock" },
-  { href: "/equipment", label: "装備", icon: "box" },
+  { href: "/shift-requests", label: "希望", icon: "calendarCheck" },
+  { href: "/reports", label: "日報", icon: "file" },
+  { href: "/locations", label: "位置", icon: "mapPin" },
 ] as const;
 
 const guardNav = [
   { href: "/dashboard", label: "ホーム", icon: "home" },
   { href: "/shifts", label: "シフト", icon: "calendar" },
   { href: "/attendance", label: "出退勤", icon: "clock" },
+  { href: "/reports", label: "日報", icon: "file" },
+  { href: "/salary", label: "給与", icon: "yen" },
 ] as const;
 
 const icons: Record<string, (active: boolean) => React.ReactNode> = {
@@ -59,6 +61,35 @@ const icons: Record<string, (active: boolean) => React.ReactNode> = {
       <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
       <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
       <line x1="12" y1="22.08" x2="12" y2="12" />
+    </svg>
+  ),
+  file: (active) => (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+    </svg>
+  ),
+  mapPin: (active) => (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  ),
+  yen: (active) => (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+      <line x1="12" y1="1" x2="12" y2="23" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
+  ),
+  calendarCheck: (active) => (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+      <path d="M9 16l2 2 4-4" />
     </svg>
   ),
 };
