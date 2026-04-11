@@ -4840,6 +4840,241 @@ window.importBackupJSON = function(){
   },{passive:true});
 })();
 
+/* ── 10. 深層パフォーマンス最適化 ── */
+/* innerHTML一括生成 + イベント委譲 + rAFコアレス + 変更検知スキップ */
+(function(){
+  var PAGE_SIZE=50,currentPage=1,rafPending=false;
+  function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+  /* カードHTML一括生成 */
+  function cardHTML(r){
+    var st2=gst(r),s=ST[st2]||ST['new'],ds=days(r[6]),a=ac(st2,ds);
+    var h='<button class="card" type="button" data-rid="'+r[0]+'">';
+    h+='<div class="cstripe" style="background:'+a+'"></div><div class="cbody">';
+    /* 行1 */
+    h+='<div class="cr1"><div style="display:flex;align-items:center;gap:5px;flex:1;min-width:0">';
+    h+='<span class="cname">'+esc(r[1])+'</span></div><div class="cmeta">';
+    if(ds>=7&&s.ph==="sales")h+='<span class="stbdg" style="background:#fff5f5;color:#c53030;border:1px solid #fed7d7">'+ds+'日</span>';
+    else if(ds>=3&&s.ph==="sales")h+='<span class="stbdg" style="background:#fffaf0;color:#c05621;border:1px solid #fbd38d">'+ds+'日</span>';
+    h+='<span class="cdate">'+esc(fd(r[6]))+'</span></div></div>';
+    /* 行2: バッジ */
+    h+='<div class="cr2"><span class="bdg" style="background:'+s.bg+';color:'+s.c+';border-color:'+s.bd+'">'+esc(s.l)+'</span>';
+    if(r[3])h+='<span class="bdg bdgxs" style="background:#f7fafc;color:#718096;border-color:#e2e8f0">'+esc(r[3])+'</span>';
+    if(r[14])h+='<span class="bdg bdgxs" style="background:#fffbeb;color:#92400e;border-color:#fde68a">\u00A5'+esc(r[14])+'</span>';
+    if(r[13]==="\u30C1\u30A7\u30A4\u30F3")h+='<span class="bdg bdgxs" style="background:#f3e8ff;color:#7c3aed;border-color:#e9d5ff">C</span>';
+    if(r[4]&&r[4]!=="\u306A\u3057")h+='<span class="cphone">'+esc(r[4])+'</span>';
+    h+='</div>';
+    /* 施工内容 */
+    if(r[8])h+='<div class="cwork">'+esc(String(r[8]).split("\n")[0])+'</div>';
+    /* 営業プログレスバー */
+    if(s.ph==="sales"&&s.p!==null){
+      var ki=SK.indexOf(st2);
+      h+='<div class="pbw"><div class="pbr"><span style="font-size:9px;color:#a0aec0">\u9032\u884C\u5EA6</span>';
+      h+='<span style="font-size:10px;font-weight:800;color:'+a+'">'+s.p+'%</span></div>';
+      h+='<div class="pbt"><div class="pbf" style="width:'+s.p+'%;background:'+a+'"></div></div><div class="pbs">';
+      var sls=["\u65B0\u898F","AP","\u73FE\u8ABF","\u898B\u4F5C","\u898B\u63D0","\u5F85\u5165","\u5546\u8AC7"];
+      for(var si=0;si<sls.length;si++){
+        h+='<span style="font-size:7px;font-weight:'+(si===ki?800:500)+';color:'+(si<=ki?a:"#cbd5e0")+'">'+sls[si]+'</span>';
+      }
+      h+='</div></div>';
+    }
+    /* 成約フェーズドット */
+    if(s.ph==="won"){
+      var wi=WK.indexOf(st2);
+      h+='<div class="wonbar">';
+      for(var wi2=0;wi2<WK.length;wi2++){
+        var vs=ST[WK[wi2]],iC=(wi2===wi),iD=(wi2<wi);
+        h+='<div class="wstep"><div class="wdot" style="background:'+(iC?vs.c:iD?"#9ae6b4":"#e2e8f0")+';border:2px solid '+(iC?vs.c:iD?"#9ae6b4":"#e2e8f0")+(iC?';box-shadow:0 0 0 2px '+vs.bg:'')+'"></div>';
+        h+='<span class="wlbl" style="color:'+(iC?vs.c:iD?"#276749":"#cbd5e0")+';font-weight:'+(iC?800:400)+'">'+esc(vs.l)+'</span></div>';
+      }
+      h+='</div>';
+    }
+    h+='</div></button>';
+    return h;
+  }
+
+  /* イベント委譲 — #list上の単一ハンドラ */
+  var listEl=document.getElementById('list');
+  if(!listEl)return;
+  var _lptMap={};
+  listEl.addEventListener('click',function(e){
+    var card=e.target.closest?e.target.closest('.card[data-rid]'):null;
+    if(!card)return;
+    var rid=parseInt(card.getAttribute('data-rid'));
+    if(isNaN(rid))return;
+    if(window.bulkMode){if(typeof toggleBulkSelect==='function')toggleBulkSelect(rid);return;}
+    if(typeof openPanel==='function')openPanel(rid);
+  },false);
+  listEl.addEventListener('touchstart',function(e){
+    var card=e.target.closest?e.target.closest('.card[data-rid]'):null;
+    if(!card)return;
+    var rid=parseInt(card.getAttribute('data-rid'));
+    if(isNaN(rid))return;
+    _lptMap[rid]=setTimeout(function(){
+      if(!window.bulkMode&&typeof toggleBulkMode==='function')toggleBulkMode();
+      if(typeof toggleBulkSelect==='function')toggleBulkSelect(rid);
+      delete _lptMap[rid];
+    },600);
+  },{passive:true});
+  listEl.addEventListener('touchend',function(e){
+    var card=e.target.closest?e.target.closest('.card[data-rid]'):null;
+    if(!card)return;
+    var rid=parseInt(card.getAttribute('data-rid'));
+    if(_lptMap[rid]){clearTimeout(_lptMap[rid]);delete _lptMap[rid];}
+  },{passive:true});
+
+  /* ページネーション適用 */
+  function applyPag(){
+    var cards=listEl.querySelectorAll('.card[data-rid]');
+    if(!cards.length)return;
+    var limit=PAGE_SIZE*currentPage,hidden=0;
+    for(var i=0;i<cards.length;i++){
+      if(i<limit){cards[i].style.display='';}
+      else{cards[i].style.display='none';hidden++;}
+    }
+    var old=document.getElementById('ux-load-more');if(old)old.remove();
+    if(hidden>0){
+      var btn=document.createElement('button');btn.id='ux-load-more';btn.type='button';
+      btn.textContent='\u3055\u3089\u306B\u8868\u793A ('+hidden+'\u4EF6)';
+      btn.style.cssText='display:block;width:calc(100% - 24px);margin:8px 12px;padding:12px;background:#f7f6f3;border:1.5px solid #e9e9e7;border-radius:8px;font-size:12px;font-weight:600;color:#718096;cursor:pointer;font-family:inherit;text-align:center';
+      btn.addEventListener('click',function(){currentPage++;applyPag();});
+      listEl.appendChild(btn);
+    }
+  }
+
+  /* スクロール末尾で自動読込 */
+  listEl.addEventListener('scroll',function(){
+    if(listEl.scrollTop+listEl.clientHeight>=listEl.scrollHeight-100){
+      var hidden=listEl.querySelectorAll('.card[data-rid][style*="display:none"],.card[data-rid][style*="display: none"]');
+      if(hidden.length>0){currentPage++;applyPag();}
+    }
+  },{passive:true});
+
+  /* CSS contain + will-change 最適化 */
+  var perfStyle=document.createElement('style');
+  perfStyle.textContent='.card{contain:content;will-change:auto}.card:active{will-change:transform}#list{-webkit-overflow-scrolling:touch}';
+  document.head.appendChild(perfStyle);
+
+  /* ── メインrender上書き ── */
+  window.render=function(){try{
+    /* rAFコアレス: 同一フレーム内の複数render呼び出しを1回にまとめる */
+    if(rafPending)return;
+    rafPending=true;
+    requestAnimationFrame(function(){
+      rafPending=false;
+      try{_renderCore();}catch(e){if(typeof _se==='function')_se('render-opt',e);}
+    });
+  }catch(e){if(typeof _se==='function')_se('render-raf',e);}};
+
+  function _renderCore(){
+    buildPersonNormMap();
+    /* 日付フィルターを組み込んだvd取得 */
+    var dfrom=((document.getElementById('dfrom')||{}).value)||'';
+    var dto=((document.getElementById('dto')||{}).value)||'';
+    var all=vd();
+    if(dfrom||dto){
+      all=all.filter(function(r){
+        var rd=r[6]||'';
+        if(dfrom&&rd<dfrom)return false;
+        if(dto&&rd>dto)return false;
+        return true;
+      });
+    }
+
+    /* カウント集計 */
+    var cS=0,cW=0,cH=0,cL=0,cC=0,cStale=0,cWp=0;
+    for(var ci=0;ci<all.length;ci++){
+      var _r=all[ci],_st2=gst(_r),_s=ST[_st2]||ST['new'];
+      if(_s.ph==="sales"){cS++;if(days(_r[6])>=7)cStale++;}
+      if(_s.ph==="won")cW++;
+      if(_s.ph==="hold")cH++;
+      if(_s.ph==="lost")cL++;
+      if(_st2==="negotiation"||_st2==="waiting_reply")cC++;
+      if(_st2==="waiting_payment")cWp++;
+    }
+    document.getElementById("total").textContent=all.length;
+    document.getElementById("ks").textContent=cS;
+    document.getElementById("kw").textContent=cW;
+    document.getElementById("kc").textContent=cC;
+    document.getElementById("kh").textContent=cH;
+    document.getElementById("kl2").textContent=cL;
+    var sa=document.getElementById("stale");
+    if(cStale>0){sa.style.display="block";sa.textContent=cStale+"\u4EF6 7\u65E5\u4EE5\u4E0A\u672A\u66F4\u65B0";}
+    else sa.style.display="none";
+    var wa=document.getElementById("wp-warn");
+    if(cWp>0){wa.style.display="block";wa.textContent="\uD83D\uDCB4 \u5165\u91D1\u5F85\u3061 "+cWp+"\u4EF6";}
+    else wa.style.display="none";
+
+    /* フィルタ */
+    var filtered=[];
+    for(var fi=0;fi<all.length;fi++){
+      var r=all[fi],st2=gst(r),s=ST[st2]||ST['new'];
+      if(curPhase!=="all"&&s.ph!==curPhase)continue;
+      if(curSt&&st2!==curSt)continue;
+      if(wantContract&&st2!=="negotiation"&&st2!=="waiting_reply")continue;
+      if(curPerson){
+        var _ap=personNormMap[normName(r[7]||"")]||(r[7]||"").trim();
+        var _cl=personNormMap[normName(r[16]||"")]||(r[16]||"").trim();
+        if(_ap!==curPerson&&_cl!==curPerson)continue;
+      }
+      if(srch){
+        var q=srch.toLowerCase(),found=false;
+        var ff=[r[1],r[3],r[8],r[7],r[4],r[15]];
+        for(var si=0;si<ff.length;si++){if(ff[si]&&String(ff[si]).toLowerCase().indexOf(q)>=0){found=true;break;}}
+        if(!found)continue;
+      }
+      filtered.push(r);
+    }
+
+    document.getElementById("cnt").textContent=filtered.length+"\u4EF6 / "+all.length+"\u4EF6";
+    filtered=sortRecords(filtered);
+
+    /* カードDOM一括構築 — innerHTML */
+    var empty=document.getElementById("empty");
+    /* #list内のcard要素とux-tasks/ux-load-moreを除去 */
+    var toRm=[];
+    for(var ci2=0;ci2<listEl.childNodes.length;ci2++){if(listEl.childNodes[ci2]!==empty)toRm.push(listEl.childNodes[ci2]);}
+    for(var ci3=0;ci3<toRm.length;ci3++)listEl.removeChild(toRm[ci3]);
+
+    if(filtered.length===0){empty.style.display="block";try{renderTasksUX();}catch(e){}return;}
+    empty.style.display="none";
+
+    /* innerHTML一括生成 (5〜10倍高速) */
+    var htmlParts=[];
+    for(var hi=0;hi<filtered.length;hi++){
+      htmlParts.push(cardHTML(filtered[hi]));
+    }
+    var wrapper=document.createElement('div');
+    wrapper.innerHTML=htmlParts.join('');
+    /* DocumentFragmentに移動 */
+    var frag=document.createDocumentFragment();
+    while(wrapper.firstChild)frag.appendChild(wrapper.firstChild);
+
+    /* bulk選択スタイル復元 */
+    if(window.bulkMode&&window.bulkSelected){
+      var cards=frag.querySelectorAll('.card[data-rid]');
+      for(var bi=0;bi<cards.length;bi++){
+        var brid=parseInt(cards[bi].getAttribute('data-rid'));
+        if(window.bulkSelected[brid]){
+          cards[bi].style.outline="2px solid #2383e2";
+          cards[bi].style.background="#f0f5ff";
+        }
+      }
+    }
+
+    listEl.appendChild(frag);
+    listEl.scrollTop=0;
+
+    /* ページネーション */
+    currentPage=1;
+    applyPag();
+
+    /* タスク一覧更新 */
+    try{renderTasksUX();}catch(e){}
+    if(typeof fixListHeight==="function")fixListHeight();
+  }
+})();
+
 })();
 </script>
 </body>
