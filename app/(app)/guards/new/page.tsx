@@ -8,14 +8,7 @@ export default function NewGuardPage() {
   const router = useRouter();
 
   function handleSubmit(data: GuardFormValues) {
-    addGuard({
-      name: data.name,
-      nameKana: data.nameKana,
-      phone: data.phone,
-      email: data.email,
-      certifications: data.certifications,
-      status: "active",
-    });
+    addGuard({ ...data, status: "active" });
     router.push("/guards");
   }
 

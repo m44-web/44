@@ -1,6 +1,6 @@
 "use client";
 
-import type { Guard, Site, Shift, AttendanceRecord, User } from "./types";
+import type { Guard, Site, Shift, AttendanceRecord, User, EquipmentItem, EquipmentLending } from "./types";
 
 const STORAGE_KEYS = {
   users: "lsecurity_users",
@@ -9,6 +9,8 @@ const STORAGE_KEYS = {
   shifts: "lsecurity_shifts",
   attendance: "lsecurity_attendance",
   currentUser: "lsecurity_current_user",
+  equipment: "lsecurity_equipment",
+  lending: "lsecurity_lending",
 } as const;
 
 function generateId(): string {
@@ -41,27 +43,32 @@ const SEED_GUARDS: Guard[] = [
   {
     id: "g1", name: "田中 太郎", nameKana: "タナカ タロウ", phone: "090-1234-5678",
     email: "tanaka@lsecurity.jp", certifications: ["施設警備業務検定2級", "交通誘導警備業務検定2級"],
-    status: "active", createdAt: "2025-01-15",
+    licenses: ["普通自動車免許", "救急救命講習修了"], skillLevel: "advanced", experienceYears: 8,
+    notes: "夜勤対応可", status: "active", createdAt: "2025-01-15",
   },
   {
     id: "g2", name: "鈴木 花子", nameKana: "スズキ ハナコ", phone: "090-2345-6789",
     email: "suzuki@lsecurity.jp", certifications: ["施設警備業務検定1級"],
-    status: "active", createdAt: "2025-02-01",
+    licenses: ["普通自動車免許", "防火管理者", "上級救命講習修了"], skillLevel: "expert", experienceYears: 15,
+    notes: "指導員としても活動", status: "active", createdAt: "2025-02-01",
   },
   {
     id: "g3", name: "佐藤 次郎", nameKana: "サトウ ジロウ", phone: "090-3456-7890",
     email: "sato@lsecurity.jp", certifications: ["交通誘導警備業務検定1級", "雑踏警備業務検定2級"],
-    status: "active", createdAt: "2025-03-10",
+    licenses: ["普通自動車免許", "中型自動車免許"], skillLevel: "advanced", experienceYears: 5,
+    notes: "", status: "active", createdAt: "2025-03-10",
   },
   {
     id: "g4", name: "高橋 美咲", nameKana: "タカハシ ミサキ", phone: "090-4567-8901",
     email: "takahashi@lsecurity.jp", certifications: ["施設警備業務検定2級"],
-    status: "active", createdAt: "2025-04-01",
+    licenses: ["普通自動車免許"], skillLevel: "intermediate", experienceYears: 2,
+    notes: "", status: "active", createdAt: "2025-04-01",
   },
   {
     id: "g5", name: "渡辺 健一", nameKana: "ワタナベ ケンイチ", phone: "090-5678-9012",
     email: "watanabe@lsecurity.jp", certifications: [],
-    status: "inactive", createdAt: "2024-11-20",
+    licenses: [], skillLevel: "beginner", experienceYears: 0,
+    notes: "研修中", status: "inactive", createdAt: "2024-11-20",
   },
 ];
 
@@ -100,11 +107,41 @@ const SEED_SHIFTS: Shift[] = [
   { id: "sh5", guardId: "g4", siteId: "s1", date: daysFromNow(1), startTime: "09:00", endTime: "18:00", status: "scheduled", notes: "" },
   { id: "sh6", guardId: "g2", siteId: "s3", date: daysFromNow(2), startTime: "10:00", endTime: "22:00", status: "scheduled", notes: "" },
   { id: "sh7", guardId: "g3", siteId: "s2", date: daysFromNow(3), startTime: "08:00", endTime: "17:00", status: "scheduled", notes: "" },
+  { id: "sh8", guardId: "g4", siteId: "s2", date: daysFromNow(4), startTime: "08:00", endTime: "17:00", status: "scheduled", notes: "" },
+  { id: "sh9", guardId: "g1", siteId: "s1", date: daysFromNow(5), startTime: "09:00", endTime: "18:00", status: "scheduled", notes: "" },
+  { id: "sh10", guardId: "g2", siteId: "s2", date: daysFromNow(5), startTime: "08:00", endTime: "17:00", status: "scheduled", notes: "" },
+  { id: "sh11", guardId: "g3", siteId: "s3", date: daysFromNow(7), startTime: "10:00", endTime: "22:00", status: "scheduled", notes: "" },
+  { id: "sh12", guardId: "g1", siteId: "s3", date: daysFromNow(7), startTime: "10:00", endTime: "22:00", status: "scheduled", notes: "" },
 ];
 
 const SEED_ATTENDANCE: AttendanceRecord[] = [
   { id: "a1", guardId: "g1", shiftId: "sh1", siteId: "s1", date: todayStr(), clockIn: "08:55", clockOut: null, status: "on_duty", notes: "" },
   { id: "a2", guardId: "g3", shiftId: "sh3", siteId: "s2", date: todayStr(), clockIn: "07:58", clockOut: null, status: "on_duty", notes: "" },
+];
+
+const SEED_EQUIPMENT: EquipmentItem[] = [
+  { id: "eq1", name: "制服（夏用）", category: "uniform", totalStock: 20, notes: "" },
+  { id: "eq2", name: "制服（冬用）", category: "uniform", totalStock: 20, notes: "" },
+  { id: "eq3", name: "帽子", category: "uniform", totalStock: 25, notes: "" },
+  { id: "eq4", name: "安全靴", category: "uniform", totalStock: 15, notes: "" },
+  { id: "eq5", name: "反射ベスト", category: "uniform", totalStock: 30, notes: "交通誘導用" },
+  { id: "eq6", name: "懐中電灯", category: "tool", totalStock: 20, notes: "" },
+  { id: "eq7", name: "誘導棒", category: "tool", totalStock: 15, notes: "" },
+  { id: "eq8", name: "トランシーバー", category: "communication", totalStock: 10, notes: "" },
+  { id: "eq9", name: "警笛", category: "tool", totalStock: 25, notes: "" },
+  { id: "eq10", name: "雨合羽", category: "uniform", totalStock: 15, notes: "" },
+];
+
+const SEED_LENDING: EquipmentLending[] = [
+  { id: "l1", equipmentId: "eq1", guardId: "g1", quantity: 2, lentDate: "2025-01-20", returnDate: null, condition: "good", notes: "" },
+  { id: "l2", equipmentId: "eq3", guardId: "g1", quantity: 1, lentDate: "2025-01-20", returnDate: null, condition: "good", notes: "" },
+  { id: "l3", equipmentId: "eq6", guardId: "g1", quantity: 1, lentDate: "2025-01-20", returnDate: null, condition: "good", notes: "" },
+  { id: "l4", equipmentId: "eq8", guardId: "g1", quantity: 1, lentDate: "2025-02-01", returnDate: null, condition: "good", notes: "" },
+  { id: "l5", equipmentId: "eq1", guardId: "g2", quantity: 2, lentDate: "2025-02-01", returnDate: null, condition: "good", notes: "" },
+  { id: "l6", equipmentId: "eq3", guardId: "g2", quantity: 1, lentDate: "2025-02-01", returnDate: null, condition: "good", notes: "" },
+  { id: "l7", equipmentId: "eq5", guardId: "g3", quantity: 1, lentDate: "2025-03-10", returnDate: null, condition: "good", notes: "" },
+  { id: "l8", equipmentId: "eq7", guardId: "g3", quantity: 1, lentDate: "2025-03-10", returnDate: null, condition: "good", notes: "" },
+  { id: "l9", equipmentId: "eq2", guardId: "g4", quantity: 1, lentDate: "2025-04-01", returnDate: null, condition: "good", notes: "" },
 ];
 
 // --- Initialize ---
@@ -116,6 +153,8 @@ export function initializeStore(): void {
   setItem(STORAGE_KEYS.sites, SEED_SITES);
   setItem(STORAGE_KEYS.shifts, SEED_SHIFTS);
   setItem(STORAGE_KEYS.attendance, SEED_ATTENDANCE);
+  setItem(STORAGE_KEYS.equipment, SEED_EQUIPMENT);
+  setItem(STORAGE_KEYS.lending, SEED_LENDING);
 }
 
 // --- Auth ---
@@ -123,11 +162,9 @@ export function login(email: string, _password: string): User | null {
   const users = getItem<User[]>(STORAGE_KEYS.users, []);
   return users.find((u) => u.email === email) ?? null;
 }
-
 export function getCurrentUser(): User | null {
   return getItem<User | null>(STORAGE_KEYS.currentUser, null);
 }
-
 export function setCurrentUser(user: User | null): void {
   setItem(STORAGE_KEYS.currentUser, user);
 }
@@ -136,11 +173,9 @@ export function setCurrentUser(user: User | null): void {
 export function getGuards(): Guard[] {
   return getItem<Guard[]>(STORAGE_KEYS.guards, []);
 }
-
 export function getGuard(id: string): Guard | undefined {
   return getGuards().find((g) => g.id === id);
 }
-
 export function addGuard(guard: Omit<Guard, "id" | "createdAt">): Guard {
   const guards = getGuards();
   const newGuard: Guard = { ...guard, id: generateId(), createdAt: todayStr() };
@@ -148,7 +183,6 @@ export function addGuard(guard: Omit<Guard, "id" | "createdAt">): Guard {
   setItem(STORAGE_KEYS.guards, guards);
   return newGuard;
 }
-
 export function updateGuard(id: string, updates: Partial<Guard>): void {
   const guards = getGuards().map((g) => (g.id === id ? { ...g, ...updates } : g));
   setItem(STORAGE_KEYS.guards, guards);
@@ -158,11 +192,9 @@ export function updateGuard(id: string, updates: Partial<Guard>): void {
 export function getSites(): Site[] {
   return getItem<Site[]>(STORAGE_KEYS.sites, []);
 }
-
 export function getSite(id: string): Site | undefined {
   return getSites().find((s) => s.id === id);
 }
-
 export function addSite(site: Omit<Site, "id" | "createdAt">): Site {
   const sites = getSites();
   const newSite: Site = { ...site, id: generateId(), createdAt: todayStr() };
@@ -170,7 +202,6 @@ export function addSite(site: Omit<Site, "id" | "createdAt">): Site {
   setItem(STORAGE_KEYS.sites, sites);
   return newSite;
 }
-
 export function updateSite(id: string, updates: Partial<Site>): void {
   const sites = getSites().map((s) => (s.id === id ? { ...s, ...updates } : s));
   setItem(STORAGE_KEYS.sites, sites);
@@ -180,15 +211,12 @@ export function updateSite(id: string, updates: Partial<Site>): void {
 export function getShifts(): Shift[] {
   return getItem<Shift[]>(STORAGE_KEYS.shifts, []);
 }
-
 export function getShiftsByDate(date: string): Shift[] {
   return getShifts().filter((s) => s.date === date);
 }
-
 export function getShiftsByGuard(guardId: string): Shift[] {
   return getShifts().filter((s) => s.guardId === guardId);
 }
-
 export function addShift(shift: Omit<Shift, "id">): Shift {
   const shifts = getShifts();
   const newShift: Shift = { ...shift, id: generateId() };
@@ -196,7 +224,6 @@ export function addShift(shift: Omit<Shift, "id">): Shift {
   setItem(STORAGE_KEYS.shifts, shifts);
   return newShift;
 }
-
 export function updateShift(id: string, updates: Partial<Shift>): void {
   const shifts = getShifts().map((s) => (s.id === id ? { ...s, ...updates } : s));
   setItem(STORAGE_KEYS.shifts, shifts);
@@ -206,15 +233,12 @@ export function updateShift(id: string, updates: Partial<Shift>): void {
 export function getAttendance(): AttendanceRecord[] {
   return getItem<AttendanceRecord[]>(STORAGE_KEYS.attendance, []);
 }
-
 export function getAttendanceByDate(date: string): AttendanceRecord[] {
   return getAttendance().filter((a) => a.date === date);
 }
-
 export function getAttendanceByGuard(guardId: string): AttendanceRecord[] {
   return getAttendance().filter((a) => a.guardId === guardId);
 }
-
 export function clockIn(shiftId: string): void {
   const attendance = getAttendance();
   const shifts = getShifts();
@@ -237,7 +261,6 @@ export function clockIn(shiftId: string): void {
     setItem(STORAGE_KEYS.attendance, attendance);
   }
 }
-
 export function clockOut(shiftId: string): void {
   const attendance = getAttendance();
   const now = new Date();
@@ -246,9 +269,44 @@ export function clockOut(shiftId: string): void {
     a.shiftId === shiftId ? { ...a, clockOut: timeStr, status: "completed" as const } : a
   );
   setItem(STORAGE_KEYS.attendance, updated);
-  // Also mark shift as completed
   const shifts = getShifts().map((s) =>
     s.id === shiftId ? { ...s, status: "completed" as const } : s
   );
   setItem(STORAGE_KEYS.shifts, shifts);
+}
+
+// --- Equipment ---
+export function getEquipment(): EquipmentItem[] {
+  return getItem<EquipmentItem[]>(STORAGE_KEYS.equipment, []);
+}
+export function getEquipmentItem(id: string): EquipmentItem | undefined {
+  return getEquipment().find((e) => e.id === id);
+}
+export function addEquipment(item: Omit<EquipmentItem, "id">): EquipmentItem {
+  const items = getEquipment();
+  const newItem: EquipmentItem = { ...item, id: generateId() };
+  items.push(newItem);
+  setItem(STORAGE_KEYS.equipment, items);
+  return newItem;
+}
+
+// --- Lending ---
+export function getLending(): EquipmentLending[] {
+  return getItem<EquipmentLending[]>(STORAGE_KEYS.lending, []);
+}
+export function getLendingByGuard(guardId: string): EquipmentLending[] {
+  return getLending().filter((l) => l.guardId === guardId && !l.returnDate);
+}
+export function addLending(lending: Omit<EquipmentLending, "id">): EquipmentLending {
+  const items = getLending();
+  const newItem: EquipmentLending = { ...lending, id: generateId() };
+  items.push(newItem);
+  setItem(STORAGE_KEYS.lending, items);
+  return newItem;
+}
+export function returnLending(id: string): void {
+  const items = getLending().map((l) =>
+    l.id === id ? { ...l, returnDate: todayStr() } : l
+  );
+  setItem(STORAGE_KEYS.lending, items);
 }
