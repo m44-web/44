@@ -3,35 +3,19 @@
 @theme inline {
   --color-primary: #0A0F1E;
   --color-primary-light: #111827;
-  --color-accent: #00D4FF;
-  --color-accent-dark: #00a8cc;
+  --color-accent: #3B82F6;
+  --color-accent-dark: #2563EB;
   --color-text-primary: #FFFFFF;
   --color-text-secondary: #B0B8C8;
   --color-sub-bg: #111827;
   --color-card-bg: #1a2235;
   --color-border: #1e293b;
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
 
   --font-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", sans-serif;
   --font-display: "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "Hiragino Sans", sans-serif;
-
-  --animate-glow: glow 3s ease-in-out infinite;
-  --animate-float: float 6s ease-in-out infinite;
-  --animate-pulse-slow: pulse-slow 4s ease-in-out infinite;
-
-  @keyframes glow {
-    0%, 100% { opacity: 0.5; }
-    50% { opacity: 1; }
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-  }
-
-  @keyframes pulse-slow {
-    0%, 100% { opacity: 0.3; transform: scale(1); }
-    50% { opacity: 0.6; transform: scale(1.05); }
-  }
 }
 
 body {
@@ -39,34 +23,9 @@ body {
   color: #FFFFFF;
 }
 
-/* Glow effect utilities */
-.glow-accent {
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3), 0 0 60px rgba(0, 212, 255, 0.1);
-}
-
-.glow-accent-strong {
-  box-shadow: 0 0 30px rgba(0, 212, 255, 0.5), 0 0 80px rgba(0, 212, 255, 0.2);
-}
-
-.gradient-border {
-  position: relative;
-}
-
-.gradient-border::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.5), transparent 50%, rgba(0, 212, 255, 0.3));
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -75,15 +34,21 @@ body {
 
 ::-webkit-scrollbar-thumb {
   background: #1e293b;
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #334155;
 }
 
-/* Selection color */
 ::selection {
-  background-color: rgba(0, 212, 255, 0.3);
+  background-color: rgba(59, 130, 246, 0.3);
   color: #FFFFFF;
+}
+
+/* Mobile-friendly tap targets */
+@media (pointer: coarse) {
+  button, a, select, input[type="checkbox"] {
+    min-height: 44px;
+  }
 }

@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import { Header } from "@/components/common/Header";
-import { Footer } from "@/components/common/Footer";
 import { SITE_NAME, SITE_DESCRIPTION } from "@/lib/constants";
+import { AuthProvider } from "@/lib/auth-context";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: `${SITE_NAME} | デジタルサイネージで街に動きを`,
+    default: `${SITE_NAME} | 警備員管理システム`,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
@@ -19,10 +18,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja" className="h-full antialiased">
-      <body className="min-h-full flex flex-col font-sans">
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
+      <body className="min-h-full font-sans">
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

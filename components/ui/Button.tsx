@@ -3,7 +3,7 @@ import Link from "next/link";
 type ButtonProps = {
   children: React.ReactNode;
   href?: string;
-  variant?: "primary" | "outline" | "ghost";
+  variant?: "primary" | "outline" | "ghost" | "danger";
   size?: "sm" | "md" | "lg";
   className?: string;
   type?: "button" | "submit";
@@ -13,11 +13,13 @@ type ButtonProps = {
 
 const variants = {
   primary:
-    "bg-accent text-primary font-semibold hover:bg-accent-dark shadow-[0_0_20px_rgba(0,212,255,0.3)] hover:shadow-[0_0_30px_rgba(0,212,255,0.5)] transition-all",
+    "bg-accent text-white font-semibold hover:bg-accent-dark shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] transition-all",
   outline:
     "border border-accent text-accent hover:bg-accent/10 transition-colors",
   ghost:
     "text-text-secondary hover:text-text-primary transition-colors",
+  danger:
+    "bg-danger text-white font-semibold hover:bg-red-600 transition-colors",
 };
 
 const sizes = {
