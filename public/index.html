@@ -608,25 +608,12 @@ html, body { margin:0; padding:0; overflow:hidden; }
 
 /* ── モバイル対応 ── */
 @media(max-width:480px){
-  #daterange{flex-wrap:wrap;width:100%}
-  #daterange input{width:calc(50% - 12px)!important;flex:1}
   #searchrow{flex-wrap:wrap;gap:6px!important}
   #swrap{width:100%}
-  .card{padding:10px 12px}
-  #tasks-section .tasks-body button{font-size:11px}
+  #dfrom,#dto{width:calc(50% - 20px)!important}
   #login-box{margin:0 12px;padding:28px 20px!important}
 }
-@media(min-width:768px){
-  #app{max-width:700px;margin-left:auto;margin-right:auto;left:0;right:0;border-left:1px solid #e9e9e7;border-right:1px solid #e9e9e7}
-  #top-bar{max-width:700px;margin-left:auto;margin-right:auto}
-  #list{max-width:700px;margin-left:auto;margin-right:auto}
-  #fab,#settings-btn,#undo-btn{max-width:700px}
-  .card{padding:12px 16px}
-  #login-box{padding:36px 32px!important}
-}
 /* タッチ領域拡大 */
-.ptab,.sc,#contract-chip,#cal-toggle{min-height:36px}
-.card{min-height:44px}
 .menu-item{min-height:44px}
 
 </style>
@@ -655,7 +642,7 @@ html, body { margin:0; padding:0; overflow:hidden; }
 <div id="top-bar">
 <div id="hdr"><div id="hdr-row1"><div id="hdr-left"><div id="hdr-sub">LIT Group / 北海工務店</div><div id="hdr-user" onclick="showUserSetupModal()" style="font-size:10px;color:#2383e2;font-weight:600;cursor:pointer;padding:1px 0;"></div><div style="display:flex;align-items:center;gap:5px"><div id="hdr-ttl">案件管理</div><div id="sb-dot"></div></div></div><div id="hdr-right"><span id="total">0</span><span id="total-lbl"> 件</span></div></div><div id="stale"></div><div id="wp-warn"></div><div id="kpi"><div class="kc"><div class="kn" id="ks">0</div><div class="kl">営業中</div></div><div class="kc"><div class="kn" id="kw">0</div><div class="kl">成約済</div></div><div class="kc kc-alert"><div class="kn" id="kc">0</div><div class="kl">契約待</div></div><div class="kc"><div class="kn" id="kh">0</div><div class="kl">保留</div></div><div class="kc"><div class="kn" id="kl2">0</div><div class="kl">失注</div></div></div></div>
 <div id="tasks-section" style="padding:8px 16px 0;display:none"></div>
-<div id="filters"><div id="ptabs"><button class="ptab on" data-ph="all">すべて</button><button class="ptab" data-ph="sales">営業</button><button class="ptab" data-ph="won">成約/施工</button><button class="ptab" data-ph="hold">保留</button><button class="ptab" data-ph="lost">失注</button></div><div id="stchips"><button id="sc-all" type="button" class="sc on" onclick="curSt='';renderChips();render();">すべて</button></div><div id="sortbar"></div><div id="personbar"></div><div id="searchrow"><div id="swrap"><span id="sico">&#128269;</span><input type="search" id="srch" placeholder="名前、住所、施工内容で検索..."></div></div><div id="daterange" style="display:flex;gap:4px;align-items:center;flex-shrink:0"><input type="date" id="dfrom" title="開始日" style="font-size:11px;padding:4px 6px;border:1.5px solid #e9e9e7;border-radius:6px;color:#37352f;background:#fff;font-family:inherit;width:120px"><span style="font-size:10px;color:#9b9a97">〜</span><input type="date" id="dto" title="終了日" style="font-size:11px;padding:4px 6px;border:1.5px solid #e9e9e7;border-radius:6px;color:#37352f;background:#fff;font-family:inherit;width:120px"></div><div style="display:flex;gap:4px;align-items:center"><button id="contract-chip">契約待</button><button id="cal-toggle" onclick="toggleCalMode()">Cal</button></div><div id="cnt"></div></div><!-- /top-bar -->
+<div id="filters"><div id="ptabs"><button class="ptab on" data-ph="all">すべて</button><button class="ptab" data-ph="sales">営業</button><button class="ptab" data-ph="won">成約/施工</button><button class="ptab" data-ph="hold">保留</button><button class="ptab" data-ph="lost">失注</button></div><div id="stchips"><button id="sc-all" type="button" class="sc on" onclick="curSt='';renderChips();render();">すべて</button></div><div id="sortbar"></div><div id="personbar"></div><div id="searchrow"><div id="swrap"><span id="sico">&#128269;</span><input type="search" id="srch" placeholder="名前、住所、施工内容で検索..."></div><input type="date" id="dfrom" title="開始日" style="font-size:11px;padding:4px 6px;border:1.5px solid #e9e9e7;border-radius:6px;color:#37352f;background:#fff;font-family:inherit;width:110px;flex-shrink:0"><span style="font-size:10px;color:#9b9a97">〜</span><input type="date" id="dto" title="終了日" style="font-size:11px;padding:4px 6px;border:1.5px solid #e9e9e7;border-radius:6px;color:#37352f;background:#fff;font-family:inherit;width:110px;flex-shrink:0"><button id="contract-chip">契約待</button><button id="cal-toggle" onclick="toggleCalMode()">Cal</button></div><div id="cnt"></div></div><!-- /top-bar -->
 <div id="collapse-handle" onclick="expandHeader()" title="タップして展開"></div>
 <div id="list"><div id="empty" style="display:none;text-align:center;padding:60px 0;color:#9b9a97"><div style="font-size:32px;margin-bottom:10px;opacity:.3">&#128269;</div><div style="font-size:14px;font-weight:500">該当する案件がありません</div></div></div>
 <div id="cal-area"></div>
