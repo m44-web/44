@@ -4829,7 +4829,7 @@ window.importBackupJSON = function(){
   listEl.addEventListener('scroll',function(){
     if(loadingMore)return;
     if(listEl.scrollTop+listEl.clientHeight>=listEl.scrollHeight-100){
-      var cards=listEl.querySelectorAll('.card[style*="display: none"],. card[style*="display:none"]');
+      var cards=listEl.querySelectorAll('.card[style*="display: none"],.card[style*="display:none"]');
       if(cards.length>0){
         loadingMore=true;
         currentPage++;
