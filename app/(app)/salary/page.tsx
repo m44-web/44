@@ -75,9 +75,9 @@ export default function SalaryPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-bold">おきゅうりょう</h1>
+      <h1 className="text-2xl font-bold">給与明細</h1>
 
-      {/* Month selector - big touch target */}
+      {/* Month selector */}
       <select
         value={selectedMonth}
         onChange={(e) => setSelectedMonth(e.target.value)}
@@ -91,53 +91,53 @@ export default function SalaryPage() {
 
       {/* Big pay display */}
       <Card className="!border-accent/30 text-center !py-6">
-        <p className="text-sm text-text-secondary">こんげつの おきゅうりょう（みこみ）</p>
+        <p className="text-sm text-text-secondary">今月の給与（見込み）</p>
         <p className="text-4xl font-bold text-accent mt-2">¥{estimatedPay.toLocaleString()}</p>
         {completedPay !== estimatedPay && (
           <p className="text-sm text-text-secondary mt-2">
-            かくていぶん：<span className="font-bold text-success">¥{completedPay.toLocaleString()}</span>
+            確定分：<span className="font-bold text-success">¥{completedPay.toLocaleString()}</span>
           </p>
         )}
-        <p className="text-[10px] text-text-secondary mt-2">※ こうつうひ・てあて は ふくまれていません</p>
+        <p className="text-[10px] text-text-secondary mt-2">※ 交通費・手当は含まれていません</p>
       </Card>
 
       {/* Rate info */}
       <div className="grid grid-cols-2 gap-3">
         <Card className="text-center !py-4">
-          <p className="text-xs text-warning font-medium">にっきん じきゅう</p>
+          <p className="text-xs text-warning font-medium">日勤 時給</p>
           <p className="text-2xl font-bold text-text-primary mt-1">¥{dayRate.toLocaleString()}</p>
         </Card>
         <Card className="text-center !py-4">
-          <p className="text-xs text-purple-400 font-medium">やきん じきゅう</p>
+          <p className="text-xs text-purple-400 font-medium">夜勤 時給</p>
           <p className="text-2xl font-bold text-text-primary mt-1">¥{nightRate.toLocaleString()}</p>
         </Card>
       </div>
 
-      {/* Summary cards - big and clear */}
+      {/* Summary cards */}
       <div className="grid grid-cols-2 gap-3">
         <Card className="text-center !py-4">
-          <p className="text-xs text-text-secondary">しごとの にっすう</p>
-          <p className="text-3xl font-bold text-text-primary mt-1">{monthShifts.length}<span className="text-base text-text-secondary ml-1">にち</span></p>
+          <p className="text-xs text-text-secondary">勤務日数</p>
+          <p className="text-3xl font-bold text-text-primary mt-1">{monthShifts.length}<span className="text-base text-text-secondary ml-1">日</span></p>
         </Card>
         <Card className="text-center !py-4">
-          <p className="text-xs text-text-secondary">ごうけい じかん</p>
+          <p className="text-xs text-text-secondary">合計時間</p>
           <p className="text-3xl font-bold text-text-primary mt-1">{totalHours.toFixed(1)}<span className="text-base text-text-secondary ml-1">h</span></p>
         </Card>
         <Card className="text-center !py-4">
-          <p className="text-xs text-warning font-medium">にっきん</p>
-          <p className="text-2xl font-bold text-warning mt-1">{dayShifts.length}<span className="text-sm text-text-secondary ml-1">にち</span></p>
+          <p className="text-xs text-warning font-medium">日勤</p>
+          <p className="text-2xl font-bold text-warning mt-1">{dayShifts.length}<span className="text-sm text-text-secondary ml-1">日</span></p>
         </Card>
         <Card className="text-center !py-4">
-          <p className="text-xs text-purple-400 font-medium">やきん</p>
-          <p className="text-2xl font-bold text-purple-400 mt-1">{nightShifts.length}<span className="text-sm text-text-secondary ml-1">にち</span></p>
+          <p className="text-xs text-purple-400 font-medium">夜勤</p>
+          <p className="text-2xl font-bold text-purple-400 mt-1">{nightShifts.length}<span className="text-sm text-text-secondary ml-1">日</span></p>
         </Card>
       </div>
 
       {/* Shift breakdown */}
       <div>
-        <h2 className="text-base font-bold text-text-primary mb-3">しごと のリスト</h2>
+        <h2 className="text-base font-bold text-text-primary mb-3">勤務一覧</h2>
         {monthShifts.length === 0 ? (
-          <Card><p className="text-text-secondary text-center py-6">このつきの シフトは ありません</p></Card>
+          <Card><p className="text-text-secondary text-center py-6">この月のシフトはありません</p></Card>
         ) : (
           <div className="space-y-2">
             {monthShifts.sort((a, b) => a.date.localeCompare(b.date)).map((shift) => {
@@ -166,7 +166,7 @@ export default function SalaryPage() {
                     <span className={`text-[10px] px-1.5 py-0.5 rounded ${
                       shift.status === "completed" ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
                     }`}>
-                      {shift.status === "completed" ? "かくてい" : "よてい"}
+                      {shift.status === "completed" ? "確定" : "予定"}
                     </span>
                   </div>
                 </Card>

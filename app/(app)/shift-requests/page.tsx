@@ -64,7 +64,7 @@ function GuardShiftRequestView({ guardId }: { guardId: string }) {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-bold">シフトきぼう</h1>
+      <h1 className="text-2xl font-bold">シフト希望</h1>
 
       {/* Big submit button */}
       <button
@@ -79,12 +79,12 @@ function GuardShiftRequestView({ guardId }: { guardId: string }) {
           <line x1="12" y1="14" x2="12" y2="18" />
           <line x1="10" y1="16" x2="14" y2="16" />
         </svg>
-        きぼうを だす
+        希望を提出する
       </button>
 
       {/* Next week summary */}
       <Card>
-        <h2 className="text-base font-bold text-text-primary mb-3">らいしゅうの シフトきぼう</h2>
+        <h2 className="text-base font-bold text-text-primary mb-3">来週のシフト希望</h2>
         <div className="grid grid-cols-7 gap-1.5">
           {nextWeek.map((date) => {
             const d = new Date(date + "T00:00:00");
@@ -106,9 +106,9 @@ function GuardShiftRequestView({ guardId }: { guardId: string }) {
           })}
         </div>
         <div className="flex gap-4 mt-3 text-xs text-text-secondary">
-          <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-full bg-warning" /> しんせいちゅう</span>
-          <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-full bg-success" /> しょうにん</span>
-          <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-full bg-danger" /> きゃっか</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-full bg-warning" /> 申請中</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-full bg-success" /> 承認済</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-full bg-danger" /> 却下</span>
         </div>
       </Card>
 
@@ -121,8 +121,8 @@ function GuardShiftRequestView({ guardId }: { guardId: string }) {
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
             <div>
-              <p className="text-base font-bold text-warning">らいしゅうの きぼうが まだ です！</p>
-              <p className="text-sm text-text-secondary mt-1">はやめに シフトきぼうを だしてね</p>
+              <p className="text-base font-bold text-warning">来週のシフト希望が未提出です</p>
+              <p className="text-sm text-text-secondary mt-1">早めにシフト希望を提出してください</p>
             </div>
           </div>
         </Card>
@@ -130,9 +130,9 @@ function GuardShiftRequestView({ guardId }: { guardId: string }) {
 
       {/* Request list */}
       <div>
-        <h2 className="text-base font-bold text-text-primary mb-3">ていしゅつずみ</h2>
+        <h2 className="text-base font-bold text-text-primary mb-3">提出済み</h2>
         {futureRequests.length === 0 ? (
-          <Card><p className="text-text-secondary text-center py-6">ていしゅつした きぼうは ありません</p></Card>
+          <Card><p className="text-text-secondary text-center py-6">提出済みの希望はありません</p></Card>
         ) : (
           <div className="space-y-2">
             {futureRequests.map((req) => {
@@ -146,7 +146,7 @@ function GuardShiftRequestView({ guardId }: { guardId: string }) {
                     <p className="text-sm text-text-secondary">{req.startTime}〜{req.endTime} {req.notes && `/ ${req.notes}`}</p>
                   </div>
                   <span className={`text-xs px-3 py-1 rounded-full shrink-0 font-medium ${SHIFT_REQUEST_STATUS_COLORS[req.status]}`}>
-                    {req.status === "pending" ? "まちちゅう" : req.status === "approved" ? "OK！" : "NG"}
+                    {SHIFT_REQUEST_STATUS_LABELS[req.status]}
                   </span>
                 </Card>
               );
@@ -366,11 +366,11 @@ function ShiftRequestFormModal({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <form onSubmit={handleSubmit} className="relative w-full max-w-md bg-card-bg border border-border rounded-t-xl sm:rounded-xl p-5 space-y-4">
-        <h2 className="text-xl font-bold">シフトきぼうを だす</h2>
+        <h2 className="text-xl font-bold">シフト希望を提出</h2>
 
         {/* Day/Night toggle - big buttons */}
         <div>
-          <label className="block text-base font-medium text-text-primary mb-2">にっきん？ やきん？</label>
+          <label className="block text-base font-medium text-text-primary mb-2">勤務区分</label>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -381,7 +381,7 @@ function ShiftRequestFormModal({
                   : "border-border text-text-secondary"
               }`}
             >
-              にっきん
+              日勤
             </button>
             <button
               type="button"
@@ -392,13 +392,13 @@ function ShiftRequestFormModal({
                   : "border-border text-text-secondary"
               }`}
             >
-              やきん
+              夜勤
             </button>
           </div>
         </div>
 
         <div>
-          <label className="block text-base font-medium text-text-primary mb-2">はたらきたい ひ を えらんでね</label>
+          <label className="block text-base font-medium text-text-primary mb-2">希望日を選択</label>
           <div className="grid grid-cols-7 gap-2">
             {nextWeek.map((date) => {
               const d = new Date(date + "T00:00:00");
@@ -431,24 +431,24 @@ function ShiftRequestFormModal({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-1.5">かいし じかん</label>
+            <label className="block text-sm font-medium text-text-primary mb-1.5">開始時間</label>
             <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className={`${inputClasses} !py-4`} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-1.5">おわり じかん</label>
+            <label className="block text-sm font-medium text-text-primary mb-1.5">終了時間</label>
             <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className={`${inputClasses} !py-4`} />
           </div>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-text-primary mb-1.5">メモ</label>
-          <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="なにか あれば..." className={inputClasses} />
+          <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="備考があれば入力" className={inputClasses} />
         </div>
 
         <div className="flex gap-3 pt-2">
-          <button type="button" onClick={onClose} className="flex-1 py-4 rounded-xl border border-border text-text-secondary text-lg hover:bg-sub-bg cursor-pointer transition-colors active:scale-[0.98]">もどる</button>
+          <button type="button" onClick={onClose} className="flex-1 py-4 rounded-xl border border-border text-text-secondary text-lg hover:bg-sub-bg cursor-pointer transition-colors active:scale-[0.98]">戻る</button>
           <button type="submit" disabled={selectedDates.size === 0} className="flex-1 py-4 rounded-xl bg-accent text-white font-bold text-lg hover:bg-accent-dark cursor-pointer transition-colors disabled:opacity-40 active:scale-[0.98]">
-            {selectedDates.size}にちぶん ていしゅつ
+            {selectedDates.size}日分を提出
           </button>
         </div>
       </form>

@@ -297,7 +297,7 @@ export default function ShiftsPage() {
                                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
                                   shift.shiftType === "night" ? "bg-purple-500/10 text-purple-400" : "bg-warning/10 text-warning"
                                 }`}>
-                                  {shift.shiftType === "night" ? "やきん" : "にっきん"}
+                                  {shift.shiftType === "night" ? "夜勤" : "日勤"}
                                 </span>
                               </div>
                             )}

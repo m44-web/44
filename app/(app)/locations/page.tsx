@@ -60,7 +60,7 @@ function GuardLocationView({ guardId }: { guardId: string }) {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">いちじょうほう</h1>
+      <h1 className="text-2xl font-bold">位置情報送信</h1>
 
       <Card className="text-center space-y-5 !py-8">
         {/* Big icon */}
@@ -72,8 +72,8 @@ function GuardLocationView({ guardId }: { guardId: string }) {
         </div>
 
         <div>
-          <p className="text-lg text-text-primary font-medium">いまいるばしょを おくります</p>
-          <p className="text-sm text-text-secondary mt-1">げんばに ついたら ボタンを おしてね</p>
+          <p className="text-lg text-text-primary font-medium">現在地を管制に送信します</p>
+          <p className="text-sm text-text-secondary mt-1">現場に到着したらボタンを押してください</p>
         </div>
 
         {/* Huge send button */}
@@ -87,38 +87,38 @@ function GuardLocationView({ guardId }: { guardId: string }) {
             "bg-accent hover:bg-accent-dark"
           }`}
         >
-          {status === "sending" ? "おくっています..." :
-           status === "success" ? "おくりました！" :
-           status === "error" ? "いちじょうほうを とれません" :
-           "いまのばしょを おくる"}
+          {status === "sending" ? "送信中..." :
+           status === "success" ? "送信完了！" :
+           status === "error" ? "位置情報を取得できません" :
+           "現在地を送信する"}
         </button>
 
         {lastSent && (
           <p className="text-sm text-text-secondary">
-            さいごに おくった じかん：{new Date(lastSent).toLocaleString("ja-JP")}
+            最終送信：{new Date(lastSent).toLocaleString("ja-JP")}
           </p>
         )}
       </Card>
 
       <Card>
         <div className="space-y-3">
-          <h2 className="text-base font-bold text-text-primary">GPSについて</h2>
+          <h2 className="text-base font-bold text-text-primary">GPS送信について</h2>
           <ul className="text-sm text-text-secondary space-y-2">
             <li className="flex items-start gap-2">
               <span className="text-accent mt-0.5">●</span>
-              <span>しゅっきんする とき に ばしょを おくってね</span>
+              <span>出勤時・現場到着時に位置情報を送信してください</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-accent mt-0.5">●</span>
-              <span>げんばに ちゃんと ついたか かくにん できます</span>
+              <span>現場への到着確認に使用されます</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-accent mt-0.5">●</span>
-              <span>ばしょの じょうほうは かんりしゃだけが みれます</span>
+              <span>位置情報は管理者のみ閲覧可能です</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-warning mt-0.5">●</span>
-              <span>ブラウザの 「いちじょうほう きょか」が ひつようです</span>
+              <span>ブラウザの「位置情報の許可」が必要です</span>
             </li>
           </ul>
         </div>
