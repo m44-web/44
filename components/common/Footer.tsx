@@ -14,15 +14,14 @@ export function Footer() {
         <div className="grid gap-8 md:grid-cols-3">
           <div>
             <Link href="/" className="text-xl font-bold tracking-wider">
-              <span className="text-accent">LIFE</span>{" "}
-              <span className="text-text-primary">VISION</span>
+              <span className="text-accent">AXE</span>
             </Link>
             <p className="mt-3 text-sm text-text-secondary leading-relaxed">
-              デジタルサイネージで街に新しい動きを。
+              AIで企業の変革を支援。
               <br />
-              設置から運用・広告配信まで
+              SaaS・開発・自動化・生成AI
               <br />
-              ワンストップでサポートします。
+              すべてをワンストップで。
             </p>
           </div>
 
@@ -49,10 +48,10 @@ export function Footer() {
               <li>{COMPANY_ADDRESS}</li>
               <li>
                 <a
-                  href="mailto:info@lifevision.jp"
+                  href="mailto:info@axe-ai.jp"
                   className="hover:text-accent transition-colors"
                 >
-                  info@lifevision.jp
+                  info@axe-ai.jp
                 </a>
               </li>
             </ul>

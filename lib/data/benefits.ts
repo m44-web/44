@@ -1,32 +1,32 @@
 export const benefits = [
   {
-    title: "高い視認性",
-    description: "動画・アニメーションで静止広告の約3倍の注目度を実現",
-    icon: "eye",
+    title: "迅速な導入",
+    description: "SaaS型ツールは最短即日、カスタム開発も最短2週間で本番運用を開始",
+    icon: "rocket",
   },
   {
-    title: "柔軟なコンテンツ更新",
-    description: "時間帯・曜日・天気に応じた配信切り替えが可能",
-    icon: "refresh",
-  },
-  {
-    title: "リアルタイム管理",
-    description: "クラウド管理画面から全拠点を一括コントロール",
-    icon: "cloud",
-  },
-  {
-    title: "コスト効率",
-    description: "印刷不要・差し替え不要でランニングコストを大幅削減",
+    title: "コスト削減",
+    description: "定型業務の自動化により、人件費・外注費を平均40%削減",
     icon: "savings",
   },
   {
-    title: "データ活用",
-    description: "接触回数・視聴率の可視化で広告効果を最大化",
+    title: "24時間稼働",
+    description: "AIエージェントが24時間365日、問い合わせ対応や業務処理を自動実行",
+    icon: "clock",
+  },
+  {
+    title: "データ駆動",
+    description: "社内データを活用した高精度な分析・予測で意思決定を加速",
     icon: "chart",
   },
   {
-    title: "地域密着",
-    description: "北海道の商圏・立地を熟知したプランニング",
-    icon: "location",
+    title: "スケーラブル",
+    description: "クラウドネイティブ設計で、事業成長に合わせて柔軟に拡張可能",
+    icon: "cloud",
+  },
+  {
+    title: "セキュリティ",
+    description: "SOC2準拠のインフラとデータ暗号化で、機密情報を安全に管理",
+    icon: "shield",
   },
 ] as const;

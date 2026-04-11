@@ -6,9 +6,9 @@ import { PricingSection } from "@/components/sections/media/PricingSection";
 import { PDFDownloadCTA } from "@/components/sections/media/PDFDownloadCTA";
 
 export const metadata: Metadata = {
-  title: "広告媒体資料",
+  title: "料金プラン",
   description:
-    "LIFE VISIONのデジタルサイネージ広告媒体資料。Route 36沿線サイネージのリーチ数・料金プランをご紹介します。",
+    "AXEのAIソリューション料金プラン。SaaSからエンタープライズまで、ニーズに合わせたプランをご紹介します。",
 };
 
 export default function MediaPage() {

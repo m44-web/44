@@ -6,44 +6,46 @@ import { Button } from "@/components/ui/Button";
 
 const plans = [
   {
-    name: "スタンダード",
-    duration: "15秒",
-    frequency: "1時間あたり4回",
-    price: "月額 150,000円〜",
+    name: "スターター",
+    duration: "SaaS基本プラン",
+    frequency: "月額制",
+    price: "月額 50,000円〜",
     features: [
-      "15秒スポット配信",
-      "基本レポート（月次）",
-      "コンテンツ制作サポート",
-      "最低契約期間：3ヶ月",
+      "AIチャットボット（1ボット）",
+      "文書自動生成（月500件）",
+      "基本データ分析",
+      "メールサポート",
+      "最低契約期間：なし",
     ],
     popular: false,
   },
   {
-    name: "プレミアム",
-    duration: "30秒",
-    frequency: "1時間あたり6回",
-    price: "月額 280,000円〜",
+    name: "ビジネス",
+    duration: "SaaS＋カスタマイズ",
+    frequency: "月額制",
+    price: "月額 200,000円〜",
     features: [
-      "30秒スポット配信",
-      "詳細レポート（週次）",
-      "コンテンツ制作込み",
-      "時間帯指定可能",
-      "最低契約期間：1ヶ月",
+      "AIチャットボット（無制限）",
+      "文書自動生成（無制限）",
+      "高度なデータ分析・可視化",
+      "AIエージェント（3ワークフロー）",
+      "専任サポート担当",
+      "API連携対応",
     ],
     popular: true,
   },
   {
-    name: "エクスクルーシブ",
-    duration: "60秒",
-    frequency: "独占枠",
-    price: "月額 500,000円〜",
+    name: "エンタープライズ",
+    duration: "フルカスタム",
+    frequency: "個別見積",
+    price: "お問い合わせ",
     features: [
-      "60秒独占枠配信",
-      "リアルタイムレポート",
-      "コンテンツ制作・更新無制限",
-      "全時間帯対応",
-      "専任担当者",
-      "契約期間：応相談",
+      "全機能無制限",
+      "カスタムAIモデル開発",
+      "オンプレミス・VPC対応",
+      "SLA 99.9%保証",
+      "専任開発チーム",
+      "24時間サポート",
     ],
     popular: false,
   },
@@ -55,8 +57,8 @@ export function PricingSection() {
       <Container>
         <MotionWrapper>
           <SectionHeading
-            title="料金イメージ"
-            subtitle="Route 36沿線大型LEDビジョンの広告掲載プラン"
+            title="料金プラン"
+            subtitle="AIの活用レベルに合わせた3つのプラン"
           />
         </MotionWrapper>
 

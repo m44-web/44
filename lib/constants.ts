@@ -1,6 +1,6 @@
-export const SITE_NAME = "LIFE VISION";
-export const COMPANY_NAME = "合同会社LIT";
-export const COMPANY_ADDRESS = "北海道札幌市";
+export const SITE_NAME = "AXE";
+export const COMPANY_NAME = "合同会社AXE";
+export const COMPANY_ADDRESS = "東京都渋谷区";
 export const SITE_DESCRIPTION =
-  "LIFE VISIONは、北海道を中心にデジタルサイネージの設置・運用・広告配信を提供するサービスです。街に、動きを。";
-export const SITE_URL = "https://lifevision.jp";
+  "AXEは、AI SaaS・カスタム開発・エージェント自動化・画像動画生成の4領域で、企業のAI活用を総合支援するAIカンパニーです。";
+export const SITE_URL = "https://axe-ai.jp";

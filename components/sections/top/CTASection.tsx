@@ -10,13 +10,13 @@ export function CTASection() {
         <MotionWrapper>
           <div className="text-center rounded-2xl border border-accent/20 bg-card-bg/50 backdrop-blur-sm p-12 sm:p-16 gradient-border">
             <h2 className="text-3xl font-bold text-text-primary sm:text-4xl">
-              デジタルサイネージの導入を
+              AIの導入を
               <br />
               ご検討ですか？
             </h2>
             <p className="mt-4 text-text-secondary text-lg max-w-xl mx-auto">
-              設置場所の選定から運用まで、まずはお気軽にご相談ください。
-              専門スタッフが最適なプランをご提案いたします。
+              課題の整理からAI実装・運用定着まで、まずはお気軽にご相談ください。
+              専門チームが最適なAI活用プランをご提案いたします。
             </p>
             <div className="mt-8">
               <Button href="/contact" size="lg">

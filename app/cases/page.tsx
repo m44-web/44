@@ -7,7 +7,7 @@ import { CaseFilter } from "@/components/sections/cases/CaseFilter";
 export const metadata: Metadata = {
   title: "導入事例",
   description:
-    "LIFE VISIONのデジタルサイネージ導入事例。飲食、小売、医療など様々な業種での活用シーンをご紹介します。",
+    "AXEのAI導入事例。製造、金融、小売、医療など様々な業種でのAI活用シーンをご紹介します。",
 };
 
 export default function CasesPage() {
@@ -17,7 +17,7 @@ export default function CasesPage() {
         <MotionWrapper>
           <SectionHeading
             title="導入事例"
-            subtitle="様々な業種でのデジタルサイネージ活用シーンをご紹介します"
+            subtitle="様々な業種でのAI活用シーンをご紹介します"
           />
         </MotionWrapper>
         <CaseFilter />

@@ -4,12 +4,12 @@ import { Card } from "@/components/ui/Card";
 import { MotionWrapper } from "@/components/ui/MotionWrapper";
 
 const specs = [
-  { label: "ディスプレイサイズ", value: "横4m × 縦3m" },
-  { label: "解像度", value: "フルHD（1920×1080）" },
-  { label: "輝度", value: "6,000cd/m² 以上" },
-  { label: "配信時間", value: "6:00〜24:00（18時間/日）" },
-  { label: "ロール尺", value: "15秒 / 30秒" },
-  { label: "更新頻度", value: "リアルタイム対応可能" },
+  { label: "対応AIモデル", value: "GPT-4o / Claude / Gemini 他" },
+  { label: "データ連携", value: "API / CSV / DB直接接続" },
+  { label: "セキュリティ", value: "SOC2準拠・データ暗号化" },
+  { label: "稼働率", value: "99.9% SLA保証" },
+  { label: "対応言語", value: "日本語・英語・中国語 他" },
+  { label: "サポート", value: "チャット・メール・オンライン" },
 ];
 
 export function SignageInfo() {
@@ -18,8 +18,8 @@ export function SignageInfo() {
       <Container>
         <MotionWrapper>
           <SectionHeading
-            title="Route 36 沿線サイネージ"
-            subtitle="札幌市内の主要幹線道路「国道36号線」沿いに設置された大型LEDビジョン"
+            title="AXE AIプラットフォーム"
+            subtitle="企業のAI活用を加速するオールインワンプラットフォーム"
           />
         </MotionWrapper>
 
@@ -27,13 +27,13 @@ export function SignageInfo() {
           <MotionWrapper delay={0.1}>
             <Card className="h-full">
               <h3 className="text-lg font-bold text-text-primary mb-4">
-                設置概要
+                プラットフォーム概要
               </h3>
               <p className="text-text-secondary leading-relaxed mb-6">
-                国道36号線は、札幌市中心部と千歳・苫小牧方面を結ぶ
-                北海道有数の交通量を誇る幹線道路です。
-                沿線の商業エリアに大型LEDビジョンを設置し、
-                1日あたり数万台の通行車両と歩行者にリーチします。
+                AXE AIプラットフォームは、チャットボット・文書生成・データ分析・
+                画像生成などの機能を統合したクラウドAI基盤です。
+                ノーコードで操作でき、既存システムとのAPI連携にも対応。
+                企業規模を問わず、すぐにAI活用を始められます。
               </p>
               <div className="aspect-video rounded-lg bg-gradient-to-br from-accent/10 to-accent/5 flex items-center justify-center">
                 <div className="text-center">
@@ -46,10 +46,18 @@ export function SignageInfo() {
                     strokeWidth="1"
                     className="text-accent/40 mx-auto"
                   >
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                    <circle cx="12" cy="10" r="3" />
+                    <rect x="4" y="4" width="16" height="16" rx="2" />
+                    <path d="M9 9h6v6H9z" />
+                    <path d="M9 1v3" />
+                    <path d="M15 1v3" />
+                    <path d="M9 20v3" />
+                    <path d="M15 20v3" />
+                    <path d="M20 9h3" />
+                    <path d="M20 15h3" />
+                    <path d="M1 9h3" />
+                    <path d="M1 15h3" />
                   </svg>
-                  <p className="text-sm text-text-secondary mt-2">設置場所イメージ</p>
+                  <p className="text-sm text-text-secondary mt-2">プラットフォームイメージ</p>
                 </div>
               </div>
             </Card>
@@ -58,7 +66,7 @@ export function SignageInfo() {
           <MotionWrapper delay={0.2}>
             <Card className="h-full">
               <h3 className="text-lg font-bold text-text-primary mb-4">
-                スペック
+                プラットフォーム仕様
               </h3>
               <div className="space-y-4">
                 {specs.map((spec) => (

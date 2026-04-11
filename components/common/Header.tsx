@@ -31,8 +31,7 @@ export function Header() {
               href="/"
               className="text-xl font-bold tracking-wider text-text-primary sm:text-2xl"
             >
-              <span className="text-accent">LIFE</span>{" "}
-              <span>VISION</span>
+              <span className="text-accent">AXE</span>
             </Link>
 
             <nav className="hidden items-center gap-8 md:flex">

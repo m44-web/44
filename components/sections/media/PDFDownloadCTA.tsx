@@ -24,11 +24,11 @@ export function PDFDownloadCTA() {
               </svg>
             </div>
             <h2 className="text-3xl font-bold text-text-primary sm:text-4xl">
-              媒体資料をダウンロード
+              サービス資料をダウンロード
             </h2>
             <p className="mt-4 text-text-secondary text-lg max-w-xl mx-auto">
-              サイネージの仕様・料金・導入事例をまとめた
-              メディアガイドをPDFでご用意しています。
+              AIソリューションの詳細・料金・導入事例をまとめた
+              サービスガイドをPDFでご用意しています。
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
               <Button href="/contact" size="lg">

@@ -6,7 +6,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: `${SITE_NAME} | デジタルサイネージで街に動きを`,
+    default: `${SITE_NAME} | AIで企業の変革を支援`,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,

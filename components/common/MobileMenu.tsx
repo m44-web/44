@@ -31,7 +31,7 @@ export function MobileMenu({ open, onClose }: MobileMenuProps) {
           >
             <div className="flex items-center justify-between p-4 border-b border-border">
               <span className="text-lg font-bold text-text-primary">
-                <span className="text-accent">LIFE</span> VISION
+                <span className="text-accent">AXE</span>
               </span>
               <button
                 type="button"

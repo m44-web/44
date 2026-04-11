@@ -7,7 +7,7 @@ import { FAQSection } from "@/components/sections/about/FAQSection";
 export const metadata: Metadata = {
   title: "サービス紹介",
   description:
-    "LIFE VISIONのデジタルサイネージサービスについて。設置タイプ、導入の流れ、よくある質問をご紹介します。",
+    "AXEのAIサービスについて。ソリューションタイプ、導入の流れ、よくある質問をご紹介します。",
 };
 
 export default function AboutPage() {

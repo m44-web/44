@@ -7,7 +7,7 @@ import { ContactForm } from "@/components/sections/contact/ContactForm";
 export const metadata: Metadata = {
   title: "お問い合わせ",
   description:
-    "LIFE VISIONへのお問い合わせ。デジタルサイネージの導入相談、料金、広告掲載についてお気軽にご連絡ください。",
+    "AXEへのお問い合わせ。AI導入相談、料金、カスタム開発についてお気軽にご連絡ください。",
 };
 
 export default function ContactPage() {
@@ -17,7 +17,7 @@ export default function ContactPage() {
         <MotionWrapper>
           <SectionHeading
             title="お問い合わせ"
-            subtitle="デジタルサイネージの導入・広告掲載について、お気軽にご相談ください"
+            subtitle="AI導入・開発について、お気軽にご相談ください"
           />
         </MotionWrapper>
 
