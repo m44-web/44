@@ -2,7 +2,7 @@
 
 import type { Guard, Site, Shift, AttendanceRecord, User, EquipmentItem, EquipmentLending, DailyReport, LocationLog, ShiftRequest } from "./types";
 
-const DATA_VERSION = "4";
+const DATA_VERSION = "5";
 
 const STORAGE_KEYS = {
   version: "lsecurity_version",
@@ -87,17 +87,23 @@ const SEED_SITES: Site[] = [
   {
     id: "s1", name: "ABCモール 常駐警備", clientName: "ABC商業施設株式会社",
     address: "東京都新宿区西新宿1-1-1", type: "facility", phone: "03-1234-5678",
-    notes: "正面入口・駐車場の巡回", status: "active", createdAt: "2025-01-20",
+    startDate: "2025-01-20", endDate: "2026-01-19",
+    requiredGuards: 3, requiredCertifications: ["施設警備業務検定2級"],
+    notes: "正面入口・駐車場の巡回。24時間体制。", status: "active", createdAt: "2025-01-20",
   },
   {
     id: "s2", name: "新宿駅前 再開発工事", clientName: "大成建設株式会社",
     address: "東京都新宿区新宿3-2-1", type: "traffic", phone: "03-2345-6789",
-    notes: "車両誘導、歩行者安全管理", status: "active", createdAt: "2025-02-15",
+    startDate: "2025-02-15", endDate: "2026-08-31",
+    requiredGuards: 2, requiredCertifications: ["交通誘導警備業務検定2級"],
+    notes: "車両誘導、歩行者安全管理。工期18ヶ月。", status: "active", createdAt: "2025-02-15",
   },
   {
     id: "s3", name: "夏祭りイベント警備", clientName: "新宿区役所",
     address: "東京都新宿区歌舞伎町広場", type: "crowd", phone: "03-3456-7890",
-    notes: "7月開催予定、雑踏警備", status: "active", createdAt: "2025-03-01",
+    startDate: "2026-07-15", endDate: "2026-07-17",
+    requiredGuards: 5, requiredCertifications: ["雑踏警備業務検定2級"],
+    notes: "7月開催予定、雑踏警備。3日間。", status: "active", createdAt: "2025-03-01",
   },
 ];
 
@@ -425,6 +431,23 @@ export function addShiftRequest(req: Omit<ShiftRequest, "id" | "createdAt">): Sh
   return newReq;
 }
 export function updateShiftRequest(id: string, updates: Partial<ShiftRequest>): void {
-  const requests = getShiftRequests().map((r) => (r.id === id ? { ...r, ...updates } : r));
-  setItem(STORAGE_KEYS.shiftRequests, requests);
+  const requests = getShiftRequests();
+  const request = requests.find((r) => r.id === id);
+  const updated = requests.map((r) => (r.id === id ? { ...r, ...updates } : r));
+  setItem(STORAGE_KEYS.shiftRequests, updated);
+
+  // Auto-create shift when approved
+  if (updates.status === "approved" && request) {
+    const isNight = request.startTime >= "17:00" || request.endTime <= "08:00";
+    addShift({
+      guardId: request.guardId,
+      siteId: "",
+      date: request.date,
+      startTime: request.startTime,
+      endTime: request.endTime,
+      shiftType: isNight ? "night" : "day",
+      status: "scheduled",
+      notes: "シフト希望より自動作成",
+    });
+  }
 }

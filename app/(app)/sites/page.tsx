@@ -43,6 +43,40 @@ export default function SitesPage() {
     return { todayShifts, monthShifts, uniqueGuardCount: uniqueGuards.size };
   }
 
+  function calcProjectDuration(startDate?: string, endDate?: string): string {
+    if (!startDate || !endDate) return "—";
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffMs = end.getTime() - start.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays <= 0) return "終了";
+    if (diffDays < 30) return `${diffDays}日`;
+    const months = Math.round(diffDays / 30);
+    return `約${months}ヶ月`;
+  }
+
+  function isProjectEnding(endDate?: string): boolean {
+    if (!endDate) return false;
+    const end = new Date(endDate);
+    const diffDays = Math.ceil((end.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    return diffDays >= 0 && diffDays <= 30;
+  }
+
+  // Check for sites with insufficient certified guards
+  function checkCertificationShortage(site: Site): boolean {
+    if (!site.requiredCertifications || site.requiredCertifications.length === 0) return false;
+    const siteGuardIds = [...new Set(shifts.filter((s) => s.siteId === site.id && s.status !== "cancelled").map((s) => s.guardId))];
+    const certifiedGuards = siteGuardIds.filter((gId) => {
+      const guard = guards.find((g) => g.id === gId);
+      if (!guard) return false;
+      return site.requiredCertifications.some((cert) => guard.certifications.includes(cert));
+    });
+    return certifiedGuards.length === 0 && siteGuardIds.length > 0;
+  }
+
+  const endingSoon = activeSites.filter((s) => isProjectEnding(s.endDate));
+  const certShortage = activeSites.filter((s) => checkCertificationShortage(s));
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
@@ -51,7 +85,7 @@ export default function SitesPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         <Card className="text-center !py-2.5">
           <p className="text-[10px] text-text-secondary">全現場</p>
           <p className="text-lg font-bold text-text-primary">{sites.length}</p>
@@ -64,7 +98,38 @@ export default function SitesPage() {
           <p className="text-[10px] text-text-secondary">本日配置</p>
           <p className="text-lg font-bold text-accent">{sites.filter((s) => shifts.some((sh) => sh.siteId === s.id && sh.date === today && sh.status !== "cancelled")).length}</p>
         </Card>
+        <Card className="text-center !py-2.5">
+          <p className="text-[10px] text-text-secondary">工期終了間近</p>
+          <p className="text-lg font-bold text-warning">{endingSoon.length}</p>
+        </Card>
       </div>
+
+      {/* Alerts */}
+      {endingSoon.length > 0 && (
+        <Card className="!border-warning/30 !bg-warning/5 !py-3">
+          <p className="text-sm font-medium text-warning mb-1">工期終了が近い現場</p>
+          <div className="flex flex-wrap gap-1.5">
+            {endingSoon.map((s) => (
+              <span key={s.id} className="text-xs px-2 py-0.5 rounded bg-warning/10 text-warning">
+                {s.name}（〜{s.endDate}）
+              </span>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {certShortage.length > 0 && (
+        <Card className="!border-danger/30 !bg-danger/5 !py-3">
+          <p className="text-sm font-medium text-danger mb-1">資格者不足の現場</p>
+          <div className="flex flex-wrap gap-1.5">
+            {certShortage.map((s) => (
+              <span key={s.id} className="text-xs px-2 py-0.5 rounded bg-danger/10 text-danger">
+                {s.name}
+              </span>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <input
         type="text"
@@ -92,9 +157,11 @@ export default function SitesPage() {
       <div className="space-y-2">
         {filtered.map((site) => {
           const { todayShifts, monthShifts, uniqueGuardCount } = getSiteStats(site.id);
+          const hasCertReq = site.requiredCertifications && site.requiredCertifications.length > 0;
+          const ending = isProjectEnding(site.endDate);
           return (
             <Link key={site.id} href={`/sites/${site.id}`}>
-              <Card className="space-y-2">
+              <Card className="space-y-2.5">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -104,6 +171,9 @@ export default function SitesPage() {
                       }`}>
                         {site.status === "active" ? "稼働中" : "休止中"}
                       </span>
+                      {ending && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-warning/10 text-warning shrink-0">工期終了間近</span>
+                      )}
                     </div>
                     <p className="text-xs text-text-secondary mt-0.5">{site.clientName}</p>
                   </div>
@@ -112,21 +182,51 @@ export default function SitesPage() {
                   </svg>
                 </div>
 
-                <div className="flex items-center gap-2 text-xs">
+                <div className="flex items-center gap-2 text-xs flex-wrap">
                   <span className="px-1.5 py-0.5 rounded bg-accent/10 text-accent">{SITE_TYPE_LABELS[site.type]}</span>
                   <span className="text-text-secondary truncate">{site.address}</span>
                 </div>
 
+                {/* Project duration & requirements */}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+                  {site.startDate && site.endDate && (
+                    <span className="text-text-secondary">
+                      工期: <span className="text-text-primary font-medium">{site.startDate} 〜 {site.endDate}</span>
+                      <span className="ml-1 text-text-secondary/70">({calcProjectDuration(site.startDate, site.endDate)})</span>
+                    </span>
+                  )}
+                  {site.requiredGuards > 0 && (
+                    <span className="text-text-secondary">
+                      必要人数: <span className="text-text-primary font-medium">{site.requiredGuards}名</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* Required certifications */}
+                {hasCertReq && (
+                  <div className="flex flex-wrap gap-1">
+                    <span className="text-[10px] text-text-secondary mr-1">必要資格:</span>
+                    {site.requiredCertifications.map((cert) => (
+                      <span key={cert} className="text-[10px] px-1.5 py-0.5 rounded bg-danger/10 text-danger">{cert}</span>
+                    ))}
+                  </div>
+                )}
+
                 {todayShifts.length > 0 && (
                   <div className="flex items-center gap-2 text-xs bg-success/5 rounded-lg px-2.5 py-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-success" />
-                    <span className="text-success">本日 {todayShifts.length}名配置</span>
+                    <span className="text-success">
+                      本日 {todayShifts.length}/{site.requiredGuards ?? "?"}名配置
+                    </span>
                     <span className="text-text-secondary">
                       {todayShifts.map((s) => {
                         const g = guards.find((gg) => gg.id === s.guardId);
                         return g?.name?.split(" ")[0];
                       }).filter(Boolean).join("、")}
                     </span>
+                    {todayShifts.length < (site.requiredGuards ?? 0) && (
+                      <span className="text-danger font-medium ml-auto">人員不足</span>
+                    )}
                   </div>
                 )}
 

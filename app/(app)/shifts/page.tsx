@@ -6,7 +6,7 @@ import { getShifts, getGuards, getSites, getShiftsByGuard } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import type { Shift, Guard, Site } from "@/lib/types";
-import { SHIFT_STATUS_LABELS } from "@/lib/types";
+import { SHIFT_STATUS_LABELS, SHIFT_TYPE_LABELS } from "@/lib/types";
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
@@ -238,7 +238,14 @@ export default function ShiftsPage() {
                     return (
                       <Card key={shift.id} className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="font-medium text-text-primary">{guard?.name ?? "—"}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-text-primary">{guard?.name ?? "—"}</p>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                              shift.shiftType === "night" ? "bg-purple-500/10 text-purple-400" : "bg-warning/10 text-warning"
+                            }`}>
+                              {SHIFT_TYPE_LABELS[shift.shiftType ?? "day"]}
+                            </span>
+                          </div>
                           <p className="text-sm text-text-secondary truncate">{site?.name ?? "—"}</p>
                         </div>
                         <div className="text-right shrink-0">
@@ -275,7 +282,25 @@ export default function ShiftsPage() {
                       return (
                         <Card key={shift.id} className="flex items-center justify-between gap-3">
                           <div className="min-w-0">
-                            {user?.role === "admin" && <p className="font-medium text-text-primary truncate">{guard?.name ?? "—"}</p>}
+                            {user?.role === "admin" && (
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-text-primary truncate">{guard?.name ?? "—"}</p>
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
+                                  shift.shiftType === "night" ? "bg-purple-500/10 text-purple-400" : "bg-warning/10 text-warning"
+                                }`}>
+                                  {SHIFT_TYPE_LABELS[shift.shiftType ?? "day"]}
+                                </span>
+                              </div>
+                            )}
+                            {user?.role !== "admin" && (
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
+                                  shift.shiftType === "night" ? "bg-purple-500/10 text-purple-400" : "bg-warning/10 text-warning"
+                                }`}>
+                                  {shift.shiftType === "night" ? "やきん" : "にっきん"}
+                                </span>
+                              </div>
+                            )}
                             <p className="text-sm text-text-secondary truncate">{site?.name ?? "—"}</p>
                           </div>
                           <div className="text-right shrink-0">

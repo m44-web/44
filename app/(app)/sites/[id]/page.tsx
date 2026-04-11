@@ -57,6 +57,10 @@ export default function SiteDetailPage() {
           address: site.address,
           type: site.type,
           phone: site.phone,
+          startDate: site.startDate ?? "",
+          endDate: site.endDate ?? "",
+          requiredGuards: site.requiredGuards ?? 1,
+          requiredCertifications: site.requiredCertifications ?? [],
           notes: site.notes,
         }}
       />

@@ -51,6 +51,10 @@ export type Site = {
   address: string;
   type: "facility" | "event" | "traffic" | "crowd";
   phone: string;
+  startDate: string;
+  endDate: string;
+  requiredGuards: number;
+  requiredCertifications: string[];
   notes: string;
   status: "active" | "inactive";
   createdAt: string;

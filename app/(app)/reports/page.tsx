@@ -38,32 +38,45 @@ function GuardReportsView({ guardId }: { guardId: string }) {
   if (!mounted) return null;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">日報</h1>
-        <button onClick={() => setShowForm(true)} className="text-sm px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent-dark cursor-pointer transition-colors">
-          日報を作成
-        </button>
-      </div>
+    <div className="space-y-5">
+      <h1 className="text-2xl font-bold">にっぽう</h1>
+
+      {/* Big create button */}
+      <button
+        onClick={() => setShowForm(true)}
+        className="w-full py-5 rounded-xl bg-accent text-white font-bold text-xl hover:bg-accent-dark cursor-pointer transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+      >
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="12" y1="18" x2="12" y2="12" />
+          <line x1="9" y1="15" x2="15" y2="15" />
+        </svg>
+        にっぽうを かく
+      </button>
 
       {reports.length === 0 ? (
-        <Card><p className="text-text-secondary text-center py-6 text-sm">日報はまだありません</p></Card>
+        <Card className="text-center !py-8">
+          <p className="text-lg text-text-secondary">にっぽうは まだ ありません</p>
+          <p className="text-sm text-text-secondary mt-1">しごとが おわったら にっぽうを かきましょう</p>
+        </Card>
       ) : (
-        <div className="space-y-2">
-          {reports.map((report) => {
+        <div className="space-y-3">
+          <p className="text-sm text-text-secondary">{reports.length}けん の にっぽう</p>
+          {reports.sort((a, b) => b.date.localeCompare(a.date)).map((report) => {
             const site = sites.find((s) => s.id === report.siteId);
             return (
               <Card key={report.id}>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs px-2 py-0.5 rounded bg-accent/10 text-accent">{report.date}</span>
-                    <span className="text-xs text-text-secondary">{site?.name ?? "—"}</span>
+                    <span className="text-sm px-3 py-1 rounded-lg bg-accent/10 text-accent font-medium">{report.date}</span>
+                    <span className="text-sm text-text-secondary">{site?.name ?? "—"}</span>
                   </div>
-                  <p className="text-sm text-text-primary whitespace-pre-wrap">{report.content}</p>
+                  <p className="text-base text-text-primary whitespace-pre-wrap leading-relaxed">{report.content}</p>
                   {report.attachments.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {report.attachments.map((att, i) => (
-                        <div key={i} className="w-16 h-16 rounded-lg overflow-hidden border border-border bg-sub-bg">
+                        <div key={i} className="w-20 h-20 rounded-lg overflow-hidden border border-border bg-sub-bg">
                           <img src={att.dataUrl} alt={att.name} className="w-full h-full object-cover" />
                         </div>
                       ))}
@@ -202,12 +215,12 @@ function ReportFormModal({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <form onSubmit={handleSubmit} className="relative w-full max-w-md bg-card-bg border border-border rounded-t-xl sm:rounded-xl p-5 space-y-4 max-h-[85vh] overflow-y-auto">
-        <h2 className="text-lg font-bold">日報を作成</h2>
+        <h2 className="text-xl font-bold">にっぽうを かく</h2>
 
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-1.5">シフト</label>
-          <select value={shiftId} onChange={(e) => setShiftId(e.target.value)} className={`${inputClasses} appearance-none cursor-pointer`} required>
-            <option value="">選択してください</option>
+          <label className="block text-base font-medium text-text-primary mb-2">どの しごと？</label>
+          <select value={shiftId} onChange={(e) => setShiftId(e.target.value)} className={`${inputClasses} !py-4 !text-base appearance-none cursor-pointer`} required>
+            <option value="">えらんでください</option>
             {shifts.filter((s) => s.status !== "cancelled").slice(0, 20).map((s) => {
               const site = sites.find((st) => st.id === s.siteId);
               return (
@@ -218,19 +231,19 @@ function ReportFormModal({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-1.5">報告内容 <span className="text-danger">*</span></label>
+          <label className="block text-base font-medium text-text-primary mb-2">ほうこく ないよう <span className="text-danger">*</span></label>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="業務内容、異常の有無、特記事項などを記入..."
+            placeholder="きょうの しごとの ないよう を かいてください..."
             rows={5}
-            className={`${inputClasses} resize-vertical`}
+            className={`${inputClasses} !text-base resize-vertical`}
             required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-1.5">添付写真</label>
+          <label className="block text-base font-medium text-text-primary mb-2">しゃしん</label>
           <input
             ref={fileRef}
             type="file"
@@ -242,24 +255,24 @@ function ReportFormModal({
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg border border-border text-text-secondary hover:text-accent hover:border-accent/30 cursor-pointer transition-colors"
+            className="flex items-center gap-3 text-base px-4 py-3 rounded-xl border border-border text-text-secondary hover:text-accent hover:border-accent/30 cursor-pointer transition-colors active:scale-[0.98] w-full justify-center"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="3" width="18" height="18" rx="2" />
               <circle cx="8.5" cy="8.5" r="1.5" />
               <polyline points="21 15 16 10 5 21" />
             </svg>
-            写真を追加
+            しゃしんを ついか
           </button>
           {attachments.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
+            <div className="flex flex-wrap gap-2 mt-3">
               {attachments.map((att, i) => (
-                <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-border">
+                <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border">
                   <img src={att.dataUrl} alt={att.name} className="w-full h-full object-cover" />
                   <button
                     type="button"
                     onClick={() => setAttachments((prev) => prev.filter((_, j) => j !== i))}
-                    className="absolute top-0 right-0 bg-danger text-white rounded-bl-lg w-5 h-5 flex items-center justify-center text-xs cursor-pointer"
+                    className="absolute top-0 right-0 bg-danger text-white rounded-bl-lg w-6 h-6 flex items-center justify-center text-sm cursor-pointer"
                   >
                     ×
                   </button>
@@ -270,8 +283,8 @@ function ReportFormModal({
         </div>
 
         <div className="flex gap-3 pt-2">
-          <button type="button" onClick={onClose} className="flex-1 py-3 rounded-lg border border-border text-text-secondary hover:bg-sub-bg cursor-pointer transition-colors">キャンセル</button>
-          <button type="submit" className="flex-1 py-3 rounded-lg bg-accent text-white font-semibold hover:bg-accent-dark cursor-pointer transition-colors">提出する</button>
+          <button type="button" onClick={onClose} className="flex-1 py-4 rounded-xl border border-border text-text-secondary text-lg hover:bg-sub-bg cursor-pointer transition-colors active:scale-[0.98]">もどる</button>
+          <button type="submit" className="flex-1 py-4 rounded-xl bg-accent text-white font-bold text-lg hover:bg-accent-dark cursor-pointer transition-colors active:scale-[0.98]">ていしゅつ</button>
         </div>
       </form>
     </div>

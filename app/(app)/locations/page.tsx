@@ -21,7 +21,6 @@ function GuardLocationView({ guardId }: { guardId: string }) {
 
   useEffect(() => {
     setMounted(true);
-    // Check for existing location
     const locations = getLatestLocations();
     const mine = locations.find((l) => l.guardId === guardId);
     if (mine) setLastSent(mine.timestamp);
@@ -59,53 +58,67 @@ function GuardLocationView({ guardId }: { guardId: string }) {
   if (!mounted) return null;
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">位置情報送信</h1>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">いちじょうほう</h1>
 
-      <Card className="text-center space-y-4 !py-8">
-        <div className="w-20 h-20 mx-auto rounded-full bg-accent/10 flex items-center justify-center">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent">
+      <Card className="text-center space-y-5 !py-8">
+        {/* Big icon */}
+        <div className="w-24 h-24 mx-auto rounded-full bg-accent/10 flex items-center justify-center">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent">
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
             <circle cx="12" cy="10" r="3" />
           </svg>
         </div>
 
         <div>
-          <p className="text-sm text-text-secondary mb-1">現在地を管理者に送信します</p>
-          <p className="text-xs text-text-secondary">現場への到着確認に使用されます</p>
+          <p className="text-lg text-text-primary font-medium">いまいるばしょを おくります</p>
+          <p className="text-sm text-text-secondary mt-1">げんばに ついたら ボタンを おしてね</p>
         </div>
 
+        {/* Huge send button */}
         <button
           onClick={sendLocation}
           disabled={status === "sending"}
-          className={`w-full max-w-xs mx-auto py-4 rounded-xl font-semibold text-white cursor-pointer transition-all ${
+          className={`w-full py-6 rounded-2xl font-bold text-xl text-white cursor-pointer transition-all active:scale-[0.97] ${
             status === "sending" ? "bg-accent/50" :
             status === "success" ? "bg-success" :
             status === "error" ? "bg-danger" :
-            "bg-accent hover:bg-accent-dark active:scale-95"
+            "bg-accent hover:bg-accent-dark"
           }`}
         >
-          {status === "sending" ? "送信中..." :
-           status === "success" ? "送信完了!" :
-           status === "error" ? "位置情報を取得できません" :
-           "現在地を送信"}
+          {status === "sending" ? "おくっています..." :
+           status === "success" ? "おくりました！" :
+           status === "error" ? "いちじょうほうを とれません" :
+           "いまのばしょを おくる"}
         </button>
 
         {lastSent && (
-          <p className="text-xs text-text-secondary">
-            最終送信: {new Date(lastSent).toLocaleString("ja-JP")}
+          <p className="text-sm text-text-secondary">
+            さいごに おくった じかん：{new Date(lastSent).toLocaleString("ja-JP")}
           </p>
         )}
       </Card>
 
       <Card>
-        <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-text-primary">GPS送信について</h2>
-          <ul className="text-xs text-text-secondary space-y-1">
-            <li>・出勤時に現在地を送信してください</li>
-            <li>・現場到着の確認に使用されます</li>
-            <li>・位置情報は管理者のみ閲覧できます</li>
-            <li>・ブラウザの位置情報許可が必要です</li>
+        <div className="space-y-3">
+          <h2 className="text-base font-bold text-text-primary">GPSについて</h2>
+          <ul className="text-sm text-text-secondary space-y-2">
+            <li className="flex items-start gap-2">
+              <span className="text-accent mt-0.5">●</span>
+              <span>しゅっきんする とき に ばしょを おくってね</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-accent mt-0.5">●</span>
+              <span>げんばに ちゃんと ついたか かくにん できます</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-accent mt-0.5">●</span>
+              <span>ばしょの じょうほうは かんりしゃだけが みれます</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-warning mt-0.5">●</span>
+              <span>ブラウザの 「いちじょうほう きょか」が ひつようです</span>
+            </li>
           </ul>
         </div>
       </Card>
@@ -130,7 +143,6 @@ function AdminLocationView() {
   useEffect(() => {
     setMounted(true);
     refresh();
-    // Auto-refresh every 30 seconds
     const interval = setInterval(refresh, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -141,7 +153,6 @@ function AdminLocationView() {
   const todayShifts = shifts.filter((s) => s.date === today && s.status !== "cancelled");
   const activeGuards = guards.filter((g) => g.status === "active");
 
-  // Build a status view per active guard
   const guardStatuses = activeGuards.map((guard) => {
     const todayShift = todayShifts.find((s) => s.guardId === guard.id);
     const loc = locations.find((l) => l.guardId === guard.id);

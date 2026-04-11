@@ -224,60 +224,74 @@ function GuardAttendance({ guardId }: { guardId?: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <p className="text-text-secondary text-sm">現在時刻</p>
-        <p className="text-5xl font-bold font-mono text-accent mt-1">{currentTime}</p>
-        <p className="text-xs text-text-secondary mt-1">{todayStr()}</p>
+      <h1 className="text-2xl font-bold">しゅったいきん</h1>
+
+      {/* Big clock display */}
+      <div className="text-center py-4">
+        <p className="text-sm text-text-secondary">いまの じかん</p>
+        <p className="text-6xl font-bold font-mono text-accent mt-2">{currentTime}</p>
+        <p className="text-sm text-text-secondary mt-2">{todayStr()}</p>
       </div>
 
       {shifts.length === 0 ? (
-        <Card><p className="text-text-secondary text-center py-8 text-sm">本日のシフトはありません</p></Card>
+        <Card className="text-center !py-8">
+          <p className="text-lg text-text-secondary">きょうの シフトは ありません</p>
+          <p className="text-sm text-text-secondary mt-1">おやすみです！</p>
+        </Card>
       ) : (
         <div className="space-y-4">
           {shifts.map((shift) => {
             const site = sites.find((s) => s.id === shift.siteId);
             const att = attendance.find((a) => a.shiftId === shift.id);
+            const isNight = shift.shiftType === "night";
 
             return (
-              <Card key={shift.id} className="space-y-4">
+              <Card key={shift.id} className="space-y-4 !py-5">
                 <div>
-                  <p className="font-semibold text-text-primary text-lg">{site?.name ?? "—"}</p>
-                  <p className="text-sm text-text-secondary">{site?.address}</p>
-                  <p className="text-sm font-mono mt-2">{shift.startTime} 〜 {shift.endTime}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-bold ${
+                      isNight ? "bg-purple-500/10 text-purple-400" : "bg-warning/10 text-warning"
+                    }`}>
+                      {isNight ? "やきん" : "にっきん"}
+                    </span>
+                  </div>
+                  <p className="font-bold text-text-primary text-xl">{site?.name ?? "—"}</p>
+                  <p className="text-sm text-text-secondary mt-1">{site?.address}</p>
+                  <p className="text-2xl font-bold font-mono mt-3 text-text-primary">{shift.startTime} 〜 {shift.endTime}</p>
                 </div>
 
                 {att?.status === "completed" ? (
-                  <div className="text-center py-4 rounded-lg bg-success/10 space-y-1">
-                    <p className="text-success font-medium text-lg">勤務完了</p>
-                    <p className="text-sm text-text-secondary font-mono">
-                      出勤 {att.clockIn} → 退勤 {att.clockOut}
+                  <div className="text-center py-5 rounded-xl bg-success/10 space-y-2">
+                    <p className="text-success font-bold text-xl">おつかれさま！</p>
+                    <p className="text-base text-text-secondary font-mono">
+                      {att.clockIn} → {att.clockOut}
                     </p>
                     {att.clockIn && att.clockOut && (() => {
                       const [ih, im] = att.clockIn!.split(":").map(Number);
                       const [oh, om] = att.clockOut!.split(":").map(Number);
                       let h = oh - ih + (om - im) / 60;
                       if (h < 0) h += 24;
-                      return <p className="text-xs text-text-secondary">勤務時間: {h.toFixed(1)}時間</p>;
+                      return <p className="text-sm text-text-secondary">{h.toFixed(1)}じかん はたらきました</p>;
                     })()}
                   </div>
                 ) : att?.status === "on_duty" ? (
-                  <div className="space-y-2">
-                    <div className="text-center py-2 rounded-lg bg-success/10">
-                      <p className="text-success text-sm">出勤済み: {att.clockIn}</p>
+                  <div className="space-y-3">
+                    <div className="text-center py-3 rounded-xl bg-success/10">
+                      <p className="text-success font-medium text-base">しゅっきんずみ：{att.clockIn}</p>
                     </div>
                     <button
                       onClick={() => handleClockOut(shift.id)}
-                      className="w-full py-4 rounded-xl bg-danger text-white font-bold text-lg hover:bg-red-600 transition-colors cursor-pointer active:scale-95"
+                      className="w-full py-6 rounded-2xl bg-danger text-white font-bold text-xl hover:bg-red-600 transition-all cursor-pointer active:scale-[0.97]"
                     >
-                      退勤する
+                      たいきんする
                     </button>
                   </div>
                 ) : (
                   <button
                     onClick={() => handleClockIn(shift.id)}
-                    className="w-full py-4 rounded-xl bg-accent text-white font-bold text-lg hover:bg-accent-dark transition-colors cursor-pointer active:scale-95"
+                    className="w-full py-6 rounded-2xl bg-accent text-white font-bold text-xl hover:bg-accent-dark transition-all cursor-pointer active:scale-[0.97]"
                   >
-                    出勤する
+                    しゅっきんする
                   </button>
                 )}
               </Card>
@@ -289,23 +303,23 @@ function GuardAttendance({ guardId }: { guardId?: string }) {
       {/* Recent history */}
       {allAttendance.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold text-text-secondary mb-2">最近の勤怠履歴</h2>
-          <div className="space-y-1.5">
+          <h2 className="text-base font-bold text-text-primary mb-3">さいきんの きろく</h2>
+          <div className="space-y-2">
             {allAttendance.map((att) => {
               const site = sites.find((s) => s.id === att.siteId);
               return (
-                <Card key={att.id} className="flex items-center justify-between gap-3 !py-3">
+                <Card key={att.id} className="flex items-center justify-between gap-3 !py-4">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-text-primary">{att.date}</p>
-                    <p className="text-xs text-text-secondary">{site?.name ?? "—"}</p>
+                    <p className="text-base font-medium text-text-primary">{att.date}</p>
+                    <p className="text-sm text-text-secondary">{site?.name ?? "—"}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-xs font-mono text-text-secondary">{att.clockIn ?? "--:--"} 〜 {att.clockOut ?? "--:--"}</p>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                    <p className="text-sm font-mono text-text-secondary">{att.clockIn ?? "--:--"} 〜 {att.clockOut ?? "--:--"}</p>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
                       att.status === "completed" ? "bg-success/10 text-success" :
                       att.status === "on_duty" ? "bg-accent/10 text-accent" : "bg-sub-bg text-text-secondary"
                     }`}>
-                      {ATTENDANCE_STATUS_LABELS[att.status]}
+                      {att.status === "completed" ? "おわり" : att.status === "on_duty" ? "きんむちゅう" : "みしゅっきん"}
                     </span>
                   </div>
                 </Card>
@@ -315,7 +329,7 @@ function GuardAttendance({ guardId }: { guardId?: string }) {
         </div>
       )}
 
-      <p className="text-[11px] text-text-secondary text-center">出退勤時に自動的にGPS位置情報が送信されます</p>
+      <p className="text-xs text-text-secondary text-center">しゅったいきん のとき GPS じょうほうが じどうで おくられます</p>
     </div>
   );
 }
