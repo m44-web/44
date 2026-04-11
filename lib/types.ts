@@ -10,6 +10,8 @@ export type User = {
 
 export type SkillLevel = "beginner" | "intermediate" | "advanced" | "expert";
 
+export type ShiftPreference = "day_only" | "night_only" | "both" | "any";
+
 export type Guard = {
   id: string;
   name: string;
@@ -21,9 +23,25 @@ export type Guard = {
   skillLevel: SkillLevel;
   experienceYears: number;
   hourlyRate: number;
+  nightHourlyRate: number;
+  shiftPreference: ShiftPreference;
   notes: string;
   status: "active" | "inactive";
   createdAt: string;
+};
+
+export const SHIFT_PREFERENCE_LABELS: Record<ShiftPreference, string> = {
+  day_only: "日勤のみ",
+  night_only: "夜勤のみ",
+  both: "日勤・夜勤両方",
+  any: "指定なし",
+};
+
+export const SHIFT_PREFERENCE_COLORS: Record<ShiftPreference, string> = {
+  day_only: "bg-warning/10 text-warning",
+  night_only: "bg-purple-500/10 text-purple-400",
+  both: "bg-accent/10 text-accent",
+  any: "bg-sub-bg text-text-secondary",
 };
 
 export type Site = {
@@ -38,6 +56,8 @@ export type Site = {
   createdAt: string;
 };
 
+export type ShiftType = "day" | "night";
+
 export type Shift = {
   id: string;
   guardId: string;
@@ -45,8 +65,19 @@ export type Shift = {
   date: string;
   startTime: string;
   endTime: string;
+  shiftType: ShiftType;
   status: "scheduled" | "confirmed" | "completed" | "cancelled";
   notes: string;
+};
+
+export const SHIFT_TYPE_LABELS: Record<ShiftType, string> = {
+  day: "日勤",
+  night: "夜勤",
+};
+
+export const SHIFT_TYPE_COLORS: Record<ShiftType, string> = {
+  day: "bg-warning/10 text-warning",
+  night: "bg-purple-500/10 text-purple-400",
 };
 
 export type AttendanceRecord = {

@@ -284,9 +284,16 @@ function ShiftRequestFormModal({
 }) {
   const nextWeek = getNextWeekDates();
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
+  const [shiftType, setShiftType] = useState<"day" | "night">("day");
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("18:00");
   const [notes, setNotes] = useState("");
+
+  function handleShiftTypeChange(type: "day" | "night") {
+    setShiftType(type);
+    if (type === "day") { setStartTime("09:00"); setEndTime("18:00"); }
+    else { setStartTime("18:00"); setEndTime("06:00"); }
+  }
 
   function toggleDate(date: string) {
     setSelectedDates((prev) => {
@@ -313,6 +320,35 @@ function ShiftRequestFormModal({
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <form onSubmit={handleSubmit} className="relative w-full max-w-md bg-card-bg border border-border rounded-t-xl sm:rounded-xl p-5 space-y-4">
         <h2 className="text-lg font-bold">シフト希望を提出</h2>
+
+        {/* Day/Night toggle */}
+        <div>
+          <label className="block text-sm font-medium text-text-primary mb-2">勤務種別</label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => handleShiftTypeChange("day")}
+              className={`py-3 rounded-lg text-base font-bold cursor-pointer transition-colors border ${
+                shiftType === "day"
+                  ? "border-warning bg-warning/10 text-warning"
+                  : "border-border text-text-secondary"
+              }`}
+            >
+              日勤
+            </button>
+            <button
+              type="button"
+              onClick={() => handleShiftTypeChange("night")}
+              className={`py-3 rounded-lg text-base font-bold cursor-pointer transition-colors border ${
+                shiftType === "night"
+                  ? "border-purple-400 bg-purple-500/10 text-purple-400"
+                  : "border-border text-text-secondary"
+              }`}
+            >
+              夜勤
+            </button>
+          </div>
+        </div>
 
         <div>
           <label className="block text-sm font-medium text-text-primary mb-2">来週の希望日を選択</label>

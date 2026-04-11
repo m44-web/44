@@ -3,10 +3,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { getGuards, getSites, getShifts, getAttendance, getShiftsByGuard, getAttendanceByGuard } from "@/lib/store";
+import {
+  getGuards, getSites, getShifts, getAttendance, getShiftsByGuard, getAttendanceByGuard,
+  getEquipment, getLending, getReports, getShiftRequests, getLatestLocations,
+} from "@/lib/store";
 import { Card } from "@/components/ui/Card";
-import type { Guard, Site, Shift, AttendanceRecord } from "@/lib/types";
-import { SITE_TYPE_LABELS, SHIFT_STATUS_LABELS, ATTENDANCE_STATUS_LABELS } from "@/lib/types";
+import type { Guard, Site, Shift, AttendanceRecord, EquipmentLending, DailyReport, ShiftRequest, LocationLog } from "@/lib/types";
+import { ATTENDANCE_STATUS_LABELS, SHIFT_STATUS_LABELS } from "@/lib/types";
 
 function todayStr() {
   return new Date().toISOString().split("T")[0];
@@ -14,97 +17,225 @@ function todayStr() {
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const [guards, setGuards] = useState<Guard[]>([]);
-  const [sites, setSites] = useState<Site[]>([]);
-  const [todayShifts, setTodayShifts] = useState<Shift[]>([]);
-  const [todayAttendance, setTodayAttendance] = useState<AttendanceRecord[]>([]);
   const [mounted, setMounted] = useState(false);
+  const [data, setData] = useState<{
+    guards: Guard[]; sites: Site[]; shifts: Shift[]; todayShifts: Shift[];
+    todayAttendance: AttendanceRecord[]; allAttendance: AttendanceRecord[];
+    lending: EquipmentLending[]; reports: DailyReport[]; shiftRequests: ShiftRequest[];
+    locations: LocationLog[];
+  } | null>(null);
 
   useEffect(() => {
     setMounted(true);
     const today = todayStr();
-    if (user?.role === "admin") {
-      setGuards(getGuards().filter((g) => g.status === "active"));
-      setSites(getSites().filter((s) => s.status === "active"));
-      setTodayShifts(getShifts().filter((s) => s.date === today));
-      setTodayAttendance(getAttendance().filter((a) => a.date === today));
-    } else if (user?.guardId) {
-      setTodayShifts(getShiftsByGuard(user.guardId).filter((s) => s.date === today));
-      setTodayAttendance(getAttendanceByGuard(user.guardId).filter((a) => a.date === today));
-    }
+    const allShifts = getShifts();
+    setData({
+      guards: getGuards(),
+      sites: getSites(),
+      shifts: allShifts,
+      todayShifts: allShifts.filter((s) => s.date === today && s.status !== "cancelled"),
+      todayAttendance: getAttendance().filter((a) => a.date === today),
+      allAttendance: getAttendance(),
+      lending: getLending().filter((l) => !l.returnDate),
+      reports: getReports(),
+      shiftRequests: getShiftRequests(),
+      locations: getLatestLocations(),
+    });
   }, [user]);
 
-  if (!mounted) return null;
+  if (!mounted || !data) return null;
 
   if (user?.role === "admin") {
-    return <AdminDashboard guards={guards} sites={sites} todayShifts={todayShifts} todayAttendance={todayAttendance} />;
+    return <AdminDashboard data={data} />;
   }
-
-  return <GuardDashboard shifts={todayShifts} attendance={todayAttendance} />;
+  return <GuardDashboard guardId={user?.guardId ?? ""} data={data} />;
 }
 
-function AdminDashboard({
-  guards, sites, todayShifts, todayAttendance,
-}: {
-  guards: Guard[]; sites: Site[]; todayShifts: Shift[]; todayAttendance: AttendanceRecord[];
-}) {
-  const allGuards = getGuards();
-  const allSites = getSites();
-  const onDuty = todayAttendance.filter((a) => a.status === "on_duty").length;
+function AdminDashboard({ data }: { data: {
+  guards: Guard[]; sites: Site[]; shifts: Shift[]; todayShifts: Shift[];
+  todayAttendance: AttendanceRecord[]; allAttendance: AttendanceRecord[];
+  lending: EquipmentLending[]; reports: DailyReport[]; shiftRequests: ShiftRequest[];
+  locations: LocationLog[];
+}}) {
+  const { guards, sites, shifts, todayShifts, todayAttendance, lending, reports, shiftRequests, locations } = data;
+  const today = todayStr();
+  const thisMonth = today.slice(0, 7);
 
-  const stats = [
-    { label: "登録警備員", value: guards.length, unit: "名", href: "/guards", color: "text-accent" },
-    { label: "稼働現場", value: sites.length, unit: "件", href: "/sites", color: "text-success" },
-    { label: "本日のシフト", value: todayShifts.length, unit: "件", href: "/shifts", color: "text-warning" },
-    { label: "勤務中", value: onDuty, unit: "名", href: "/attendance", color: "text-accent" },
-  ];
+  const activeGuards = guards.filter((g) => g.status === "active");
+  const activeSites = sites.filter((s) => s.status === "active");
+  const onDuty = todayAttendance.filter((a) => a.status === "on_duty").length;
+  const completedToday = todayAttendance.filter((a) => a.status === "completed").length;
+  const pendingRequests = shiftRequests.filter((r) => r.status === "pending").length;
+  const todayReports = reports.filter((r) => r.date === today).length;
+
+  // This month stats
+  const thisMonthShifts = shifts.filter((s) => s.date.startsWith(thisMonth) && s.status !== "cancelled");
+  const completedMonthShifts = thisMonthShifts.filter((s) => s.status === "completed");
+
+  // Upcoming week shifts
+  const weekDates: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    weekDates.push(d.toISOString().split("T")[0]);
+  }
+  const weekShifts = shifts.filter((s) => weekDates.includes(s.date) && s.status !== "cancelled");
+
+  // Guards without location
+  const guardsWithTodayShift = new Set(todayShifts.map((s) => s.guardId));
+  const guardsWithLocation = new Set(locations.filter((l) => {
+    const hoursAgo = (Date.now() - new Date(l.timestamp).getTime()) / (1000 * 60 * 60);
+    return hoursAgo < 12;
+  }).map((l) => l.guardId));
+  const missingLocationCount = [...guardsWithTodayShift].filter((id) => !guardsWithLocation.has(id)).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <h1 className="text-2xl font-bold">ダッシュボード</h1>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {stats.map((stat) => (
-          <Link key={stat.label} href={stat.href}>
-            <Card className="text-center hover:border-accent/30">
-              <p className={`text-3xl font-bold ${stat.color}`}>
-                {stat.value}
-                <span className="text-lg ml-0.5">{stat.unit}</span>
-              </p>
-              <p className="text-text-secondary text-sm mt-1">{stat.label}</p>
-            </Card>
-          </Link>
-        ))}
+      {/* Alert banners */}
+      {pendingRequests > 0 && (
+        <Link href="/shift-requests">
+          <Card className="!border-warning/30 !bg-warning/5 !py-3 flex items-center gap-3">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-warning shrink-0"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
+            <p className="text-sm text-warning">未処理のシフト希望が <span className="font-bold">{pendingRequests}件</span> あります</p>
+          </Card>
+        </Link>
+      )}
+      {missingLocationCount > 0 && (
+        <Link href="/locations">
+          <Card className="!border-danger/30 !bg-danger/5 !py-3 flex items-center gap-3">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-danger shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+            <p className="text-sm text-danger">位置未送信の警備員が <span className="font-bold">{missingLocationCount}名</span> います</p>
+          </Card>
+        </Link>
+      )}
+
+      {/* Main stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Link href="/guards">
+          <Card className="text-center hover:border-accent/30">
+            <p className="text-3xl font-bold text-accent">{activeGuards.length}<span className="text-lg ml-0.5">名</span></p>
+            <p className="text-text-secondary text-xs mt-1">稼働警備員</p>
+            <p className="text-[10px] text-text-secondary/60 mt-0.5">全{guards.length}名中</p>
+          </Card>
+        </Link>
+        <Link href="/sites">
+          <Card className="text-center hover:border-accent/30">
+            <p className="text-3xl font-bold text-success">{activeSites.length}<span className="text-lg ml-0.5">件</span></p>
+            <p className="text-text-secondary text-xs mt-1">稼働現場</p>
+            <p className="text-[10px] text-text-secondary/60 mt-0.5">全{sites.length}件中</p>
+          </Card>
+        </Link>
+        <Link href="/shifts">
+          <Card className="text-center hover:border-accent/30">
+            <p className="text-3xl font-bold text-warning">{todayShifts.length}<span className="text-lg ml-0.5">件</span></p>
+            <p className="text-text-secondary text-xs mt-1">本日のシフト</p>
+            <p className="text-[10px] text-text-secondary/60 mt-0.5">今月 {thisMonthShifts.length}件</p>
+          </Card>
+        </Link>
+        <Link href="/attendance">
+          <Card className="text-center hover:border-accent/30">
+            <p className="text-3xl font-bold text-accent">{onDuty}<span className="text-lg ml-0.5">名</span></p>
+            <p className="text-text-secondary text-xs mt-1">勤務中</p>
+            <p className="text-[10px] text-text-secondary/60 mt-0.5">完了 {completedToday}名</p>
+          </Card>
+        </Link>
       </div>
 
+      {/* Secondary stats */}
+      <div className="grid grid-cols-3 gap-2">
+        <Link href="/reports">
+          <Card className="text-center !py-2.5 hover:border-accent/30">
+            <p className="text-lg font-bold text-text-primary">{todayReports}</p>
+            <p className="text-[10px] text-text-secondary">本日の日報</p>
+          </Card>
+        </Link>
+        <Link href="/equipment">
+          <Card className="text-center !py-2.5 hover:border-accent/30">
+            <p className="text-lg font-bold text-text-primary">{lending.length}</p>
+            <p className="text-[10px] text-text-secondary">貸出中装備</p>
+          </Card>
+        </Link>
+        <Link href="/shift-requests">
+          <Card className="text-center !py-2.5 hover:border-accent/30">
+            <p className="text-lg font-bold text-warning">{pendingRequests}</p>
+            <p className="text-[10px] text-text-secondary">未処理希望</p>
+          </Card>
+        </Link>
+      </div>
+
+      {/* Week overview */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold">本日のシフト</h2>
-          <Link href="/shifts" className="text-sm text-accent hover:underline">すべて見る</Link>
+        <h2 className="text-sm font-semibold text-text-secondary mb-2">今週のシフト概要</h2>
+        <Card>
+          <div className="grid grid-cols-7 gap-1">
+            {weekDates.map((date) => {
+              const d = new Date(date + "T00:00:00");
+              const dayIdx = d.getDay();
+              const dayLabels = ["日", "月", "火", "水", "木", "金", "土"];
+              const count = weekShifts.filter((s) => s.date === date).length;
+              const isToday = date === today;
+              return (
+                <div key={date} className={`text-center py-2 rounded-lg ${isToday ? "bg-accent/10" : ""}`}>
+                  <p className={`text-[10px] ${dayIdx === 0 ? "text-danger" : dayIdx === 6 ? "text-accent" : "text-text-secondary"}`}>
+                    {dayLabels[dayIdx]}
+                  </p>
+                  <p className={`text-xs ${isToday ? "font-bold text-accent" : "text-text-primary"}`}>{d.getDate()}</p>
+                  <p className={`text-sm font-bold mt-0.5 ${count > 0 ? "text-text-primary" : "text-text-secondary/30"}`}>{count}</p>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      </div>
+
+      {/* Today's shifts detail */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-semibold text-text-secondary">本日のシフト詳細</h2>
+          <Link href="/shifts" className="text-xs text-accent hover:underline">すべて見る</Link>
         </div>
         {todayShifts.length === 0 ? (
-          <Card><p className="text-text-secondary text-center py-4">本日のシフトはありません</p></Card>
+          <Card><p className="text-text-secondary text-center py-4 text-sm">本日のシフトはありません</p></Card>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {todayShifts.map((shift) => {
-              const guard = allGuards.find((g) => g.id === shift.guardId);
-              const site = allSites.find((s) => s.id === shift.siteId);
+              const guard = guards.find((g) => g.id === shift.guardId);
+              const site = sites.find((s) => s.id === shift.siteId);
               const att = todayAttendance.find((a) => a.shiftId === shift.id);
+              const loc = data.locations.find((l) => l.guardId === shift.guardId);
+              const hasRecentLoc = loc && (Date.now() - new Date(loc.timestamp).getTime()) < 12 * 60 * 60 * 1000;
               return (
-                <Card key={shift.id} className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-medium text-text-primary truncate">{guard?.name ?? "—"}</p>
-                    <p className="text-sm text-text-secondary truncate">{site?.name ?? "—"}</p>
+                <Card key={shift.id} className="!py-3">
+                  <div className="flex items-center justify-between gap-3 mb-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${
+                        att?.status === "on_duty" ? "bg-success animate-pulse" :
+                        att?.status === "completed" ? "bg-accent" :
+                        "bg-warning"
+                      }`} />
+                      <p className="font-medium text-text-primary truncate">{guard?.name ?? "—"}</p>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                        att?.status === "on_duty" ? "bg-success/10 text-success" :
+                        att?.status === "completed" ? "bg-accent/10 text-accent" :
+                        "bg-sub-bg text-text-secondary"
+                      }`}>
+                        {att ? ATTENDANCE_STATUS_LABELS[att.status] : SHIFT_STATUS_LABELS[shift.status]}
+                      </span>
+                    </div>
+                    <span className="text-xs font-mono text-text-secondary shrink-0">{shift.startTime}〜{shift.endTime}</span>
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-mono">{shift.startTime}〜{shift.endTime}</p>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      att?.status === "on_duty" ? "bg-success/10 text-success" :
-                      att?.status === "completed" ? "bg-accent/10 text-accent" :
-                      "bg-sub-bg text-text-secondary"
-                    }`}>
-                      {att ? ATTENDANCE_STATUS_LABELS[att.status] : SHIFT_STATUS_LABELS[shift.status]}
-                    </span>
+                  <div className="flex items-center justify-between gap-2 text-xs text-text-secondary">
+                    <span>{site?.name ?? "—"}</span>
+                    <div className="flex items-center gap-2">
+                      {att?.clockIn && <span>出勤 {att.clockIn}</span>}
+                      {att?.clockOut && <span>退勤 {att.clockOut}</span>}
+                      <span className={`flex items-center gap-0.5 ${hasRecentLoc ? "text-success" : "text-danger"}`}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                        {hasRecentLoc ? "GPS" : "未送信"}
+                      </span>
+                    </div>
                   </div>
                 </Card>
               );
@@ -116,51 +247,223 @@ function AdminDashboard({
   );
 }
 
-function GuardDashboard({ shifts, attendance }: { shifts: Shift[]; attendance: AttendanceRecord[] }) {
-  const allSites = getSites();
+function GuardDashboard({ guardId, data }: { guardId: string; data: {
+  guards: Guard[]; sites: Site[]; shifts: Shift[]; todayShifts: Shift[];
+  todayAttendance: AttendanceRecord[]; allAttendance: AttendanceRecord[];
+  reports: DailyReport[]; shiftRequests: ShiftRequest[];
+}}) {
+  const { sites, todayAttendance, shiftRequests } = data;
+  const today = todayStr();
+  const thisMonth = today.slice(0, 7);
+  const guard = data.guards.find((g) => g.id === guardId);
+
+  const myTodayShifts = data.todayShifts.filter((s) => s.guardId === guardId);
+  const myShifts = data.shifts.filter((s) => s.guardId === guardId);
+  const myThisMonthShifts = myShifts.filter((s) => s.date.startsWith(thisMonth) && s.status !== "cancelled");
+  const myUpcoming = myShifts.filter((s) => s.date > today && s.status !== "cancelled").sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3);
+
+  function calcHours(s: Shift): number {
+    const [sh, sm] = s.startTime.split(":").map(Number);
+    const [eh, em] = s.endTime.split(":").map(Number);
+    let hours = eh - sh + (em - sm) / 60;
+    if (hours < 0) hours += 24;
+    return hours;
+  }
+
+  const monthlyHours = myThisMonthShifts.reduce((sum, s) => sum + calcHours(s), 0);
+  const monthlyPay = Math.round(monthlyHours * (guard?.hourlyRate ?? 1000));
+
+  // Next week shift request check
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const daysUntilMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
+  const nextMonday = new Date(now);
+  nextMonday.setDate(now.getDate() + daysUntilMonday);
+  const nextWeekStart = nextMonday.toISOString().split("T")[0];
+  const hasNextWeekRequest = shiftRequests.some(
+    (r) => r.guardId === guardId && r.date >= nextWeekStart
+  );
+
+  const dayLabels = ["日", "月", "火", "水", "木", "金", "土"];
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">本日の予定</h1>
+    <div className="space-y-5">
+      {/* Big greeting */}
+      <div className="text-center py-2">
+        <p className="text-lg text-text-secondary">おつかれさまです</p>
+        <h1 className="text-3xl font-bold mt-1">{guard?.name ?? ""}さん</h1>
+      </div>
 
-      {shifts.length === 0 ? (
-        <Card><p className="text-text-secondary text-center py-8">本日のシフトはありません</p></Card>
-      ) : (
-        <div className="space-y-3">
-          {shifts.map((shift) => {
-            const site = allSites.find((s) => s.id === shift.siteId);
-            const att = attendance.find((a) => a.shiftId === shift.id);
-            return (
-              <Card key={shift.id}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-semibold text-text-primary">{site?.name ?? "—"}</p>
-                    <p className="text-sm text-text-secondary mt-1">{site?.address}</p>
-                    <p className="text-sm font-mono mt-2">
+      {/* Alert - big and obvious */}
+      {!hasNextWeekRequest && (
+        <Link href="/shift-requests">
+          <div className="bg-warning/10 border-2 border-warning/40 rounded-2xl p-4 flex items-center gap-4 active:scale-[0.98] transition-transform">
+            <div className="w-12 h-12 rounded-full bg-warning/20 flex items-center justify-center shrink-0">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-warning"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
+            </div>
+            <div>
+              <p className="text-base font-bold text-warning">来週のシフト希望</p>
+              <p className="text-sm text-text-secondary">まだ出していません。タップして提出!</p>
+            </div>
+          </div>
+        </Link>
+      )}
+
+      {/* Today's shift - BIG and clear */}
+      <div>
+        <h2 className="text-xl font-bold mb-3">きょうの仕事</h2>
+        {myTodayShifts.length === 0 ? (
+          <div className="bg-card-bg border border-border rounded-2xl p-8 text-center">
+            <div className="w-16 h-16 mx-auto rounded-full bg-sub-bg flex items-center justify-center mb-3">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-secondary"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+            </div>
+            <p className="text-lg text-text-secondary">きょうは休みです</p>
+            <p className="text-sm text-text-secondary/60 mt-1">ゆっくり休んでください</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {myTodayShifts.map((shift) => {
+              const site = sites.find((s) => s.id === shift.siteId);
+              const att = todayAttendance.find((a) => a.shiftId === shift.id);
+              const isNight = shift.shiftType === "night";
+              return (
+                <div key={shift.id} className={`bg-card-bg border-2 rounded-2xl p-5 ${
+                  att?.status === "on_duty" ? "border-success/40" :
+                  att?.status === "completed" ? "border-accent/40" :
+                  "border-border"
+                }`}>
+                  {/* Status indicator */}
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`text-sm font-bold px-3 py-1 rounded-full ${
+                      att?.status === "on_duty" ? "bg-success/10 text-success" :
+                      att?.status === "completed" ? "bg-accent/10 text-accent" :
+                      "bg-warning/10 text-warning"
+                    }`}>
+                      {att?.status === "on_duty" ? "いま勤務中" :
+                       att?.status === "completed" ? "おつかれさま!" :
+                       "まだ出勤していません"}
+                    </span>
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                      isNight ? "bg-purple-500/10 text-purple-400" : "bg-warning/10 text-warning"
+                    }`}>
+                      {isNight ? "夜勤" : "日勤"}
+                    </span>
+                  </div>
+
+                  {/* Site name - BIG */}
+                  <p className="text-xl font-bold text-text-primary">{site?.name ?? "—"}</p>
+                  <p className="text-sm text-text-secondary mt-1">{site?.address}</p>
+
+                  {/* Time - BIG */}
+                  <div className="mt-3 bg-sub-bg rounded-xl p-3 text-center">
+                    <p className="text-3xl font-bold font-mono text-text-primary">
                       {shift.startTime} 〜 {shift.endTime}
                     </p>
+                    {att?.clockIn && (
+                      <p className="text-sm text-success mt-1">出勤 {att.clockIn} {att.clockOut && `→ 退勤 ${att.clockOut}`}</p>
+                    )}
                   </div>
-                  <span className={`text-xs px-2.5 py-1 rounded-full shrink-0 ${
-                    att?.status === "on_duty" ? "bg-success/10 text-success" :
-                    att?.status === "completed" ? "bg-accent/10 text-accent" :
-                    "bg-sub-bg text-text-secondary"
+
+                  {/* Action button - HUGE */}
+                  {att?.status !== "completed" && (
+                    <Link
+                      href="/attendance"
+                      className={`mt-4 block text-center text-white rounded-xl py-5 text-xl font-bold active:scale-[0.97] transition-transform ${
+                        att?.status === "on_duty" ? "bg-danger" : "bg-accent"
+                      }`}
+                    >
+                      {att?.status === "on_duty" ? "退勤する" : "出勤する"}
+                    </Link>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Monthly summary - simple */}
+      <Link href="/salary">
+        <div className="bg-card-bg border border-border rounded-2xl p-4 flex items-center justify-between active:scale-[0.98] transition-transform">
+          <div>
+            <p className="text-sm text-text-secondary">今月の見込み給与</p>
+            <p className="text-2xl font-bold text-success">¥{monthlyPay.toLocaleString()}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-sm text-text-secondary">{myThisMonthShifts.length}件 / {monthlyHours.toFixed(1)}h</p>
+            <p className="text-xs text-accent mt-0.5">くわしく見る →</p>
+          </div>
+        </div>
+      </Link>
+
+      {/* Upcoming shifts - simple list */}
+      {myUpcoming.length > 0 && (
+        <div>
+          <h2 className="text-lg font-bold mb-2">つぎのシフト</h2>
+          <div className="space-y-2">
+            {myUpcoming.map((shift) => {
+              const site = sites.find((s) => s.id === shift.siteId);
+              const d = new Date(shift.date + "T00:00:00");
+              const isNight = shift.shiftType === "night";
+              return (
+                <div key={shift.id} className="bg-card-bg border border-border rounded-xl p-4 flex items-center gap-4">
+                  <div className="text-center shrink-0 w-12">
+                    <p className={`text-xs ${d.getDay() === 0 ? "text-danger" : d.getDay() === 6 ? "text-accent" : "text-text-secondary"}`}>
+                      {dayLabels[d.getDay()]}
+                    </p>
+                    <p className="text-2xl font-bold text-text-primary">{d.getDate()}</p>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-text-primary truncate">{site?.name ?? "—"}</p>
+                    <p className="text-sm text-text-secondary">{shift.startTime}〜{shift.endTime}</p>
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium shrink-0 ${
+                    isNight ? "bg-purple-500/10 text-purple-400" : "bg-warning/10 text-warning"
                   }`}>
-                    {att ? ATTENDANCE_STATUS_LABELS[att.status] : "未出勤"}
+                    {isNight ? "夜勤" : "日勤"}
                   </span>
                 </div>
-                {att?.status !== "completed" && (
-                  <Link
-                    href="/attendance"
-                    className="mt-4 block text-center bg-accent text-white rounded-lg py-3 font-medium hover:bg-accent-dark transition-colors"
-                  >
-                    {att?.status === "on_duty" ? "退勤する" : "出勤する"}
-                  </Link>
-                )}
-              </Card>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
+
+      {/* Big action buttons */}
+      <div className="space-y-2">
+        <Link href="/reports" className="block bg-card-bg border border-border rounded-xl p-4 flex items-center gap-4 active:scale-[0.98] transition-transform">
+          <div className="w-11 h-11 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+          </div>
+          <div className="flex-1">
+            <p className="font-bold text-text-primary">日報を書く</p>
+            <p className="text-xs text-text-secondary">きょうの報告を提出</p>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-secondary"><polyline points="9 18 15 12 9 6" /></svg>
+        </Link>
+
+        <Link href="/shift-requests" className="block bg-card-bg border border-border rounded-xl p-4 flex items-center gap-4 active:scale-[0.98] transition-transform">
+          <div className="w-11 h-11 rounded-full bg-warning/10 flex items-center justify-center shrink-0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-warning"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><path d="M9 16l2 2 4-4" /></svg>
+          </div>
+          <div className="flex-1">
+            <p className="font-bold text-text-primary">シフト希望</p>
+            <p className="text-xs text-text-secondary">来週の希望を出す</p>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-secondary"><polyline points="9 18 15 12 9 6" /></svg>
+        </Link>
+
+        <Link href="/locations" className="block bg-card-bg border border-border rounded-xl p-4 flex items-center gap-4 active:scale-[0.98] transition-transform">
+          <div className="w-11 h-11 rounded-full bg-success/10 flex items-center justify-center shrink-0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-success"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+          </div>
+          <div className="flex-1">
+            <p className="font-bold text-text-primary">いまの場所を送る</p>
+            <p className="text-xs text-text-secondary">GPS位置を管理者に送信</p>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-secondary"><polyline points="9 18 15 12 9 6" /></svg>
+        </Link>
+      </div>
     </div>
   );
 }

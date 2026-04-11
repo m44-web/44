@@ -2,7 +2,10 @@
 
 import type { Guard, Site, Shift, AttendanceRecord, User, EquipmentItem, EquipmentLending, DailyReport, LocationLog, ShiftRequest } from "./types";
 
+const DATA_VERSION = "4";
+
 const STORAGE_KEYS = {
+  version: "lsecurity_version",
   users: "lsecurity_users",
   guards: "lsecurity_guards",
   sites: "lsecurity_sites",
@@ -47,31 +50,36 @@ const SEED_GUARDS: Guard[] = [
     id: "g1", name: "田中 太郎", nameKana: "タナカ タロウ", phone: "090-1234-5678",
     email: "tanaka@lsecurity.jp", certifications: ["施設警備業務検定2級", "交通誘導警備業務検定2級"],
     licenses: ["普通自動車免許", "救急救命講習修了"], skillLevel: "advanced", experienceYears: 8,
-    hourlyRate: 1200, notes: "夜勤対応可", status: "active", createdAt: "2025-01-15",
+    hourlyRate: 1200, nightHourlyRate: 1500, shiftPreference: "both",
+    notes: "夜勤対応可", status: "active", createdAt: "2025-01-15",
   },
   {
     id: "g2", name: "鈴木 花子", nameKana: "スズキ ハナコ", phone: "090-2345-6789",
     email: "suzuki@lsecurity.jp", certifications: ["施設警備業務検定1級"],
     licenses: ["普通自動車免許", "防火管理者", "上級救命講習修了"], skillLevel: "expert", experienceYears: 15,
-    hourlyRate: 1500, notes: "指導員としても活動", status: "active", createdAt: "2025-02-01",
+    hourlyRate: 1500, nightHourlyRate: 1875, shiftPreference: "both",
+    notes: "指導員としても活動", status: "active", createdAt: "2025-02-01",
   },
   {
     id: "g3", name: "佐藤 次郎", nameKana: "サトウ ジロウ", phone: "090-3456-7890",
     email: "sato@lsecurity.jp", certifications: ["交通誘導警備業務検定1級", "雑踏警備業務検定2級"],
     licenses: ["普通自動車免許", "中型自動車免許"], skillLevel: "advanced", experienceYears: 5,
-    hourlyRate: 1200, notes: "", status: "active", createdAt: "2025-03-10",
+    hourlyRate: 1200, nightHourlyRate: 1500, shiftPreference: "day_only",
+    notes: "", status: "active", createdAt: "2025-03-10",
   },
   {
     id: "g4", name: "高橋 美咲", nameKana: "タカハシ ミサキ", phone: "090-4567-8901",
     email: "takahashi@lsecurity.jp", certifications: ["施設警備業務検定2級"],
     licenses: ["普通自動車免許"], skillLevel: "intermediate", experienceYears: 2,
-    hourlyRate: 1100, notes: "", status: "active", createdAt: "2025-04-01",
+    hourlyRate: 1100, nightHourlyRate: 1375, shiftPreference: "day_only",
+    notes: "", status: "active", createdAt: "2025-04-01",
   },
   {
     id: "g5", name: "渡辺 健一", nameKana: "ワタナベ ケンイチ", phone: "090-5678-9012",
     email: "watanabe@lsecurity.jp", certifications: [],
     licenses: [], skillLevel: "beginner", experienceYears: 0,
-    hourlyRate: 1000, notes: "研修中", status: "inactive", createdAt: "2024-11-20",
+    hourlyRate: 1000, nightHourlyRate: 1250, shiftPreference: "any",
+    notes: "研修中", status: "inactive", createdAt: "2024-11-20",
   },
 ];
 
@@ -103,18 +111,20 @@ function daysFromNow(n: number) {
 }
 
 const SEED_SHIFTS: Shift[] = [
-  { id: "sh1", guardId: "g1", siteId: "s1", date: todayStr(), startTime: "09:00", endTime: "18:00", status: "confirmed", notes: "" },
-  { id: "sh2", guardId: "g2", siteId: "s1", date: todayStr(), startTime: "18:00", endTime: "06:00", status: "confirmed", notes: "夜勤" },
-  { id: "sh3", guardId: "g3", siteId: "s2", date: todayStr(), startTime: "08:00", endTime: "17:00", status: "confirmed", notes: "" },
-  { id: "sh4", guardId: "g1", siteId: "s2", date: daysFromNow(1), startTime: "08:00", endTime: "17:00", status: "scheduled", notes: "" },
-  { id: "sh5", guardId: "g4", siteId: "s1", date: daysFromNow(1), startTime: "09:00", endTime: "18:00", status: "scheduled", notes: "" },
-  { id: "sh6", guardId: "g2", siteId: "s3", date: daysFromNow(2), startTime: "10:00", endTime: "22:00", status: "scheduled", notes: "" },
-  { id: "sh7", guardId: "g3", siteId: "s2", date: daysFromNow(3), startTime: "08:00", endTime: "17:00", status: "scheduled", notes: "" },
-  { id: "sh8", guardId: "g4", siteId: "s2", date: daysFromNow(4), startTime: "08:00", endTime: "17:00", status: "scheduled", notes: "" },
-  { id: "sh9", guardId: "g1", siteId: "s1", date: daysFromNow(5), startTime: "09:00", endTime: "18:00", status: "scheduled", notes: "" },
-  { id: "sh10", guardId: "g2", siteId: "s2", date: daysFromNow(5), startTime: "08:00", endTime: "17:00", status: "scheduled", notes: "" },
-  { id: "sh11", guardId: "g3", siteId: "s3", date: daysFromNow(7), startTime: "10:00", endTime: "22:00", status: "scheduled", notes: "" },
-  { id: "sh12", guardId: "g1", siteId: "s3", date: daysFromNow(7), startTime: "10:00", endTime: "22:00", status: "scheduled", notes: "" },
+  { id: "sh1", guardId: "g1", siteId: "s1", date: todayStr(), startTime: "09:00", endTime: "18:00", shiftType: "day", status: "confirmed", notes: "" },
+  { id: "sh2", guardId: "g2", siteId: "s1", date: todayStr(), startTime: "18:00", endTime: "06:00", shiftType: "night", status: "confirmed", notes: "夜勤" },
+  { id: "sh3", guardId: "g3", siteId: "s2", date: todayStr(), startTime: "08:00", endTime: "17:00", shiftType: "day", status: "confirmed", notes: "" },
+  { id: "sh4", guardId: "g1", siteId: "s2", date: daysFromNow(1), startTime: "08:00", endTime: "17:00", shiftType: "day", status: "scheduled", notes: "" },
+  { id: "sh5", guardId: "g4", siteId: "s1", date: daysFromNow(1), startTime: "09:00", endTime: "18:00", shiftType: "day", status: "scheduled", notes: "" },
+  { id: "sh6", guardId: "g2", siteId: "s3", date: daysFromNow(2), startTime: "10:00", endTime: "22:00", shiftType: "day", status: "scheduled", notes: "" },
+  { id: "sh7", guardId: "g3", siteId: "s2", date: daysFromNow(3), startTime: "08:00", endTime: "17:00", shiftType: "day", status: "scheduled", notes: "" },
+  { id: "sh8", guardId: "g4", siteId: "s2", date: daysFromNow(4), startTime: "08:00", endTime: "17:00", shiftType: "day", status: "scheduled", notes: "" },
+  { id: "sh9", guardId: "g1", siteId: "s1", date: daysFromNow(5), startTime: "09:00", endTime: "18:00", shiftType: "day", status: "scheduled", notes: "" },
+  { id: "sh10", guardId: "g2", siteId: "s2", date: daysFromNow(5), startTime: "08:00", endTime: "17:00", shiftType: "day", status: "scheduled", notes: "" },
+  { id: "sh11", guardId: "g3", siteId: "s3", date: daysFromNow(7), startTime: "10:00", endTime: "22:00", shiftType: "day", status: "scheduled", notes: "" },
+  { id: "sh12", guardId: "g1", siteId: "s3", date: daysFromNow(7), startTime: "10:00", endTime: "22:00", shiftType: "day", status: "scheduled", notes: "" },
+  { id: "sh13", guardId: "g1", siteId: "s1", date: daysFromNow(2), startTime: "18:00", endTime: "06:00", shiftType: "night", status: "scheduled", notes: "夜勤" },
+  { id: "sh14", guardId: "g2", siteId: "s1", date: daysFromNow(3), startTime: "18:00", endTime: "06:00", shiftType: "night", status: "scheduled", notes: "夜勤" },
 ];
 
 const SEED_ATTENDANCE: AttendanceRecord[] = [
@@ -173,9 +183,7 @@ const SEED_SHIFT_REQUESTS: ShiftRequest[] = [
 ];
 
 // --- Initialize ---
-export function initializeStore(): void {
-  if (typeof window === "undefined") return;
-  if (localStorage.getItem(STORAGE_KEYS.users)) return;
+function seedAll(): void {
   setItem(STORAGE_KEYS.users, SEED_USERS);
   setItem(STORAGE_KEYS.guards, SEED_GUARDS);
   setItem(STORAGE_KEYS.sites, SEED_SITES);
@@ -185,6 +193,24 @@ export function initializeStore(): void {
   setItem(STORAGE_KEYS.lending, SEED_LENDING);
   setItem(STORAGE_KEYS.reports, SEED_REPORTS);
   setItem(STORAGE_KEYS.shiftRequests, SEED_SHIFT_REQUESTS);
+  localStorage.setItem(STORAGE_KEYS.version, DATA_VERSION);
+}
+
+export function initializeStore(): void {
+  if (typeof window === "undefined") return;
+  const currentVersion = localStorage.getItem(STORAGE_KEYS.version);
+  if (!currentVersion || currentVersion !== DATA_VERSION) {
+    // Clear old data and re-seed with latest schema
+    const currentUser = localStorage.getItem(STORAGE_KEYS.currentUser);
+    Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
+    seedAll();
+    // Restore login session if there was one
+    if (currentUser) localStorage.setItem(STORAGE_KEYS.currentUser, currentUser);
+    return;
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.users)) {
+    seedAll();
+  }
 }
 
 // --- Auth ---

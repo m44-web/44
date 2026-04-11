@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { CERTIFICATION_OPTIONS, LICENSE_OPTIONS, SKILL_LEVEL_LABELS } from "@/lib/types";
-import type { SkillLevel } from "@/lib/types";
+import { CERTIFICATION_OPTIONS, LICENSE_OPTIONS, SKILL_LEVEL_LABELS, SHIFT_PREFERENCE_LABELS } from "@/lib/types";
+import type { SkillLevel, ShiftPreference } from "@/lib/types";
 
 export type GuardFormValues = {
   name: string;
@@ -14,6 +14,8 @@ export type GuardFormValues = {
   skillLevel: SkillLevel;
   experienceYears: number;
   hourlyRate: number;
+  nightHourlyRate: number;
+  shiftPreference: ShiftPreference;
   notes: string;
 };
 
@@ -36,6 +38,8 @@ export function GuardForm({ onSubmit, defaultValues }: GuardFormProps) {
   const [skillLevel, setSkillLevel] = useState<SkillLevel>(defaultValues?.skillLevel ?? "beginner");
   const [experienceYears, setExperienceYears] = useState(defaultValues?.experienceYears ?? 0);
   const [hourlyRate, setHourlyRate] = useState(defaultValues?.hourlyRate ?? 1000);
+  const [nightHourlyRate, setNightHourlyRate] = useState(defaultValues?.nightHourlyRate ?? 1250);
+  const [shiftPreference, setShiftPreference] = useState<ShiftPreference>(defaultValues?.shiftPreference ?? "any");
   const [notes, setNotes] = useState(defaultValues?.notes ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -52,7 +56,7 @@ export function GuardForm({ onSubmit, defaultValues }: GuardFormProps) {
     }
     onSubmit({
       name: name.trim(), nameKana: nameKana.trim(), phone: phone.trim(), email: email.trim(),
-      certifications: certs, licenses, skillLevel, experienceYears, hourlyRate, notes: notes.trim(),
+      certifications: certs, licenses, skillLevel, experienceYears, hourlyRate, nightHourlyRate, shiftPreference, notes: notes.trim(),
     });
   }
 
@@ -105,9 +109,38 @@ export function GuardForm({ onSubmit, defaultValues }: GuardFormProps) {
         </div>
       </div>
 
+      {/* Shift preference */}
       <div>
-        <label htmlFor="hourlyRate" className={labelClasses}>時給（円）</label>
-        <input id="hourlyRate" type="number" min="0" step="50" value={hourlyRate} onChange={(e) => setHourlyRate(Number(e.target.value))} className={inputClasses} />
+        <label className={labelClasses}>勤務希望</label>
+        <div className="grid grid-cols-2 gap-2">
+          {(Object.entries(SHIFT_PREFERENCE_LABELS) as [ShiftPreference, string][]).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setShiftPreference(key)}
+              className={`py-3 rounded-lg text-sm font-medium cursor-pointer transition-colors border ${
+                shiftPreference === key
+                  ? "border-accent bg-accent/10 text-accent"
+                  : "border-border text-text-secondary hover:border-accent/30"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Hourly rates */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="hourlyRate" className={labelClasses}>日勤時給（円）</label>
+          <input id="hourlyRate" type="number" min="0" step="50" value={hourlyRate} onChange={(e) => setHourlyRate(Number(e.target.value))} className={inputClasses} />
+        </div>
+        <div>
+          <label htmlFor="nightHourlyRate" className={labelClasses}>夜勤時給（円）</label>
+          <input id="nightHourlyRate" type="number" min="0" step="50" value={nightHourlyRate} onChange={(e) => setNightHourlyRate(Number(e.target.value))} className={inputClasses} />
+          <p className="text-[10px] text-text-secondary mt-1">22:00〜5:00は深夜割増が適用されます</p>
+        </div>
       </div>
 
       {/* Certifications */}
