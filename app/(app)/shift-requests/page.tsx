@@ -331,15 +331,17 @@ function ShiftRequestFormModal({
 }) {
   const nextWeek = getNextWeekDates();
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
-  const [shiftType, setShiftType] = useState<"day" | "night">("day");
+  const [shiftType, setShiftType] = useState<"day" | "night" | "both" | "custom">("day");
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("18:00");
   const [notes, setNotes] = useState("");
 
-  function handleShiftTypeChange(type: "day" | "night") {
+  function handleShiftTypeChange(type: "day" | "night" | "both" | "custom") {
     setShiftType(type);
     if (type === "day") { setStartTime("09:00"); setEndTime("18:00"); }
-    else { setStartTime("18:00"); setEndTime("06:00"); }
+    else if (type === "night") { setStartTime("18:00"); setEndTime("06:00"); }
+    else if (type === "both") { setStartTime("09:00"); setEndTime("18:00"); }
+    // custom: keep current times
   }
 
   function toggleDate(date: string) {
@@ -355,7 +357,12 @@ function ShiftRequestFormModal({
     e.preventDefault();
     if (selectedDates.size === 0) return;
     selectedDates.forEach((date) => {
-      if (!existingDates.includes(date)) {
+      if (existingDates.includes(date)) return;
+      if (shiftType === "both") {
+        // Submit two requests: day + night
+        addShiftRequest({ guardId, date, startTime: "09:00", endTime: "18:00", notes: (notes.trim() ? notes.trim() + "（日勤）" : "日勤"), status: "pending" });
+        addShiftRequest({ guardId, date, startTime: "18:00", endTime: "06:00", notes: (notes.trim() ? notes.trim() + "（夜勤）" : "夜勤"), status: "pending" });
+      } else {
         addShiftRequest({ guardId, date, startTime, endTime, notes: notes.trim(), status: "pending" });
       }
     });
@@ -365,17 +372,17 @@ function ShiftRequestFormModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full max-w-md bg-card-bg border border-border rounded-t-xl sm:rounded-xl p-5 space-y-4">
+      <form onSubmit={handleSubmit} className="relative w-full max-w-md bg-card-bg border border-border rounded-t-xl sm:rounded-xl p-5 space-y-4 max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-bold">シフト希望を提出</h2>
 
-        {/* Day/Night toggle - big buttons */}
+        {/* Shift type toggle */}
         <div>
           <label className="block text-base font-medium text-text-primary mb-2">勤務区分</label>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => handleShiftTypeChange("day")}
-              className={`py-4 rounded-xl text-lg font-bold cursor-pointer transition-colors border ${
+              className={`py-3 rounded-xl text-base font-bold cursor-pointer transition-colors border ${
                 shiftType === "day"
                   ? "border-warning bg-warning/10 text-warning"
                   : "border-border text-text-secondary"
@@ -386,7 +393,7 @@ function ShiftRequestFormModal({
             <button
               type="button"
               onClick={() => handleShiftTypeChange("night")}
-              className={`py-4 rounded-xl text-lg font-bold cursor-pointer transition-colors border ${
+              className={`py-3 rounded-xl text-base font-bold cursor-pointer transition-colors border ${
                 shiftType === "night"
                   ? "border-purple-400 bg-purple-500/10 text-purple-400"
                   : "border-border text-text-secondary"
@@ -394,7 +401,32 @@ function ShiftRequestFormModal({
             >
               夜勤
             </button>
+            <button
+              type="button"
+              onClick={() => handleShiftTypeChange("both")}
+              className={`py-3 rounded-xl text-base font-bold cursor-pointer transition-colors border ${
+                shiftType === "both"
+                  ? "border-accent bg-accent/10 text-accent"
+                  : "border-border text-text-secondary"
+              }`}
+            >
+              両方OK
+            </button>
+            <button
+              type="button"
+              onClick={() => handleShiftTypeChange("custom")}
+              className={`py-3 rounded-xl text-base font-bold cursor-pointer transition-colors border ${
+                shiftType === "custom"
+                  ? "border-success bg-success/10 text-success"
+                  : "border-border text-text-secondary"
+              }`}
+            >
+              時間指定
+            </button>
           </div>
+          {shiftType === "both" && (
+            <p className="text-xs text-accent mt-1.5">日勤・夜勤どちらでも勤務可能として2件の希望が提出されます</p>
+          )}
         </div>
 
         <div>
@@ -429,16 +461,18 @@ function ShiftRequestFormModal({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-text-primary mb-1.5">開始時間</label>
-            <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className={`${inputClasses} !py-4`} />
+        {(shiftType === "custom" || shiftType === "day" || shiftType === "night") && (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-1.5">開始時間</label>
+              <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className={`${inputClasses} !py-4`} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-1.5">終了時間</label>
+              <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className={`${inputClasses} !py-4`} />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-text-primary mb-1.5">終了時間</label>
-            <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className={`${inputClasses} !py-4`} />
-          </div>
-        </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-text-primary mb-1.5">メモ</label>

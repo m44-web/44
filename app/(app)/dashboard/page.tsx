@@ -167,6 +167,53 @@ function AdminDashboard({ data }: { data: {
         </Link>
       </div>
 
+      {/* Available guards - surplus display */}
+      {(() => {
+        const guardsWithShiftToday = new Set(todayShifts.map((s) => s.guardId));
+        const availableGuards = activeGuards.filter((g) => !guardsWithShiftToday.has(g.id));
+        return (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-sm font-semibold text-text-secondary">本日の余剰人員</h2>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                availableGuards.length > 0 ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+              }`}>
+                {availableGuards.length}名待機可能
+              </span>
+            </div>
+            {availableGuards.length === 0 ? (
+              <Card className="!border-danger/20 !bg-danger/5 !py-3">
+                <p className="text-sm text-danger text-center">全員配置済み — 急遽出勤の要員がいません</p>
+              </Card>
+            ) : (
+              <Card>
+                <div className="flex flex-wrap gap-2">
+                  {availableGuards.map((g) => (
+                    <div key={g.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-sub-bg text-sm">
+                      <span className="w-2 h-2 rounded-full bg-success shrink-0" />
+                      <span className="font-medium text-text-primary">{g.name}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                        g.shiftPreference === "both" || g.shiftPreference === "any"
+                          ? "bg-accent/10 text-accent"
+                          : g.shiftPreference === "night_only"
+                            ? "bg-purple-500/10 text-purple-400"
+                            : "bg-warning/10 text-warning"
+                      }`}>
+                        {g.shiftPreference === "both" ? "日夜可" : g.shiftPreference === "any" ? "指定なし" : g.shiftPreference === "night_only" ? "夜勤のみ" : "日勤のみ"}
+                      </span>
+                      {g.certifications.length > 0 && (
+                        <span className="text-[10px] text-text-secondary">{g.certifications.length}資格</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-text-secondary mt-2">急遽の欠員時に出勤依頼できる警備員です</p>
+              </Card>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Week overview */}
       <div>
         <div className="flex items-center justify-between mb-2">

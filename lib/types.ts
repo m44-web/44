@@ -192,7 +192,8 @@ export type ChatMessage = {
   senderName: string;
   senderRole: UserRole;
   receiverId: string | null;
-  channel: "general" | "direct";
+  channel: "general" | "site" | "direct";
+  siteId?: string;
   content: string;
   timestamp: string;
 };

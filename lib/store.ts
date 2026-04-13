@@ -474,6 +474,9 @@ export function getChatMessages(): ChatMessage[] {
 export function getChatGeneral(): ChatMessage[] {
   return getChatMessages().filter((m) => m.channel === "general").sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 }
+export function getChatBySite(siteId: string): ChatMessage[] {
+  return getChatMessages().filter((m) => m.channel === "site" && m.siteId === siteId).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+}
 export function getChatDirect(userId1: string, userId2: string): ChatMessage[] {
   return getChatMessages().filter((m) =>
     m.channel === "direct" &&

@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { getShifts, getGuards, getSites, getAttendance, getShiftsByGuard, getAttendanceByGuard, clockIn, clockOut, addLocation } from "@/lib/store";
+import { getShifts, getGuards, getSites, getAttendance, getShiftsByGuard, getAttendanceByGuard, clockIn, clockOut, addLocation, getLocations } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
-import type { Shift, Guard, Site, AttendanceRecord } from "@/lib/types";
+import type { Shift, Guard, Site, AttendanceRecord, LocationLog } from "@/lib/types";
 import { ATTENDANCE_STATUS_LABELS } from "@/lib/types";
 
 function todayStr() {
@@ -30,6 +30,7 @@ function AdminAttendance() {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [guards, setGuards] = useState<Guard[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
+  const [locations, setLocations] = useState<LocationLog[]>([]);
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [mounted, setMounted] = useState(false);
 
@@ -39,6 +40,7 @@ function AdminAttendance() {
     setSites(getSites());
     setShifts(getShifts());
     setAllAttendance(getAttendance());
+    setLocations(getLocations());
   }, []);
 
   if (!mounted) return null;
@@ -155,6 +157,28 @@ function AdminAttendance() {
                     <span>{calcWorkedHours(record)}</span>
                   </div>
                 </div>
+                {/* GPS location info */}
+                {(() => {
+                  const guardLocs = locations.filter((l) => l.guardId === record.guardId && l.timestamp.startsWith(selectedDate));
+                  const clockInLoc = guardLocs.find((l) => l.type === "clock_in");
+                  const clockOutLoc = guardLocs.find((l) => l.type === "clock_out");
+                  if (!clockInLoc && !clockOutLoc) return null;
+                  return (
+                    <div className="flex items-center gap-3 text-[10px] text-text-secondary pt-1 border-t border-border">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-success shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                      {clockInLoc && (
+                        <a href={`https://www.google.com/maps?q=${clockInLoc.latitude},${clockInLoc.longitude}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
+                          上番GPS {clockInLoc.speed != null ? `(${(clockInLoc.speed * 3.6).toFixed(0)}km/h)` : ""}
+                        </a>
+                      )}
+                      {clockOutLoc && (
+                        <a href={`https://www.google.com/maps?q=${clockOutLoc.latitude},${clockOutLoc.longitude}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
+                          下番GPS {clockOutLoc.speed != null ? `(${(clockOutLoc.speed * 3.6).toFixed(0)}km/h)` : ""}
+                        </a>
+                      )}
+                    </div>
+                  );
+                })()}
               </Card>
             );
           })}
