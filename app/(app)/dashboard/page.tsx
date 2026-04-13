@@ -167,52 +167,8 @@ function AdminDashboard({ data }: { data: {
         </Link>
       </div>
 
-      {/* Available guards - surplus display */}
-      {(() => {
-        const guardsWithShiftToday = new Set(todayShifts.map((s) => s.guardId));
-        const availableGuards = activeGuards.filter((g) => !guardsWithShiftToday.has(g.id));
-        return (
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-sm font-semibold text-text-secondary">本日の余剰人員</h2>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                availableGuards.length > 0 ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
-              }`}>
-                {availableGuards.length}名待機可能
-              </span>
-            </div>
-            {availableGuards.length === 0 ? (
-              <Card className="!border-danger/20 !bg-danger/5 !py-3">
-                <p className="text-sm text-danger text-center">全員配置済み — 急遽出勤の要員がいません</p>
-              </Card>
-            ) : (
-              <Card>
-                <div className="flex flex-wrap gap-2">
-                  {availableGuards.map((g) => (
-                    <div key={g.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-sub-bg text-sm">
-                      <span className="w-2 h-2 rounded-full bg-success shrink-0" />
-                      <span className="font-medium text-text-primary">{g.name}</span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                        g.shiftPreference === "both" || g.shiftPreference === "any"
-                          ? "bg-accent/10 text-accent"
-                          : g.shiftPreference === "night_only"
-                            ? "bg-purple-500/10 text-purple-400"
-                            : "bg-warning/10 text-warning"
-                      }`}>
-                        {g.shiftPreference === "both" ? "日夜可" : g.shiftPreference === "any" ? "指定なし" : g.shiftPreference === "night_only" ? "夜勤のみ" : "日勤のみ"}
-                      </span>
-                      {g.certifications.length > 0 && (
-                        <span className="text-[10px] text-text-secondary">{g.certifications.length}資格</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <p className="text-[10px] text-text-secondary mt-2">急遽の欠員時に出勤依頼できる警備員です</p>
-              </Card>
-            )}
-          </div>
-        );
-      })()}
+      {/* Available guards - surplus display with date navigation */}
+      <SurplusGuards activeGuards={activeGuards} shifts={shifts} />
 
       {/* Week overview */}
       <div>
@@ -575,6 +531,77 @@ function GuardDashboard({ guardId, data }: { guardId: string; data: {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-secondary"><polyline points="9 18 15 12 9 6" /></svg>
         </Link>
       </div>
+    </div>
+  );
+}
+
+function SurplusGuards({ activeGuards, shifts }: { activeGuards: Guard[]; shifts: Shift[] }) {
+  const [dayOffset, setDayOffset] = useState(0);
+
+  const targetDate = new Date();
+  targetDate.setDate(targetDate.getDate() + dayOffset);
+  const targetDateStr = targetDate.toISOString().split("T")[0];
+
+  const dayLabels = ["日", "月", "火", "水", "木", "金", "土"];
+  const dayIdx = targetDate.getDay();
+  const dateLabel = dayOffset === 0 ? "本日" : dayOffset === 1 ? "明日" : `${targetDate.getMonth() + 1}/${targetDate.getDate()}(${dayLabels[dayIdx]})`;
+
+  const dayShifts = shifts.filter((s) => s.date === targetDateStr && s.status !== "cancelled");
+  const guardsWithShift = new Set(dayShifts.map((s) => s.guardId));
+  const availableGuards = activeGuards.filter((g) => !guardsWithShift.has(g.id));
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-text-secondary">{dateLabel}の余剰人員</h2>
+          <div className="flex items-center gap-0.5">
+            <button onClick={() => setDayOffset((d) => Math.max(d - 1, -7))} className="p-1 rounded-lg hover:bg-sub-bg text-text-secondary hover:text-text-primary transition-colors cursor-pointer">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
+            </button>
+            {dayOffset !== 0 && (
+              <button onClick={() => setDayOffset(0)} className="px-1.5 py-0.5 text-[10px] rounded-lg hover:bg-sub-bg text-accent cursor-pointer">今日</button>
+            )}
+            <button onClick={() => setDayOffset((d) => d + 1)} className="p-1 rounded-lg hover:bg-sub-bg text-text-secondary hover:text-text-primary transition-colors cursor-pointer">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
+            </button>
+          </div>
+        </div>
+        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+          availableGuards.length > 0 ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+        }`}>
+          {availableGuards.length}名待機可能
+        </span>
+      </div>
+      {availableGuards.length === 0 ? (
+        <Card className="!border-danger/20 !bg-danger/5 !py-3">
+          <p className="text-sm text-danger text-center">全員配置済み — 急遽出勤の要員がいません</p>
+        </Card>
+      ) : (
+        <Card>
+          <div className="flex flex-wrap gap-2">
+            {availableGuards.map((g) => (
+              <div key={g.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-sub-bg text-sm">
+                <span className="w-2 h-2 rounded-full bg-success shrink-0" />
+                <span className="font-medium text-text-primary">{g.name}</span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                  g.shiftPreference === "both" || g.shiftPreference === "any"
+                    ? "bg-accent/10 text-accent"
+                    : g.shiftPreference === "night_only"
+                      ? "bg-purple-500/10 text-purple-400"
+                      : "bg-warning/10 text-warning"
+                }`}>
+                  {g.shiftPreference === "both" ? "日夜可" : g.shiftPreference === "any" ? "指定なし" : g.shiftPreference === "night_only" ? "夜勤のみ" : "日勤のみ"}
+                </span>
+                {g.certifications.length > 0 && (
+                  <span className="text-[10px] text-text-secondary">{g.certifications.length}資格</span>
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-text-secondary mt-2">急遽の欠員時に出勤依頼できる警備員です</p>
+        </Card>
+      )}
     </div>
   );
 }

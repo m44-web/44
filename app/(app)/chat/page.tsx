@@ -13,7 +13,6 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [handoverNotes, setHandoverNotes] = useState<HandoverNote[]>([]);
   const [input, setInput] = useState("");
-  const [showHandover, setShowHandover] = useState(false);
   const [mounted, setMounted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -83,22 +82,12 @@ export default function ChatPage() {
     <div className="flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)]">
       <div className="flex items-center justify-between gap-3 mb-2">
         <h1 className="text-2xl font-bold">{user.role === "admin" ? "管制チャット" : "チャット"}</h1>
-        {selectedChannel !== "general" && (
-          <button
-            onClick={() => setShowHandover(!showHandover)}
-            className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
-              showHandover ? "bg-accent text-white" : "bg-sub-bg text-text-secondary hover:text-text-primary"
-            }`}
-          >
-            引継ぎ {handoverNotes.length > 0 && `(${handoverNotes.length})`}
-          </button>
-        )}
       </div>
 
       {/* Channel selector */}
       <div className="flex gap-1.5 overflow-x-auto pb-2 mb-2 -mx-1 px-1">
         <button
-          onClick={() => { setSelectedChannel("general"); setShowHandover(false); }}
+          onClick={() => setSelectedChannel("general")}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
             selectedChannel === "general" ? "bg-accent text-white" : "bg-sub-bg text-text-secondary hover:text-text-primary"
           }`}
@@ -118,23 +107,22 @@ export default function ChatPage() {
         ))}
       </div>
 
-      {/* Handover notes panel */}
-      {showHandover && selectedChannel !== "general" && (
-        <div className="mb-2 max-h-48 overflow-y-auto rounded-xl border border-border bg-sub-bg p-3 space-y-2">
-          <p className="text-xs font-semibold text-text-secondary">引継ぎノート — {selectedSite?.name}</p>
-          {handoverNotes.length === 0 ? (
-            <p className="text-xs text-text-secondary">引継ぎはありません</p>
-          ) : (
-            handoverNotes.slice(0, 5).map((note) => (
-              <div key={note.id} className="text-xs bg-card-bg rounded-lg p-2.5 border border-border">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium text-text-primary">{note.guardName}</span>
-                  <span className="text-text-secondary">{note.date}</span>
-                </div>
-                <p className="text-text-secondary whitespace-pre-wrap">{note.content}</p>
+      {/* Handover notes - always visible for site channels */}
+      {selectedChannel !== "general" && handoverNotes.length > 0 && (
+        <div className="mb-2 max-h-40 overflow-y-auto rounded-xl border border-accent/20 bg-accent/5 p-3 space-y-2">
+          <div className="flex items-center gap-2 mb-1">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
+            <p className="text-xs font-semibold text-accent">引継ぎノート — {selectedSite?.name}</p>
+          </div>
+          {handoverNotes.slice(0, 5).map((note) => (
+            <div key={note.id} className="text-xs bg-card-bg rounded-lg p-2.5 border border-border">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-medium text-text-primary">{note.guardName}</span>
+                <span className="text-text-secondary">{note.date}</span>
               </div>
-            ))
-          )}
+              <p className="text-text-secondary whitespace-pre-wrap">{note.content}</p>
+            </div>
+          ))}
         </div>
       )}
 
