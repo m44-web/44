@@ -1,18 +1,14 @@
-type CardProps = {
-  children: React.ReactNode;
-  className?: string;
-  hover?: boolean;
-};
+import { ReactNode } from "react";
 
-export function Card({ children, className = "", hover = true }: CardProps) {
+export function Card({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <div
-      className={`rounded-xl bg-card-bg border border-border p-6 ${
-        hover
-          ? "transition-all duration-300 hover:border-accent/30 hover:shadow-[0_0_20px_rgba(0,212,255,0.1)]"
-          : ""
-      } ${className}`}
-    >
+    <div className={`bg-surface rounded-xl border border-white/10 p-6 ${className}`}>
       {children}
     </div>
   );

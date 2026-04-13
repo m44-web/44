@@ -1,61 +1,38 @@
-import Link from "next/link";
+"use client";
 
-type ButtonProps = {
-  children: React.ReactNode;
-  href?: string;
-  variant?: "primary" | "outline" | "ghost";
-  size?: "sm" | "md" | "lg";
-  className?: string;
-  type?: "button" | "submit";
-  disabled?: boolean;
-  onClick?: () => void;
+import { ButtonHTMLAttributes, forwardRef } from "react";
+
+type Variant = "primary" | "danger" | "ghost" | "success";
+
+const variantStyles: Record<Variant, string> = {
+  primary: "bg-primary hover:bg-primary-dark text-white",
+  danger: "bg-danger hover:bg-red-600 text-white",
+  ghost: "bg-transparent hover:bg-surface-light text-text-muted",
+  success: "bg-success hover:bg-green-600 text-white",
 };
 
-const variants = {
-  primary:
-    "bg-accent text-primary font-semibold hover:bg-accent-dark shadow-[0_0_20px_rgba(0,212,255,0.3)] hover:shadow-[0_0_30px_rgba(0,212,255,0.5)] transition-all",
-  outline:
-    "border border-accent text-accent hover:bg-accent/10 transition-colors",
-  ghost:
-    "text-text-secondary hover:text-text-primary transition-colors",
-};
-
-const sizes = {
-  sm: "px-4 py-2 text-sm",
-  md: "px-6 py-3 text-base",
-  lg: "px-8 py-4 text-lg",
-};
-
-export function Button({
-  children,
-  href,
-  variant = "primary",
-  size = "md",
-  className = "",
-  type = "button",
-  disabled = false,
-  onClick,
-}: ButtonProps) {
-  const classes = `inline-flex items-center justify-center rounded-lg font-medium ${variants[variant]} ${sizes[size]} ${
-    disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-  } ${className}`;
-
-  if (href) {
-    return (
-      <Link href={href} className={classes}>
-        {children}
-      </Link>
-    );
-  }
-
-  return (
-    <button
-      type={type}
-      className={classes}
-      disabled={disabled}
-      onClick={onClick}
-    >
-      {children}
-    </button>
-  );
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: Variant;
+  loading?: boolean;
 }
+
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ variant = "primary", loading, children, disabled, className = "", ...props }, ref) => (
+    <button
+      ref={ref}
+      disabled={disabled || loading}
+      className={`px-4 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${variantStyles[variant]} ${className}`}
+      {...props}
+    >
+      {loading ? (
+        <span className="flex items-center justify-center gap-2">
+          <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          処理中...
+        </span>
+      ) : (
+        children
+      )}
+    </button>
+  )
+);
+Button.displayName = "Button";
