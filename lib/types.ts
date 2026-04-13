@@ -25,9 +25,26 @@ export type Guard = {
   hourlyRate: number;
   nightHourlyRate: number;
   shiftPreference: ShiftPreference;
+  trainingStatus: "none" | "new_hire" | "ongoing" | "probation";
   notes: string;
   status: "active" | "inactive";
   createdAt: string;
+};
+
+export type TrainingStatus = Guard["trainingStatus"];
+
+export const TRAINING_STATUS_LABELS: Record<TrainingStatus, string> = {
+  none: "なし",
+  new_hire: "新任教育中",
+  ongoing: "現任教育中",
+  probation: "研修中",
+};
+
+export const TRAINING_STATUS_COLORS: Record<TrainingStatus, string> = {
+  none: "",
+  new_hire: "bg-warning/10 text-warning",
+  ongoing: "bg-accent/10 text-accent",
+  probation: "bg-purple-500/10 text-purple-400",
 };
 
 export const SHIFT_PREFERENCE_LABELS: Record<ShiftPreference, string> = {
@@ -228,6 +245,35 @@ export const SHIFT_REQUEST_STATUS_LABELS: Record<ShiftRequest["status"], string>
 export const SHIFT_REQUEST_STATUS_COLORS: Record<ShiftRequest["status"], string> = {
   pending: "bg-warning/10 text-warning",
   approved: "bg-success/10 text-success",
+  rejected: "bg-danger/10 text-danger",
+};
+
+export type InterviewCandidate = {
+  id: string;
+  name: string;
+  nameKana: string;
+  phone: string;
+  email: string;
+  interviewDate: string;
+  interviewTime: string;
+  status: "scheduled" | "completed" | "cancelled" | "hired" | "rejected";
+  notes: string;
+  createdAt: string;
+};
+
+export const INTERVIEW_STATUS_LABELS: Record<InterviewCandidate["status"], string> = {
+  scheduled: "面接予定",
+  completed: "面接済",
+  cancelled: "キャンセル",
+  hired: "採用",
+  rejected: "不採用",
+};
+
+export const INTERVIEW_STATUS_COLORS: Record<InterviewCandidate["status"], string> = {
+  scheduled: "bg-warning/10 text-warning",
+  completed: "bg-accent/10 text-accent",
+  cancelled: "bg-sub-bg text-text-secondary",
+  hired: "bg-success/10 text-success",
   rejected: "bg-danger/10 text-danger",
 };
 

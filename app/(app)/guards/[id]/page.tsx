@@ -75,7 +75,7 @@ export default function GuardDetailPage() {
             certifications: guard.certifications, licenses: guard.licenses,
             skillLevel: guard.skillLevel, experienceYears: guard.experienceYears,
             hourlyRate: guard.hourlyRate, nightHourlyRate: guard.nightHourlyRate, shiftPreference: guard.shiftPreference,
-            notes: guard.notes,
+            trainingStatus: guard.trainingStatus ?? "none", notes: guard.notes,
           }}
         />
       </div>

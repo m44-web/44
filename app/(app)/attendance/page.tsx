@@ -157,25 +157,40 @@ function AdminAttendance() {
                     <span>{calcWorkedHours(record)}</span>
                   </div>
                 </div>
-                {/* GPS location info */}
+                {/* GPS location history */}
                 {(() => {
-                  const guardLocs = locations.filter((l) => l.guardId === record.guardId && l.timestamp.startsWith(selectedDate));
-                  const clockInLoc = guardLocs.find((l) => l.type === "clock_in");
-                  const clockOutLoc = guardLocs.find((l) => l.type === "clock_out");
-                  if (!clockInLoc && !clockOutLoc) return null;
+                  const guardLocs = locations
+                    .filter((l) => l.guardId === record.guardId && l.timestamp.startsWith(selectedDate))
+                    .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+                  if (guardLocs.length === 0) return null;
+                  const typeLabels: Record<string, string> = { clock_in: "上番", clock_out: "下番", manual: "手動", periodic: "定期" };
+                  const typeColors: Record<string, string> = { clock_in: "text-success", clock_out: "text-danger", manual: "text-accent", periodic: "text-text-secondary" };
                   return (
-                    <div className="flex items-center gap-3 text-[10px] text-text-secondary pt-1 border-t border-border">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-success shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
-                      {clockInLoc && (
-                        <a href={`https://www.google.com/maps?q=${clockInLoc.latitude},${clockInLoc.longitude}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
-                          上番GPS {clockInLoc.speed != null ? `(${(clockInLoc.speed * 3.6).toFixed(0)}km/h)` : ""}
-                        </a>
-                      )}
-                      {clockOutLoc && (
-                        <a href={`https://www.google.com/maps?q=${clockOutLoc.latitude},${clockOutLoc.longitude}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
-                          下番GPS {clockOutLoc.speed != null ? `(${(clockOutLoc.speed * 3.6).toFixed(0)}km/h)` : ""}
-                        </a>
-                      )}
+                    <div className="pt-1.5 border-t border-border space-y-1">
+                      <div className="flex items-center gap-1.5 text-[10px] text-text-secondary">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-success shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                        <span className="font-medium">GPS履歴 ({guardLocs.length}件)</span>
+                      </div>
+                      {guardLocs.map((loc) => {
+                        const time = new Date(loc.timestamp).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+                        return (
+                          <div key={loc.id} className="flex items-center gap-2 text-[10px] pl-4">
+                            <span className={`font-medium ${typeColors[loc.type] ?? "text-text-secondary"}`}>
+                              {typeLabels[loc.type] ?? loc.type}
+                            </span>
+                            <span className="text-text-secondary font-mono">{time}</span>
+                            {loc.speed != null && loc.speed >= 0 && (
+                              <span className={`${loc.speed * 3.6 > 60 ? "text-danger" : loc.speed * 3.6 > 5 ? "text-warning" : "text-success"}`}>
+                                {(loc.speed * 3.6).toFixed(0)}km/h
+                              </span>
+                            )}
+                            <a href={`https://www.google.com/maps?q=${loc.latitude},${loc.longitude}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline inline-flex items-center gap-0.5">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                              地図
+                            </a>
+                          </div>
+                        );
+                      })}
                     </div>
                   );
                 })()}

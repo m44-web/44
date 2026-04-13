@@ -1,8 +1,8 @@
 "use client";
 
-import type { Guard, Site, Shift, AttendanceRecord, User, EquipmentItem, EquipmentLending, DailyReport, LocationLog, ShiftRequest, ChatMessage, HandoverNote } from "./types";
+import type { Guard, Site, Shift, AttendanceRecord, User, EquipmentItem, EquipmentLending, DailyReport, LocationLog, ShiftRequest, ChatMessage, HandoverNote, InterviewCandidate } from "./types";
 
-const DATA_VERSION = "6";
+const DATA_VERSION = "7";
 
 const STORAGE_KEYS = {
   version: "lsecurity_version",
@@ -19,6 +19,7 @@ const STORAGE_KEYS = {
   shiftRequests: "lsecurity_shift_requests",
   chat: "lsecurity_chat",
   handover: "lsecurity_handover",
+  interviews: "lsecurity_interviews",
 } as const;
 
 function generateId(): string {
@@ -53,35 +54,35 @@ const SEED_GUARDS: Guard[] = [
     email: "tanaka@lsecurity.jp", certifications: ["施設警備業務検定2級", "交通誘導警備業務検定2級"],
     licenses: ["普通自動車免許", "救急救命講習修了"], skillLevel: "advanced", experienceYears: 8,
     hourlyRate: 1200, nightHourlyRate: 1500, shiftPreference: "both",
-    notes: "夜勤対応可", status: "active", createdAt: "2025-01-15",
+    trainingStatus: "none", notes: "夜勤対応可", status: "active", createdAt: "2025-01-15",
   },
   {
     id: "g2", name: "鈴木 花子", nameKana: "スズキ ハナコ", phone: "090-2345-6789",
     email: "suzuki@lsecurity.jp", certifications: ["施設警備業務検定1級"],
     licenses: ["普通自動車免許", "防火管理者", "上級救命講習修了"], skillLevel: "expert", experienceYears: 15,
     hourlyRate: 1500, nightHourlyRate: 1875, shiftPreference: "both",
-    notes: "指導員としても活動", status: "active", createdAt: "2025-02-01",
+    trainingStatus: "none", notes: "指導員としても活動", status: "active", createdAt: "2025-02-01",
   },
   {
     id: "g3", name: "佐藤 次郎", nameKana: "サトウ ジロウ", phone: "090-3456-7890",
     email: "sato@lsecurity.jp", certifications: ["交通誘導警備業務検定1級", "雑踏警備業務検定2級"],
     licenses: ["普通自動車免許", "中型自動車免許"], skillLevel: "advanced", experienceYears: 5,
     hourlyRate: 1200, nightHourlyRate: 1500, shiftPreference: "day_only",
-    notes: "", status: "active", createdAt: "2025-03-10",
+    trainingStatus: "ongoing", notes: "現任教育受講中", status: "active", createdAt: "2025-03-10",
   },
   {
     id: "g4", name: "高橋 美咲", nameKana: "タカハシ ミサキ", phone: "090-4567-8901",
     email: "takahashi@lsecurity.jp", certifications: ["施設警備業務検定2級"],
     licenses: ["普通自動車免許"], skillLevel: "intermediate", experienceYears: 2,
     hourlyRate: 1100, nightHourlyRate: 1375, shiftPreference: "day_only",
-    notes: "", status: "active", createdAt: "2025-04-01",
+    trainingStatus: "none", notes: "", status: "active", createdAt: "2025-04-01",
   },
   {
     id: "g5", name: "渡辺 健一", nameKana: "ワタナベ ケンイチ", phone: "090-5678-9012",
     email: "watanabe@lsecurity.jp", certifications: [],
     licenses: [], skillLevel: "beginner", experienceYears: 0,
     hourlyRate: 1000, nightHourlyRate: 1250, shiftPreference: "any",
-    notes: "研修中", status: "inactive", createdAt: "2024-11-20",
+    trainingStatus: "new_hire", notes: "新任教育受講中", status: "active", createdAt: "2024-11-20",
   },
 ];
 
@@ -202,6 +203,13 @@ const SEED_HANDOVER: HandoverNote[] = [
   { id: "h2", siteId: "s2", guardId: "g3", guardName: "佐藤 次郎", date: daysFromNow(-1), content: "午後から大型車両搬入3回あり。明日も同様の予定。歩行者誘導のポイントは北側交差点。", createdAt: daysFromNow(-1) + "T17:00:00" },
 ];
 
+const SEED_INTERVIEWS: InterviewCandidate[] = [
+  { id: "iv1", name: "山田 一郎", nameKana: "ヤマダ イチロウ", phone: "090-6789-0123", email: "yamada@example.com", interviewDate: daysFromNow(2), interviewTime: "10:00", status: "scheduled", notes: "警備経験3年。交通誘導希望。", createdAt: todayStr() },
+  { id: "iv2", name: "中村 真理", nameKana: "ナカムラ マリ", phone: "090-7890-1234", email: "nakamura@example.com", interviewDate: daysFromNow(3), interviewTime: "14:00", status: "scheduled", notes: "未経験。施設警備希望。", createdAt: todayStr() },
+  { id: "iv3", name: "小林 大輔", nameKana: "コバヤシ ダイスケ", phone: "090-8901-2345", email: "kobayashi@example.com", interviewDate: daysFromNow(-2), interviewTime: "11:00", status: "hired", notes: "前職は警備会社。即戦力。", createdAt: daysFromNow(-5) },
+  { id: "iv4", name: "加藤 裕子", nameKana: "カトウ ユウコ", phone: "090-9012-3456", email: "kato@example.com", interviewDate: daysFromNow(5), interviewTime: "15:00", status: "scheduled", notes: "パート希望。日勤のみ。", createdAt: todayStr() },
+];
+
 function seedAll(): void {
   setItem(STORAGE_KEYS.users, SEED_USERS);
   setItem(STORAGE_KEYS.guards, SEED_GUARDS);
@@ -214,6 +222,7 @@ function seedAll(): void {
   setItem(STORAGE_KEYS.shiftRequests, SEED_SHIFT_REQUESTS);
   setItem(STORAGE_KEYS.chat, SEED_CHAT);
   setItem(STORAGE_KEYS.handover, SEED_HANDOVER);
+  setItem(STORAGE_KEYS.interviews, SEED_INTERVIEWS);
   localStorage.setItem(STORAGE_KEYS.version, DATA_VERSION);
 }
 
@@ -511,4 +520,20 @@ export function addHandoverNote(note: Omit<HandoverNote, "id" | "createdAt">): H
 // --- Location history for a guard ---
 export function getLocationsByGuard(guardId: string): LocationLog[] {
   return getLocations().filter((l) => l.guardId === guardId).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+}
+
+// --- Interview Candidates ---
+export function getInterviews(): InterviewCandidate[] {
+  return getItem<InterviewCandidate[]>(STORAGE_KEYS.interviews, []);
+}
+export function addInterview(interview: Omit<InterviewCandidate, "id" | "createdAt">): InterviewCandidate {
+  const interviews = getInterviews();
+  const newInterview: InterviewCandidate = { ...interview, id: generateId(), createdAt: todayStr() };
+  interviews.push(newInterview);
+  setItem(STORAGE_KEYS.interviews, interviews);
+  return newInterview;
+}
+export function updateInterview(id: string, updates: Partial<InterviewCandidate>): void {
+  const interviews = getInterviews().map((i) => (i.id === id ? { ...i, ...updates } : i));
+  setItem(STORAGE_KEYS.interviews, interviews);
 }

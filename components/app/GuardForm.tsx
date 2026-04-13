@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { CERTIFICATION_OPTIONS, LICENSE_OPTIONS, SKILL_LEVEL_LABELS, SHIFT_PREFERENCE_LABELS } from "@/lib/types";
-import type { SkillLevel, ShiftPreference } from "@/lib/types";
+import { CERTIFICATION_OPTIONS, LICENSE_OPTIONS, SKILL_LEVEL_LABELS, SHIFT_PREFERENCE_LABELS, TRAINING_STATUS_LABELS } from "@/lib/types";
+import type { SkillLevel, ShiftPreference, TrainingStatus } from "@/lib/types";
 
 export type GuardFormValues = {
   name: string;
@@ -16,6 +16,7 @@ export type GuardFormValues = {
   hourlyRate: number;
   nightHourlyRate: number;
   shiftPreference: ShiftPreference;
+  trainingStatus: TrainingStatus;
   notes: string;
 };
 
@@ -40,6 +41,7 @@ export function GuardForm({ onSubmit, defaultValues }: GuardFormProps) {
   const [hourlyRate, setHourlyRate] = useState(defaultValues?.hourlyRate ?? 1000);
   const [nightHourlyRate, setNightHourlyRate] = useState(defaultValues?.nightHourlyRate ?? 1250);
   const [shiftPreference, setShiftPreference] = useState<ShiftPreference>(defaultValues?.shiftPreference ?? "any");
+  const [trainingStatus, setTrainingStatus] = useState<TrainingStatus>(defaultValues?.trainingStatus ?? "none");
   const [notes, setNotes] = useState(defaultValues?.notes ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -56,7 +58,7 @@ export function GuardForm({ onSubmit, defaultValues }: GuardFormProps) {
     }
     onSubmit({
       name: name.trim(), nameKana: nameKana.trim(), phone: phone.trim(), email: email.trim(),
-      certifications: certs, licenses, skillLevel, experienceYears, hourlyRate, nightHourlyRate, shiftPreference, notes: notes.trim(),
+      certifications: certs, licenses, skillLevel, experienceYears, hourlyRate, nightHourlyRate, shiftPreference, trainingStatus, notes: notes.trim(),
     });
   }
 
@@ -128,6 +130,16 @@ export function GuardForm({ onSubmit, defaultValues }: GuardFormProps) {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Training status */}
+      <div>
+        <label htmlFor="trainingStatus" className={labelClasses}>研修・教育状態</label>
+        <select id="trainingStatus" value={trainingStatus} onChange={(e) => setTrainingStatus(e.target.value as TrainingStatus)} className={`${inputClasses} appearance-none cursor-pointer`}>
+          {(Object.entries(TRAINING_STATUS_LABELS) as [TrainingStatus, string][]).map(([key, label]) => (
+            <option key={key} value={key}>{label}</option>
+          ))}
+        </select>
       </div>
 
       {/* Hourly rates */}
