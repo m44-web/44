@@ -6891,6 +6891,176 @@ window.importBackupJSON = function(){
   setTimeout(function(){if(shouldShow())showReport();},4000);
 })();
 
+/* ── 40. マイタスク (自分の担当のみ) トグル ── */
+(function(){
+  var MYK='crm-only-mine';
+  var onlyMine=false;
+  try{onlyMine=localStorage.getItem(MYK)==='1';}catch(e){}
+
+  /* vd()をラップして自分の担当のみに絞る */
+  var _origVd=window.vd;
+  window.vd=function(){
+    var all=_origVd();
+    if(!onlyMine)return all;
+    var me=(typeof getCurrentUser==='function')?getCurrentUser():'';
+    if(!me)return all;
+    var meNorm=(typeof normName==='function')?normName(me):me.replace(/\s/g,'').toLowerCase();
+    return all.filter(function(r){
+      var a=(typeof normName==='function')?normName(r[7]||''):(r[7]||'').replace(/\s/g,'').toLowerCase();
+      var c=(typeof normName==='function')?normName(r[16]||''):(r[16]||'').replace(/\s/g,'').toLowerCase();
+      return a===meNorm||c===meNorm;
+    });
+  };
+
+  /* ヘッダーにトグルボタン */
+  setTimeout(function(){
+    var sr=document.getElementById('searchrow');
+    if(!sr||document.getElementById('ux-only-mine'))return;
+    var btn=document.createElement('button');btn.id='ux-only-mine';btn.type='button';
+    btn.textContent=onlyMine?'\uD83D\uDC64 \u81EA\u5206':'\uD83D\uDC65 \u5168\u54E1';
+    btn.style.cssText='font-size:11px;padding:4px 10px;border:1.5px solid '+(onlyMine?'#1a56db':'#e9e9e7')+';border-radius:6px;color:'+(onlyMine?'#fff':'#37352f')+';background:'+(onlyMine?'#1a56db':'#fff')+';font-family:inherit;cursor:pointer;flex-shrink:0;font-weight:'+(onlyMine?700:500);
+    btn.addEventListener('click',function(){
+      onlyMine=!onlyMine;
+      try{localStorage.setItem(MYK,onlyMine?'1':'0');}catch(e){}
+      btn.textContent=onlyMine?'\uD83D\uDC64 \u81EA\u5206':'\uD83D\uDC65 \u5168\u54E1';
+      btn.style.borderColor=onlyMine?'#1a56db':'#e9e9e7';
+      btn.style.background=onlyMine?'#1a56db':'#fff';
+      btn.style.color=onlyMine?'#fff':'#37352f';
+      btn.style.fontWeight=onlyMine?700:500;
+      if(typeof render==='function')render();
+      if(typeof renderChips==='function')renderChips();
+      if(typeof showToast==='function')showToast(onlyMine?'\uD83D\uDC64 \u81EA\u5206\u306E\u6848\u4EF6\u306E\u307F':'\uD83D\uDC65 \u5168\u54E1\u306E\u6848\u4EF6');
+    });
+    sr.insertBefore(btn,sr.firstChild);
+  },1800);
+})();
+
+/* ── 41. 優先度スター (★1〜3) ── */
+(function(){
+  var PRK='crm-priority';
+  function getP(){try{return JSON.parse(localStorage.getItem(PRK)||'{}');}catch(e){return {};}}
+  function saveP(p){try{localStorage.setItem(PRK,JSON.stringify(p));}catch(e){}}
+  window._crmPriority=getP();
+
+  window.setPriority=function(rid,level){
+    var p=window._crmPriority||{};
+    if(level<=0)delete p[rid];
+    else p[rid]=level;
+    window._crmPriority=p;saveP(p);
+    if(typeof render==='function')render();
+  };
+
+  /* sortRecordsをラップ: 優先度降順を先頭に */
+  var _origSort=window.sortRecords;
+  window.sortRecords=function(arr){
+    var sorted=_origSort(arr);
+    var p=window._crmPriority||{};
+    /* 優先度3→2→1→無 の順序 */
+    return sorted.slice().sort(function(a,b){
+      var pa=p[a[0]]||0,pb=p[b[0]]||0;
+      return pb-pa;
+    });
+  };
+
+  /* cardHTML にスター追加 — 既存の cardHTML をラップ */
+  /* cardHTML は feature 10 のクロージャ内にあるのでアクセス不可。
+     代わりに render 後に DOM 操作で挿入 */
+  var _origRender=window.render;
+  window.render=function(){
+    var r=_origRender();
+    requestAnimationFrame(function(){
+      var p=window._crmPriority||{};
+      var cards=document.querySelectorAll('.card[data-rid]');
+      for(var i=0;i<cards.length;i++){
+        var rid=parseInt(cards[i].getAttribute('data-rid'));
+        var level=p[rid]||0;
+        if(level===0)continue;
+        if(cards[i].querySelector('.ux-priority'))continue;
+        var stars=document.createElement('span');
+        stars.className='ux-priority';
+        stars.textContent='\u2605'.repeat(level);
+        stars.style.cssText='position:absolute;bottom:4px;right:6px;font-size:11px;color:#f59e0b;letter-spacing:-1px;pointer-events:none;z-index:2';
+        cards[i].style.position='relative';
+        cards[i].appendChild(stars);
+      }
+    });
+    return r;
+  };
+
+  /* 詳細パネルに優先度設定ボタン */
+  var _origOpenPnl=window.openPanel;
+  window.openPanel=function(id){
+    _origOpenPnl(id);
+    setTimeout(function(){
+      var pnlbdg=document.getElementById('pnlbdg');if(!pnlbdg)return;
+      if(document.getElementById('ux-pri-row'))return;
+      var row=document.createElement('div');row.id='ux-pri-row';
+      row.style.cssText='margin-top:8px;display:flex;align-items:center;gap:6px';
+      var lbl=document.createElement('span');lbl.textContent='\u512A\u5148\u5EA6:';lbl.style.cssText='font-size:11px;color:#9b9a97;margin-right:2px';
+      row.appendChild(lbl);
+      var cur=(window._crmPriority||{})[id]||0;
+      [0,1,2,3].forEach(function(n){
+        var b=document.createElement('button');b.type='button';
+        b.textContent=n===0?'\u2205':'\u2605'.repeat(n);
+        var isCur=(n===cur);
+        b.style.cssText='padding:4px 10px;border:1.5px solid '+(isCur?'#f59e0b':'#e9e9e7')+';border-radius:6px;background:'+(isCur?'#fffbeb':'#fff')+';color:'+(n===0?'#9b9a97':'#f59e0b')+';font-size:12px;cursor:pointer;font-family:inherit;letter-spacing:-1px;font-weight:'+(isCur?700:500);
+        b.addEventListener('click',function(){setPriority(id,n);closePanel();});
+        row.appendChild(b);
+      });
+      pnlbdg.appendChild(row);
+    },100);
+  };
+})();
+
+/* ── 42. ヘッダータップで今日の成績クイック表示 ── */
+(function(){
+  var tot=document.getElementById('total');
+  if(!tot)return;
+  tot.style.cursor='pointer';
+  tot.title='\u30BF\u30C3\u30D7\u3067\u4ECA\u65E5\u306E\u7D71\u8A08';
+  var pop=null;
+
+  tot.addEventListener('click',function(e){
+    e.stopPropagation();
+    if(pop){pop.remove();pop=null;return;}
+    var d=window.D||[],del=window.deletedIds||{};
+    var today=new Date().toISOString().slice(0,10);
+    var todayAp=0,todayWon=0,todayEdit=0,thisMonth=0,thisMonthWon=0;
+    var month=today.slice(0,7);
+    d.forEach(function(r){
+      if(del[r[0]])return;
+      if(r[6]===today)todayAp++;
+      if(r[18]===today)todayWon++;
+      if((r[6]||'').slice(0,7)===month)thisMonth++;
+      if((r[18]||'').slice(0,7)===month)thisMonthWon++;
+    });
+    /* editLog から今日の編集件数 */
+    var log=window.editLog||{};
+    Object.keys(log).forEach(function(k){
+      (log[k]||[]).forEach(function(e){
+        if(e.ts&&e.ts.slice(0,10)===today)todayEdit++;
+      });
+    });
+
+    pop=document.createElement('div');
+    pop.style.cssText='position:fixed;top:120px;left:16px;right:16px;background:#fff;border-radius:12px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,0.2);z-index:90;font-family:inherit;border:1px solid #e9e9e7;animation:snackSlide 0.2s';
+    pop.innerHTML='<div style="font-size:11px;font-weight:800;color:#a0aec0;margin-bottom:10px">\uD83D\uDCC5 \u4ECA\u65E5 \u30FB '+today+'</div>'+
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">'+
+        '<div style="background:#ebf5ff;border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:#2b6cb0">\u4ECA\u65E5AP</div><div style="font-size:20px;font-weight:800;color:#2b6cb0">'+todayAp+'</div></div>'+
+        '<div style="background:#f0fdf4;border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:#276749">\u4ECA\u65E5\u6210\u7D04</div><div style="font-size:20px;font-weight:800;color:#276749">'+todayWon+'</div></div>'+
+        '<div style="background:#faf5ff;border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:#6b46c1">\u4ECA\u65E5\u7DE8\u96C6</div><div style="font-size:20px;font-weight:800;color:#6b46c1">'+todayEdit+'</div></div>'+
+      '</div>'+
+      '<div style="font-size:11px;font-weight:800;color:#a0aec0;margin-bottom:6px">\u4ECA\u6708\u7D2F\u8A08</div>'+
+      '<div style="display:flex;gap:12px;font-size:12px"><div>AP: <b>'+thisMonth+'</b></div><div>\u6210\u7D04: <b style="color:#276749">'+thisMonthWon+'</b></div></div>';
+    document.body.appendChild(pop);
+    setTimeout(function(){
+      document.addEventListener('click',function cls(ev){
+        if(pop&&!pop.contains(ev.target)&&ev.target!==tot){pop.remove();pop=null;document.removeEventListener('click',cls);}
+      });
+    },50);
+  });
+})();
+
 })();
 </script>
 </body>
