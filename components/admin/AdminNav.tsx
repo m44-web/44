@@ -11,6 +11,7 @@ const navItems = [
   { href: "/admin", label: "ダッシュボード", exact: true },
   { href: "/admin/employees", label: "従業員" },
   { href: "/admin/shifts", label: "シフト履歴" },
+  { href: "/admin/reports", label: "レポート" },
   { href: "/admin/geofences", label: "エリア" },
   { href: "/admin/audit", label: "監査ログ" },
 ];

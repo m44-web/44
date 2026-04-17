@@ -52,6 +52,7 @@ export function CommandPalette() {
           d: "/admin",
           e: "/admin/employees",
           s: "/admin/shifts",
+          r: "/admin/reports",
           a: "/admin/audit",
           f: "/admin/geofences",
         };
@@ -95,6 +96,7 @@ export function CommandPalette() {
     { label: "ダッシュボード", href: "/admin", hint: "" },
     { label: "従業員管理", href: "/admin/employees", hint: "" },
     { label: "シフト履歴", href: "/admin/shifts", hint: "" },
+    { label: "日次レポート", href: "/admin/reports", hint: "" },
     { label: "エリア管理", href: "/admin/geofences", hint: "" },
     { label: "監査ログ", href: "/admin/audit", hint: "" },
     { label: "設定", href: "/settings", hint: "" },
