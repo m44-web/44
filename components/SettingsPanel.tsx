@@ -65,7 +65,7 @@ export function SettingsPanel({
   const [gpsIntervalSec, setGpsIntervalSec] = useState(30);
   const [prefsSaved, setPrefsSaved] = useState(false);
   const [cleanupInfo, setCleanupInfo] = useState<{
-    deletableRecords: { gps: number; audit: number; audio: number };
+    deletableRecords: { gps: number; audit: number; audio: number; sessions?: number };
     retentionDays: { gps: number; audit: number; audio: number };
   } | null>(null);
   const [cleanupResult, setCleanupResult] = useState<string | null>(null);
@@ -314,7 +314,7 @@ export function SettingsPanel({
             <p className="text-xs text-text-muted mb-4">
               保持期間を超えた古いデータを削除できます。
             </p>
-            <div className="grid grid-cols-3 gap-3 text-sm mb-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm mb-4">
               <div className="bg-white/5 rounded-lg p-3">
                 <p className="text-xs text-text-muted">GPSログ</p>
                 <p className="font-bold">{cleanupInfo.deletableRecords.gps}件</p>
@@ -329,6 +329,10 @@ export function SettingsPanel({
                 <p className="text-xs text-text-muted">音声録音</p>
                 <p className="font-bold">{cleanupInfo.deletableRecords.audio}件</p>
                 <p className="text-[10px] text-text-muted">{cleanupInfo.retentionDays.audio}日以上前</p>
+              </div>
+              <div className="bg-white/5 rounded-lg p-3">
+                <p className="text-xs text-text-muted">期限切れセッション</p>
+                <p className="font-bold">{cleanupInfo.deletableRecords.sessions ?? 0}件</p>
               </div>
             </div>
             {cleanupResult && (

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { gpsLogs, auditLogs, audioRecordings } from "@/lib/db/schema";
+import { gpsLogs, auditLogs, audioRecordings, sessions } from "@/lib/db/schema";
 import { lt } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 import { audit } from "@/lib/audit";
@@ -61,11 +61,16 @@ export async function POST(request: NextRequest) {
     .where(lt(audioRecordings.recordedAt, audioCutoff))
     .run();
 
+  const sessionsDeleted = db
+    .delete(sessions)
+    .where(lt(sessions.expiresAt, new Date()))
+    .run();
+
   audit({
     actorId: session.userId,
     actorName: session.userName,
     action: "data_cleanup",
-    detail: `GPS: ${gpsDeleted.changes}件, 監査: ${auditDeleted.changes}件, 音声: ${audioDeleted.changes}件(ファイル ${audioFilesDeleted}件)`,
+    detail: `GPS: ${gpsDeleted.changes}件, 監査: ${auditDeleted.changes}件, 音声: ${audioDeleted.changes}件(ファイル ${audioFilesDeleted}件), セッション: ${sessionsDeleted.changes}件`,
   });
 
   return NextResponse.json({
@@ -73,6 +78,7 @@ export async function POST(request: NextRequest) {
     auditDeleted: auditDeleted.changes,
     audioDeleted: audioDeleted.changes,
     audioFilesDeleted,
+    sessionsDeleted: sessionsDeleted.changes,
     retentionDays: { gpsDays, auditDays, audioDays },
   });
 }
@@ -91,9 +97,10 @@ export async function GET() {
   const gpsOld = db.select().from(gpsLogs).where(lt(gpsLogs.recordedAt, gpsCutoff)).all().length;
   const auditOld = db.select().from(auditLogs).where(lt(auditLogs.createdAt, auditCutoff)).all().length;
   const audioOld = db.select().from(audioRecordings).where(lt(audioRecordings.recordedAt, audioCutoff)).all().length;
+  const expiredSessions = db.select().from(sessions).where(lt(sessions.expiresAt, new Date())).all().length;
 
   return NextResponse.json({
-    deletableRecords: { gps: gpsOld, audit: auditOld, audio: audioOld },
+    deletableRecords: { gps: gpsOld, audit: auditOld, audio: audioOld, sessions: expiredSessions },
     retentionDays: {
       gps: DEFAULT_GPS_RETENTION_DAYS,
       audit: DEFAULT_AUDIT_RETENTION_DAYS,
