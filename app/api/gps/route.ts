@@ -1,10 +1,31 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { gpsLogs } from "@/lib/db/schema";
+import { gpsLogs, geofences } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
 import { gpsLogSchema } from "@/lib/validations";
 import { emitEvent } from "@/lib/event-bus";
 import { checkRateLimit } from "@/lib/rate-limit";
+
+function haversineM(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371e3;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+let cachedFences: Array<{ id: string; name: string; latitude: number; longitude: number; radiusM: number; type: string }> | null = null;
+let fencesCachedAt = 0;
+
+function getGeofences() {
+  if (cachedFences && Date.now() - fencesCachedAt < 60_000) return cachedFences;
+  cachedFences = db.select().from(geofences).all();
+  fencesCachedAt = Date.now();
+  return cachedFences;
+}
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -59,6 +80,27 @@ export async function POST(request: Request) {
       latitude,
       longitude,
     });
+
+    const fences = getGeofences();
+    for (const fence of fences) {
+      const dist = haversineM(latitude, longitude, fence.latitude, fence.longitude);
+      const inside = dist <= fence.radiusM;
+      if (fence.type === "forbidden" && inside) {
+        emitEvent({
+          type: "geofence_alert",
+          userId: session.userId,
+          userName: session.userName,
+          message: `${fence.name}（禁止エリア）に進入しました`,
+        });
+      } else if (fence.type === "allowed" && !inside) {
+        emitEvent({
+          type: "geofence_alert",
+          userId: session.userId,
+          userName: session.userName,
+          message: `${fence.name}（許可エリア）から離脱しました`,
+        });
+      }
+    }
 
     return NextResponse.json({ ok: true, lowAccuracy: accuracy ? accuracy > 100 : false });
   } catch {
