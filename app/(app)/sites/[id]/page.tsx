@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { getSite, updateSite } from "@/lib/store";
+import { getSite, updateSite, getShifts, getGuards, getAttendance } from "@/lib/store";
 import { SiteForm, type SiteFormValues } from "@/components/app/SiteForm";
 import { BackButton } from "@/components/ui/BackButton";
-import type { Site } from "@/lib/types";
+import { Avatar } from "@/components/ui/Avatar";
+import { Card } from "@/components/ui/Card";
+import type { Site, Shift, Guard, AttendanceRecord } from "@/lib/types";
 
 export default function SiteDetailPage() {
   const router = useRouter();
@@ -52,6 +54,9 @@ export default function SiteDetailPage() {
         </button>
       </div>
 
+      {/* Today's guards at this site */}
+      <TodayStaffCard siteId={id} />
+
       {/* Quick actions */}
       {site.address && (
         <div className="flex flex-wrap gap-2">
@@ -90,6 +95,59 @@ export default function SiteDetailPage() {
           notes: site.notes,
         }}
       />
+    </div>
+  );
+}
+
+function TodayStaffCard({ siteId }: { siteId: string }) {
+  const [today] = useState(() => new Date().toISOString().split("T")[0]);
+  const [shifts, setShifts] = useState<Shift[]>([]);
+  const [guards, setGuards] = useState<Guard[]>([]);
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+
+  useEffect(() => {
+    setShifts(getShifts().filter((s) => s.siteId === siteId && s.date === today && s.status !== "cancelled"));
+    setGuards(getGuards());
+    setAttendance(getAttendance().filter((a) => a.date === today && a.siteId === siteId));
+  }, [siteId, today]);
+
+  if (shifts.length === 0) return null;
+
+  return (
+    <div>
+      <h2 className="text-sm font-semibold text-text-secondary mb-2">本日の配置</h2>
+      <Card>
+        <div className="space-y-2">
+          {shifts.map((shift) => {
+            const g = guards.find((gg) => gg.id === shift.guardId);
+            const att = attendance.find((a) => a.shiftId === shift.id);
+            const isNight = shift.shiftType === "night";
+            return (
+              <div key={shift.id} className="flex items-center gap-3 py-1">
+                <Avatar name={g?.name ?? "?"} size="sm" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-text-primary truncate">{g?.name ?? "—"}</p>
+                  <p className="text-xs text-text-secondary font-mono">{shift.startTime}〜{shift.endTime}</p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                    isNight ? "bg-purple-500/10 text-purple-400" : "bg-warning/10 text-warning"
+                  }`}>
+                    {isNight ? "夜勤" : "日勤"}
+                  </span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                    att?.status === "on_duty" ? "bg-success/10 text-success" :
+                    att?.status === "completed" ? "bg-accent/10 text-accent" :
+                    "bg-sub-bg text-text-secondary"
+                  }`}>
+                    {att?.status === "on_duty" ? "勤務中" : att?.status === "completed" ? "完了" : "未出勤"}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
     </div>
   );
 }
