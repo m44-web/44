@@ -23,6 +23,7 @@ export function EmployeeManagement() {
   const [serverError, setServerError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [showDeactivated, setShowDeactivated] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const {
     register,
@@ -95,9 +96,15 @@ export function EmployeeManagement() {
     window.location.href = "/";
   };
 
-  const visible = employees.filter((e) =>
-    showDeactivated ? true : !e.deactivatedAt
-  );
+  const query = searchQuery.trim().toLowerCase();
+  const visible = employees
+    .filter((e) => (showDeactivated ? true : !e.deactivatedAt))
+    .filter((e) =>
+      query === ""
+        ? true
+        : e.name.toLowerCase().includes(query) ||
+          e.email.toLowerCase().includes(query)
+    );
 
   return (
     <div className="min-h-screen">
@@ -197,19 +204,28 @@ export function EmployeeManagement() {
 
         {/* Employee List */}
         <Card>
-          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
             <h2 className="font-semibold">
               登録済み従業員 ({visible.length}名)
             </h2>
-            <label className="flex items-center gap-2 text-xs text-text-muted cursor-pointer select-none">
+            <div className="flex items-center gap-3 flex-wrap">
               <input
-                type="checkbox"
-                checked={showDeactivated}
-                onChange={(e) => setShowDeactivated(e.target.checked)}
-                className="accent-primary"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="名前 / メールで検索"
+                className="px-3 py-1.5 bg-surface-light border border-white/10 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
-              無効化済みを表示
-            </label>
+              <label className="flex items-center gap-2 text-xs text-text-muted cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={showDeactivated}
+                  onChange={(e) => setShowDeactivated(e.target.checked)}
+                  className="accent-primary"
+                />
+                無効化済みを表示
+              </label>
+            </div>
           </div>
           {visible.length === 0 ? (
             <p className="text-text-muted text-sm">従業員はまだ登録されていません</p>

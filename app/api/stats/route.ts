@@ -65,6 +65,26 @@ export async function GET() {
   // Unique active users this week
   const weekUniqueUsers = new Set(weekShifts.map((s) => s.userId)).size;
 
+  // 7-day trend: worked hours per day, last 7 days (including today)
+  const trend: Array<{ date: string; workedMs: number; shifts: number }> = [];
+  for (let i = 6; i >= 0; i--) {
+    const dayStart = new Date(new Date().setHours(0, 0, 0, 0) - i * 24 * 3600 * 1000);
+    const dayEnd = new Date(dayStart.getTime() + 24 * 3600 * 1000);
+    const dayShifts = weekShifts.filter(
+      (s) => s.startedAt >= dayStart && s.startedAt < dayEnd
+    );
+    let ms = 0;
+    for (const s of dayShifts) {
+      const end = s.endedAt?.getTime() ?? now;
+      ms += end - s.startedAt.getTime();
+    }
+    trend.push({
+      date: dayStart.toISOString().slice(0, 10),
+      workedMs: ms,
+      shifts: dayShifts.length,
+    });
+  }
+
   return NextResponse.json({
     totalEmployees,
     activeNow,
@@ -75,5 +95,6 @@ export async function GET() {
     weekShifts: weekShifts.length,
     weekWorkedMs,
     weekUniqueUsers,
+    trend,
   });
 }

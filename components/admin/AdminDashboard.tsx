@@ -9,6 +9,7 @@ import { AudioPanel } from "./AudioPanel";
 import { StatsBar } from "./StatsBar";
 import { Toasts } from "./Toasts";
 import { AlertWatcher } from "./AlertWatcher";
+import { CommandPalette } from "./CommandPalette";
 import Link from "next/link";
 
 function ConnectionBadge() {
@@ -80,6 +81,7 @@ function DashboardContent({ userName }: { userName: string }) {
         </div>
       </Container>
       <Toasts />
+      <CommandPalette />
     </div>
   );
 }

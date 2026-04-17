@@ -52,6 +52,7 @@ export function EmployeeDetail({ userId }: { userId: string }) {
   const [data, setData] = useState<EmployeeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [dateRange, setDateRange] = useState<"7" | "30" | "all">("30");
 
   const fetchData = useCallback(async () => {
     try {
@@ -176,10 +177,45 @@ export function EmployeeDetail({ userId }: { userId: string }) {
 
         {/* Shift history */}
         <Card>
-          <h3 className="font-semibold mb-4">シフト履歴</h3>
-          {shifts.length === 0 ? (
-            <p className="text-text-muted text-sm">シフト履歴はありません</p>
-          ) : (
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+            <h3 className="font-semibold">シフト履歴</h3>
+            <div className="flex items-center gap-2">
+              <div className="flex rounded-lg overflow-hidden border border-white/10 text-xs">
+                {(["7", "30", "all"] as const).map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => setDateRange(range)}
+                    className={`px-3 py-1.5 transition-colors ${
+                      dateRange === range
+                        ? "bg-primary text-white"
+                        : "bg-white/5 text-text-muted hover:bg-white/10"
+                    }`}
+                  >
+                    {range === "7" ? "7日" : range === "30" ? "30日" : "全期間"}
+                  </button>
+                ))}
+              </div>
+              <a
+                href={`/api/export?type=shifts&userId=${user.id}&days=${dateRange === "all" ? 3650 : dateRange}`}
+                className="text-xs px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted"
+              >
+                CSV
+              </a>
+            </div>
+          </div>
+          {(() => {
+            const cutoff =
+              dateRange === "all"
+                ? 0
+                : Date.now() - parseInt(dateRange, 10) * 24 * 3600 * 1000;
+            const filtered = shifts.filter((s) => s.startedAt >= cutoff);
+            if (filtered.length === 0)
+              return (
+                <p className="text-text-muted text-sm">
+                  シフト履歴はありません
+                </p>
+              );
+            return (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -191,7 +227,7 @@ export function EmployeeDetail({ userId }: { userId: string }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {shifts.map((shift) => (
+                  {filtered.map((shift) => (
                     <tr key={shift.id} className="hover:bg-white/5">
                       <td className="py-3">{formatDateTime(shift.startedAt)}</td>
                       <td className="py-3">
@@ -217,7 +253,8 @@ export function EmployeeDetail({ userId }: { userId: string }) {
                 </tbody>
               </table>
             </div>
-          )}
+            );
+          })()}
         </Card>
       </Container>
     </div>
