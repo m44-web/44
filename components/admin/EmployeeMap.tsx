@@ -79,6 +79,10 @@ const Popup = dynamic(
   () => import("react-leaflet").then((m) => m.Popup),
   { ssr: false }
 );
+const Tooltip = dynamic(
+  () => import("react-leaflet").then((m) => m.Tooltip),
+  { ssr: false }
+);
 
 function formatTime(ts: number) {
   return new Date(ts).toLocaleTimeString("ja-JP");
@@ -220,6 +224,14 @@ export function EmployeeMap() {
                     fillOpacity: 0.9,
                   }}
                 >
+                  <Tooltip
+                    permanent
+                    direction="top"
+                    offset={[0, -8]}
+                    className="employee-map-label"
+                  >
+                    {loc.userName}
+                  </Tooltip>
                   <Popup>
                     <div className="text-sm">
                       <strong>{loc.userName}</strong>

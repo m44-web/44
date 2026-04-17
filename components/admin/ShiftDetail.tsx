@@ -15,6 +15,7 @@ interface ShiftData {
     userEmail: string;
     startedAt: number;
     endedAt: number | null;
+    adminNote: string | null;
   };
   gps: Array<{ lat: number; lng: number; accuracy: number | null; at: number }>;
   recordings: Array<{ id: string; durationSec: number | null; recordedAt: number }>;
@@ -65,6 +66,9 @@ export function ShiftDetail({ shiftId }: { shiftId: string }) {
   const [playing, setPlaying] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [ending, setEnding] = useState(false);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [noteSaved, setNoteSaved] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -74,14 +78,33 @@ export function ShiftDetail({ shiftId }: { shiftId: string }) {
         setError(json.error ?? "取得に失敗しました");
         return;
       }
-      const json = await res.json();
+      const json: ShiftData = await res.json();
       setData(json);
+      setNoteDraft(json.shift.adminNote ?? "");
     } catch {
       setError("通信エラー");
     } finally {
       setLoading(false);
     }
   }, [shiftId]);
+
+  const saveNote = async () => {
+    setNoteSaving(true);
+    setNoteSaved(false);
+    try {
+      const res = await fetch(`/api/shifts/${shiftId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminNote: noteDraft }),
+      });
+      if (res.ok) {
+        setNoteSaved(true);
+        setTimeout(() => setNoteSaved(false), 2000);
+      }
+    } finally {
+      setNoteSaving(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -286,6 +309,37 @@ export function ShiftDetail({ shiftId }: { shiftId: string }) {
                 GPS記録がありません
               </div>
             )}
+          </div>
+        </Card>
+
+        {/* Admin Note */}
+        <Card>
+          <h3 className="font-semibold mb-3">管理者メモ</h3>
+          <textarea
+            value={noteDraft}
+            onChange={(e) => setNoteDraft(e.target.value)}
+            rows={4}
+            maxLength={2000}
+            placeholder="このシフトに関するメモを記入..."
+            className="w-full px-3 py-2 bg-surface-light border border-white/10 rounded-lg text-text placeholder-text-muted text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-y"
+          />
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-xs text-text-muted">
+              {noteDraft.length}/2000
+            </span>
+            <div className="flex items-center gap-3">
+              {noteSaved && (
+                <span className="text-xs text-success">保存しました</span>
+              )}
+              <Button
+                onClick={saveNote}
+                loading={noteSaving}
+                variant="primary"
+                className="text-sm"
+              >
+                保存
+              </Button>
+            </div>
           </div>
         </Card>
 

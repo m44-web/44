@@ -30,6 +30,21 @@ export function ShiftController({ userName }: { userName: string }) {
     Array<{ shiftId: string; latitude: number; longitude: number; accuracy?: number; at: number }>
   >([]);
   const [queuedCount, setQueuedCount] = useState(0);
+  const [myStats, setMyStats] = useState<{
+    todayShifts: Array<{ id: string; startedAt: number; endedAt: number | null }>;
+    todayWorkedMs: number;
+    weekWorkedMs: number;
+    weekShiftsCount: number;
+  } | null>(null);
+
+  const fetchMyStats = useCallback(async () => {
+    try {
+      const res = await fetch("/api/my");
+      if (res.ok) setMyStats(await res.json());
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const flushQueue = useCallback(async () => {
     while (queueRef.current.length > 0) {
@@ -83,6 +98,11 @@ export function ShiftController({ userName }: { userName: string }) {
     window.addEventListener("online", onOnline);
     return () => window.removeEventListener("online", onOnline);
   }, [flushQueue]);
+
+  // Hydrate from current active shift (in case of page reload mid-shift)
+  useEffect(() => {
+    fetchMyStats();
+  }, [fetchMyStats]);
 
   const startGps = useCallback(
     (shiftId: string) => {
@@ -211,6 +231,7 @@ export function ShiftController({ userName }: { userName: string }) {
       startGps(newShift.id);
       startRecording(newShift.id);
       requestWakeLock();
+      fetchMyStats();
     } catch {
       setError("勤務開始に失敗しました");
     } finally {
@@ -235,6 +256,7 @@ export function ShiftController({ userName }: { userName: string }) {
         return;
       }
       setShift(null);
+      fetchMyStats();
     } catch {
       setError("勤務終了に失敗しました");
     } finally {
@@ -337,7 +359,47 @@ export function ShiftController({ userName }: { userName: string }) {
             勤務開始するとGPS追跡と音声録音が自動的に開始されます
           </p>
         )}
+
+        {/* My Stats */}
+        {myStats && (
+          <Card className="w-full max-w-sm">
+            <h3 className="text-sm font-medium text-text-muted mb-3">
+              勤務実績
+            </h3>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-text-muted text-xs">本日の勤務時間</p>
+                <p className="font-mono font-bold">
+                  {formatMs(myStats.todayWorkedMs)}
+                </p>
+              </div>
+              <div>
+                <p className="text-text-muted text-xs">今週の勤務時間</p>
+                <p className="font-mono font-bold">
+                  {formatMs(myStats.weekWorkedMs)}
+                </p>
+              </div>
+              <div>
+                <p className="text-text-muted text-xs">本日のシフト</p>
+                <p className="font-bold">{myStats.todayShifts.length}回</p>
+              </div>
+              <div>
+                <p className="text-text-muted text-xs">今週のシフト</p>
+                <p className="font-bold">{myStats.weekShiftsCount}回</p>
+              </div>
+            </div>
+          </Card>
+        )}
       </div>
     </div>
   );
+}
+
+function formatMs(ms: number) {
+  if (ms < 60000) return `${Math.floor(ms / 1000)}秒`;
+  const totalMin = Math.floor(ms / 60000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h === 0) return `${m}分`;
+  return `${h}時間${m}分`;
 }

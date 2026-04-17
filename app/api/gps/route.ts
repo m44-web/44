@@ -4,11 +4,21 @@ import { gpsLogs } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
 import { gpsLogSchema } from "@/lib/validations";
 import { emitEvent } from "@/lib/event-bus";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
+  }
+
+  // 20 GPS posts per minute per user (expected: 2-4 under normal usage)
+  const limit = checkRateLimit("gps", session.userId, 20, 60_000);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: "GPS送信の頻度が高すぎます" },
+      { status: 429 }
+    );
   }
 
   try {

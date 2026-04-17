@@ -8,6 +8,7 @@ import { EmployeeList } from "./EmployeeList";
 import { AudioPanel } from "./AudioPanel";
 import { StatsBar } from "./StatsBar";
 import { Toasts } from "./Toasts";
+import { AlertWatcher } from "./AlertWatcher";
 import Link from "next/link";
 
 function ConnectionBadge() {
@@ -40,9 +41,10 @@ function DashboardContent({ userName }: { userName: string }) {
     <div className="min-h-screen">
       <header className="bg-surface border-b border-white/10 sticky top-0 z-50">
         <Container className="flex items-center justify-between py-3">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 flex-wrap">
             <h1 className="font-semibold">営業監視システム</h1>
             <ConnectionBadge />
+            <AlertWatcher />
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm text-text-muted hidden sm:inline">

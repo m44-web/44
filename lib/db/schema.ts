@@ -25,6 +25,7 @@ export const shifts = sqliteTable("shifts", {
     .references(() => users.id),
   startedAt: integer("started_at", { mode: "timestamp_ms" }).notNull(),
   endedAt: integer("ended_at", { mode: "timestamp_ms" }),
+  adminNote: text("admin_note"),
 });
 
 export const gpsLogs = sqliteTable("gps_logs", {

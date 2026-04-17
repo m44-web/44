@@ -23,6 +23,7 @@ export async function GET(
       userEmail: users.email,
       startedAt: shifts.startedAt,
       endedAt: shifts.endedAt,
+      adminNote: shifts.adminNote,
     })
     .from(shifts)
     .innerJoin(users, eq(shifts.userId, users.id))
@@ -101,4 +102,30 @@ export async function DELETE(
     .run();
 
   return NextResponse.json({ ok: true });
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getSession();
+  if (!session || session.userRole !== "admin") {
+    return NextResponse.json({ error: "権限がありません" }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const body = await request.json().catch(() => ({}));
+  const note =
+    typeof body.adminNote === "string" ? body.adminNote.slice(0, 2000) : null;
+
+  const shift = db.select().from(shifts).where(eq(shifts.id, id)).get();
+  if (!shift) {
+    return NextResponse.json(
+      { error: "シフトが見つかりません" },
+      { status: 404 }
+    );
+  }
+
+  db.update(shifts).set({ adminNote: note }).where(eq(shifts.id, id)).run();
+  return NextResponse.json({ ok: true, adminNote: note });
 }

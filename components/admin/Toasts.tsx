@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRealtime } from "./RealtimeProvider";
 import { AppEvent } from "@/lib/event-bus";
 
 interface Toast {
   id: number;
-  type: AppEvent["type"];
+  type: AppEvent["type"] | "idle_alert";
   message: string;
   icon: string;
   tone: "info" | "success" | "warning";
