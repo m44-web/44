@@ -49,8 +49,8 @@ export function BenefitsSection() {
       <Container>
         <MotionWrapper>
           <SectionHeading
-            title="導入メリット"
-            subtitle="AI導入がビジネスにもたらす6つの価値"
+            title="AI社員を雇うメリット"
+            subtitle="人間の社員と比べて、こんなに違います"
           />
         </MotionWrapper>
 

@@ -3,13 +3,13 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Card } from "@/components/ui/Card";
 import { MotionWrapper } from "@/components/ui/MotionWrapper";
 
-const specs = [
-  { label: "対応AIモデル", value: "GPT-4o / Claude / Gemini 他" },
-  { label: "データ連携", value: "API / CSV / DB直接接続" },
-  { label: "セキュリティ", value: "SOC2準拠・データ暗号化" },
-  { label: "稼働率", value: "99.9% SLA保証" },
-  { label: "対応言語", value: "日本語・英語・中国語 他" },
-  { label: "サポート", value: "チャット・メール・オンライン" },
+const comparison = [
+  { label: "月額コスト", human: "10〜30万円", ai: "9,800円〜" },
+  { label: "稼働時間", human: "1日8時間", ai: "24時間365日" },
+  { label: "教育期間", human: "1〜3ヶ月", ai: "即日" },
+  { label: "退職リスク", human: "あり", ai: "なし" },
+  { label: "対応スピード", human: "数分〜数時間", ai: "数秒" },
+  { label: "同時対応数", human: "1件ずつ", ai: "無制限" },
 ];
 
 export function SignageInfo() {
@@ -18,8 +18,8 @@ export function SignageInfo() {
       <Container>
         <MotionWrapper>
           <SectionHeading
-            title="AXE AIプラットフォーム"
-            subtitle="企業のAI活用を加速するオールインワンプラットフォーム"
+            title="人間の社員 vs AI社員"
+            subtitle="コスト・稼働時間・教育すべてにおいて、AI社員が圧倒的"
           />
         </MotionWrapper>
 
@@ -27,13 +27,14 @@ export function SignageInfo() {
           <MotionWrapper delay={0.1}>
             <Card className="h-full">
               <h3 className="text-lg font-bold text-text-primary mb-4">
-                プラットフォーム概要
+                AI社員の1日
               </h3>
               <p className="text-text-secondary leading-relaxed mb-6">
-                AXE AIプラットフォームは、チャットボット・文書生成・データ分析・
-                画像生成などの機能を統合したクラウドAI基盤です。
-                ノーコードで操作でき、既存システムとのAPI連携にも対応。
-                企業規模を問わず、すぐにAI活用を始められます。
+                朝9時に「おはようございます」と出勤メッセージ。
+                今日のタスク予定と昨日の積み残しを報告。
+                会議の準備を自分で始め、終了後は議事録を作成。
+                17時に日報を自動集計してマネージャーに報告。
+                夜間も社員からの質問には即回答。
               </p>
               <div className="aspect-video rounded-lg bg-gradient-to-br from-accent/10 to-accent/5 flex items-center justify-center">
                 <div className="text-center">
@@ -46,18 +47,10 @@ export function SignageInfo() {
                     strokeWidth="1"
                     className="text-accent/40 mx-auto"
                   >
-                    <rect x="4" y="4" width="16" height="16" rx="2" />
-                    <path d="M9 9h6v6H9z" />
-                    <path d="M9 1v3" />
-                    <path d="M15 1v3" />
-                    <path d="M9 20v3" />
-                    <path d="M15 20v3" />
-                    <path d="M20 9h3" />
-                    <path d="M20 15h3" />
-                    <path d="M1 9h3" />
-                    <path d="M1 15h3" />
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
                   </svg>
-                  <p className="text-sm text-text-secondary mt-2">プラットフォームイメージ</p>
+                  <p className="text-sm text-text-secondary mt-2">AI社員イメージ</p>
                 </div>
               </div>
             </Card>
@@ -66,22 +59,30 @@ export function SignageInfo() {
           <MotionWrapper delay={0.2}>
             <Card className="h-full">
               <h3 className="text-lg font-bold text-text-primary mb-4">
-                プラットフォーム仕様
+                比較表
               </h3>
               <div className="space-y-4">
-                {specs.map((spec) => (
+                {comparison.map((item) => (
                   <div
-                    key={spec.label}
-                    className="flex justify-between items-center py-2 border-b border-border last:border-0"
+                    key={item.label}
+                    className="grid grid-cols-3 items-center py-2 border-b border-border last:border-0"
                   >
                     <span className="text-text-secondary text-sm">
-                      {spec.label}
+                      {item.label}
                     </span>
-                    <span className="text-text-primary font-medium text-sm">
-                      {spec.value}
+                    <span className="text-text-secondary text-sm text-center">
+                      {item.human}
+                    </span>
+                    <span className="text-accent font-medium text-sm text-center">
+                      {item.ai}
                     </span>
                   </div>
                 ))}
+                <div className="grid grid-cols-3 items-center pt-2 text-xs text-text-secondary">
+                  <span></span>
+                  <span className="text-center">人間の社員</span>
+                  <span className="text-center text-accent">AI社員</span>
+                </div>
               </div>
             </Card>
           </MotionWrapper>

@@ -1,32 +1,32 @@
 export const benefits = [
   {
-    title: "迅速な導入",
-    description: "SaaS型ツールは最短即日、カスタム開発も最短2週間で本番運用を開始",
-    icon: "rocket",
-  },
-  {
-    title: "コスト削減",
-    description: "定型業務の自動化により、人件費・外注費を平均40%削減",
+    title: "人件費の1/10以下",
+    description: "パート社員を月10万円で雇うより安い。月額9,800円から、AI社員が働きます。",
     icon: "savings",
   },
   {
-    title: "24時間稼働",
-    description: "AIエージェントが24時間365日、問い合わせ対応や業務処理を自動実行",
+    title: "24時間365日稼働",
+    description: "休憩なし、休日なし。AI社員は常にSlackで待機し、いつでも仕事をこなします。",
     icon: "clock",
   },
   {
-    title: "データ駆動",
-    description: "社内データを活用した高精度な分析・予測で意思決定を加速",
+    title: "教育コストゼロ",
+    description: "入社初日から即戦力。マニュアルを読み込ませれば、すぐに社内の質問に答えられます。",
+    icon: "rocket",
+  },
+  {
+    title: "自分から報告・提案",
+    description: "聞かれたら答えるだけじゃない。日報集計や会議の準備など、能動的に動きます。",
     icon: "chart",
   },
   {
-    title: "スケーラブル",
-    description: "クラウドネイティブ設計で、事業成長に合わせて柔軟に拡張可能",
+    title: "Slackで完結",
+    description: "新しい画面を覚える必要なし。いつものSlackで話しかけるだけで仕事が進みます。",
     icon: "cloud",
   },
   {
-    title: "セキュリティ",
-    description: "SOC2準拠のインフラとデータ暗号化で、機密情報を安全に管理",
+    title: "情報漏洩リスク対策済み",
+    description: "データは暗号化して安全に管理。お客様ごとに環境を分離し、外部共有は一切しません。",
     icon: "shield",
   },
 ] as const;

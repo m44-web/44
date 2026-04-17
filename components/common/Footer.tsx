@@ -17,11 +17,11 @@ export function Footer() {
               <span className="text-accent">AXE</span>
             </Link>
             <p className="mt-3 text-sm text-text-secondary leading-relaxed">
-              AIで企業の変革を支援。
+              AIを、雇おう。
               <br />
-              SaaS・開発・自動化・生成AI
+              AI社員があなたの会社の
               <br />
-              すべてをワンストップで。
+              新しい仲間になります。
             </p>
           </div>
 

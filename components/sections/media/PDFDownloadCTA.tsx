@@ -17,29 +17,20 @@ export function PDFDownloadCTA() {
                 stroke="currentColor"
                 strokeWidth="1.5"
               >
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="12" y1="18" x2="12" y2="12" />
-                <polyline points="9 15 12 18 15 15" />
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
               </svg>
             </div>
             <h2 className="text-3xl font-bold text-text-primary sm:text-4xl">
-              サービス資料をダウンロード
+              AI社員を採用してみませんか？
             </h2>
             <p className="mt-4 text-text-secondary text-lg max-w-xl mx-auto">
-              AIソリューションの詳細・料金・導入事例をまとめた
-              サービスガイドをPDFでご用意しています。
+              2週間無料のお試し採用で、AI社員がどう働くか体験できます。
+              合わなければいつでも解約OK。まずはお気軽にご相談ください。
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
               <Button href="/contact" size="lg">
-                資料請求・お問い合わせ
-              </Button>
-              <Button
-                href="/docs/media-guide.pdf"
-                variant="outline"
-                size="lg"
-              >
-                PDFをダウンロード
+                無料でAI社員を試す
               </Button>
             </div>
           </div>

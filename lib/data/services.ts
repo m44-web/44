@@ -1,26 +1,26 @@
 export const services = [
   {
-    title: "AI SaaS",
+    title: "AI総務",
     description:
-      "チャットボット、文書自動生成、データ分析ツールなど、すぐに使えるAIプロダクトをクラウドで提供します。",
-    icon: "saas",
+      "議事録作成、社内FAQ対応、日報集計。総務の仕事をSlackで指示するだけで完了します。",
+    icon: "soumu",
   },
   {
-    title: "AI開発・コンサルティング",
+    title: "AI営業アシスタント",
     description:
-      "企業ごとの課題に合わせたAIモデルの開発から、AI導入戦略の策定・実行まで伴走支援します。",
-    icon: "consulting",
+      "リード情報の整理、提案書の下書き、フォローアップのリマインド。営業チームの右腕になります。",
+    icon: "sales",
   },
   {
-    title: "AIエージェント・自動化",
+    title: "AI経理アシスタント",
     description:
-      "業務プロセスをAIエージェントで自動化。ワークフローの最適化で生産性を飛躍的に向上させます。",
-    icon: "agent",
+      "請求書の読み取り・整理、経費精算の補助、月次レポート作成。数字の仕事を正確にこなします。",
+    icon: "accounting",
   },
   {
-    title: "AI画像・動画生成",
+    title: "AIカスタマーサポート",
     description:
-      "最先端の生成AIで、広告クリエイティブ・プロモーション動画・プロダクトビジュアルを高速に制作します。",
-    icon: "creative",
+      "問い合わせの一次対応、FAQ自動生成、エスカレーション判断。お客様対応を24時間体制に。",
+    icon: "support",
   },
 ] as const;

@@ -5,9 +5,9 @@ import { InstallationTypes } from "@/components/sections/about/InstallationTypes
 import { FAQSection } from "@/components/sections/about/FAQSection";
 
 export const metadata: Metadata = {
-  title: "サービス紹介",
+  title: "AI社員とは",
   description:
-    "AXEのAIサービスについて。ソリューションタイプ、導入の流れ、よくある質問をご紹介します。",
+    "AI社員とは何か、採用フロー、プラン、よくある質問をご紹介。AIを道具ではなく社員として雇う新しい選択肢。",
 };
 
 export default function AboutPage() {

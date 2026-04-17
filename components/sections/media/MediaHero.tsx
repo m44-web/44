@@ -9,15 +9,15 @@ export function MediaHero() {
         <MotionWrapper>
           <div className="text-center max-w-3xl mx-auto">
             <p className="text-accent text-sm tracking-[0.2em] uppercase mb-4 font-display">
-              AI Platform &amp; Pricing
+              AI Employee Pricing
             </p>
             <h1 className="text-4xl font-bold text-text-primary sm:text-5xl">
-              AIを導入したい
-              <span className="text-accent">企業様</span>へ
+              AI社員の
+              <span className="text-accent">採用プラン</span>
             </h1>
             <p className="mt-6 text-lg text-text-secondary leading-relaxed">
-              AXEのAIプラットフォームで、業務効率化と競争力強化を実現。
-              用途と規模に合わせた最適なプランをお選びいただけます。
+              人間のパート社員を月10万円で雇うより安い。
+              月額9,800円から、あなたの会社にAI社員を迎えられます。
             </p>
           </div>
         </MotionWrapper>

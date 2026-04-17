@@ -6,10 +6,10 @@ import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 const reachData = [
-  { label: "月間API処理件数", value: 500, suffix: "万件+", prefix: "" },
-  { label: "平均応答時間", value: 200, suffix: "ms", prefix: "" },
-  { label: "顧客満足度", value: 96, suffix: "%", prefix: "" },
-  { label: "データ処理精度", value: 99, suffix: "%", prefix: "" },
+  { label: "対応可能タスク", value: 100, suffix: "種類+", prefix: "" },
+  { label: "平均応答時間", value: 3, suffix: "秒", prefix: "" },
+  { label: "人件費削減率", value: 90, suffix: "%", prefix: "" },
+  { label: "稼働時間", value: 24, suffix: "時間/日", prefix: "" },
 ];
 
 function CountUp({ target, prefix, suffix }: { target: number; prefix: string; suffix: string }) {
@@ -43,8 +43,8 @@ export function ReachSection() {
     <section className="py-24">
       <Container>
         <SectionHeading
-          title="プラットフォーム実績"
-          subtitle="AXE AIプラットフォームの稼働実績"
+          title="AI社員の実力"
+          subtitle="数字で見る、AI社員のパフォーマンス"
         />
 
         <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">

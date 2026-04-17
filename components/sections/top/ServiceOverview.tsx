@@ -5,12 +5,16 @@ import { MotionWrapper } from "@/components/ui/MotionWrapper";
 import { services } from "@/lib/data/services";
 
 const icons: Record<string, React.ReactNode> = {
-  saas: (
+  soumu: (
     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+      <polyline points="10 9 9 9 8 9" />
     </svg>
   ),
-  consulting: (
+  sales: (
     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
       <circle cx="9" cy="7" r="4" />
@@ -18,24 +22,15 @@ const icons: Record<string, React.ReactNode> = {
       <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   ),
-  agent: (
+  accounting: (
     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <rect x="4" y="4" width="16" height="16" rx="2" />
-      <path d="M9 9h6v6H9z" />
-      <path d="M9 1v3" />
-      <path d="M15 1v3" />
-      <path d="M9 20v3" />
-      <path d="M15 20v3" />
-      <path d="M20 9h3" />
-      <path d="M20 15h3" />
-      <path d="M1 9h3" />
-      <path d="M1 15h3" />
+      <line x1="12" y1="1" x2="12" y2="23" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
     </svg>
   ),
-  creative: (
+  support: (
     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <polygon points="23 7 16 12 23 17 23 7" />
-      <rect x="1" y="5" width="15" height="14" rx="2" />
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </svg>
   ),
 };
@@ -46,8 +41,8 @@ export function ServiceOverview() {
       <Container>
         <MotionWrapper>
           <SectionHeading
-            title="サービス概要"
-            subtitle="4つのAI事業領域で、企業のDXを総合支援します"
+            title="AI社員の職種"
+            subtitle="あなたの会社に必要な「人材」を、AIで採用できます"
           />
         </MotionWrapper>
 

@@ -10,17 +10,17 @@ export function CTASection() {
         <MotionWrapper>
           <div className="text-center rounded-2xl border border-accent/20 bg-card-bg/50 backdrop-blur-sm p-12 sm:p-16 gradient-border">
             <h2 className="text-3xl font-bold text-text-primary sm:text-4xl">
-              AIの導入を
+              まずは2週間、
               <br />
-              ご検討ですか？
+              <span className="text-accent">無料</span>で試してみませんか？
             </h2>
             <p className="mt-4 text-text-secondary text-lg max-w-xl mx-auto">
-              課題の整理からAI実装・運用定着まで、まずはお気軽にご相談ください。
-              専門チームが最適なAI活用プランをご提案いたします。
+              AI社員がどう働くか、実際のSlackで体験できます。
+              お試し採用は完全無料。合わなければいつでも解約OK。
             </p>
             <div className="mt-8">
               <Button href="/contact" size="lg">
-                無料相談はこちら
+                無料でAI社員を試す
               </Button>
             </div>
           </div>

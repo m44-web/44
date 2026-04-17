@@ -5,30 +5,23 @@ import { MotionWrapper } from "@/components/ui/MotionWrapper";
 import { installationTypes } from "@/lib/data/installation-types";
 
 const icons: Record<string, React.ReactNode> = {
-  platform: (
+  trial: (
     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
     </svg>
   ),
-  custom: (
+  part: (
     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <polyline points="16 18 22 12 16 6" />
-      <polyline points="8 6 2 12 8 18" />
-      <line x1="14" y1="4" x2="10" y2="20" />
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
     </svg>
   ),
-  agent: (
+  full: (
     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <rect x="4" y="4" width="16" height="16" rx="2" />
-      <path d="M9 9h6v6H9z" />
-      <path d="M9 1v3" />
-      <path d="M15 1v3" />
-      <path d="M9 20v3" />
-      <path d="M15 20v3" />
-      <path d="M20 9h3" />
-      <path d="M20 15h3" />
-      <path d="M1 9h3" />
-      <path d="M1 15h3" />
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   ),
 };
@@ -39,8 +32,8 @@ export function InstallationTypes() {
       <Container>
         <MotionWrapper>
           <SectionHeading
-            title="ソリューションタイプ"
-            subtitle="課題とフェーズに合わせた最適なAIソリューション"
+            title="採用プラン"
+            subtitle="まずは無料で試して、効果を実感してから本採用"
           />
         </MotionWrapper>
 

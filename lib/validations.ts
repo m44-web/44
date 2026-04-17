@@ -15,10 +15,11 @@ export const contactSchema = z.object({
 export type ContactFormData = z.infer<typeof contactSchema>;
 
 export const inquiryTypes = [
-  "AI SaaS導入相談",
-  "カスタムAI開発",
-  "AIエージェント構築",
-  "AI画像・動画生成",
+  "AI社員のお試し採用について",
+  "AI総務について",
+  "AI営業アシスタントについて",
+  "AI経理アシスタントについて",
+  "AIカスタマーサポートについて",
   "料金について",
   "その他",
 ] as const;
