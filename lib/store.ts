@@ -528,6 +528,31 @@ export function addHandoverNote(note: Omit<HandoverNote, "id" | "createdAt">): H
   return newNote;
 }
 
+// --- Backup / Restore ---
+export function exportAllData(): string {
+  const data: Record<string, unknown> = { __version: DATA_VERSION, __exportedAt: new Date().toISOString() };
+  for (const [name, key] of Object.entries(STORAGE_KEYS)) {
+    if (name === "currentUser") continue; // don't export the logged-in session
+    data[name] = getItem(key, null);
+  }
+  return JSON.stringify(data, null, 2);
+}
+
+export function importAllData(json: string): { ok: boolean; error?: string } {
+  try {
+    const parsed = JSON.parse(json);
+    if (!parsed || typeof parsed !== "object") return { ok: false, error: "不正なファイル形式です" };
+    for (const [name, key] of Object.entries(STORAGE_KEYS)) {
+      if (name === "currentUser") continue;
+      if (name in parsed) setItem(key, parsed[name]);
+    }
+    localStorage.setItem(STORAGE_KEYS.version, DATA_VERSION);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "インポートに失敗しました" };
+  }
+}
+
 // --- Notification counts ---
 export function getAdminNotificationCounts(): { shiftRequests: number; missingLocation: number } {
   const pendingRequests = getShiftRequests().filter((r) => r.status === "pending").length;

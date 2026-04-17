@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { getGuards, getSites, getShifts, getAttendance, getReports, getShiftRequests } from "@/lib/store";
+import { getGuards, getSites, getShifts, getAttendance, getReports, getShiftRequests, exportAllData, importAllData } from "@/lib/store";
+import { useToast } from "@/lib/toast";
+import { useConfirm } from "@/lib/confirm";
 import { Card } from "@/components/ui/Card";
 import type { Shift } from "@/lib/types";
 import { SITE_TYPE_LABELS, SHIFT_STATUS_LABELS, ATTENDANCE_STATUS_LABELS, SKILL_LEVEL_LABELS, SHIFT_TYPE_LABELS } from "@/lib/types";
@@ -26,6 +28,52 @@ export default function CsvPage() {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   });
+  const { showToast } = useToast();
+  const { confirm } = useConfirm();
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function handleBackup() {
+    const json = exportAllData();
+    const bom = "\uFEFF";
+    const blob = new Blob([bom + json], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const date = new Date().toISOString().split("T")[0];
+    a.href = url;
+    a.download = `lsecurity_backup_${date}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast("バックアップをダウンロードしました", "success");
+  }
+
+  async function handleRestoreClick() {
+    const ok = await confirm({
+      title: "データを復元",
+      message: "現在のデータは上書きされます。続行しますか？",
+      confirmLabel: "ファイル選択へ",
+      variant: "danger",
+    });
+    if (!ok) return;
+    fileRef.current?.click();
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result ?? "").replace(/^\uFEFF/, "");
+      const result = importAllData(text);
+      if (result.ok) {
+        showToast("データを復元しました。再読み込みします", "success");
+        setTimeout(() => window.location.reload(), 1200);
+      } else {
+        showToast(`復元に失敗: ${result.error}`, "error");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  }
 
   useEffect(() => { setMounted(true); }, []);
   if (!mounted) return null;
@@ -196,6 +244,35 @@ export default function CsvPage() {
       </div>
 
       <p className="text-xs text-text-secondary">※ CSVファイルはUTF-8(BOM付き)で出力されます。Excelで直接開けます。</p>
+
+      {/* Backup / Restore */}
+      <div className="pt-4 mt-4 border-t border-border">
+        <h2 className="text-base font-semibold text-text-primary mb-2">データバックアップ</h2>
+        <p className="text-xs text-text-secondary mb-3">すべてのデータをJSON形式でバックアップ/復元します。端末の買い替えや障害時の復旧に利用できます。</p>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={handleBackup}
+            className="py-3 rounded-lg bg-success text-white text-sm font-medium hover:opacity-90 cursor-pointer transition-opacity inline-flex items-center justify-center gap-1.5"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+            バックアップを出力
+          </button>
+          <button
+            onClick={handleRestoreClick}
+            className="py-3 rounded-lg border border-danger/30 text-danger text-sm font-medium hover:bg-danger/5 cursor-pointer transition-colors inline-flex items-center justify-center gap-1.5"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+            復元（危険）
+          </button>
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".json,application/json"
+          onChange={handleFileChange}
+          className="hidden"
+        />
+      </div>
     </div>
   );
 }
