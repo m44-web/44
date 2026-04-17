@@ -26,28 +26,63 @@ export function ShiftController({ userName }: { userName: string }) {
   const streamRef = useRef<MediaStream | null>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const latestPositionRef = useRef<{ lat: number; lng: number; acc?: number } | null>(null);
+  const queueRef = useRef<
+    Array<{ shiftId: string; latitude: number; longitude: number; accuracy?: number; at: number }>
+  >([]);
+  const [queuedCount, setQueuedCount] = useState(0);
+
+  const flushQueue = useCallback(async () => {
+    while (queueRef.current.length > 0) {
+      const entry = queueRef.current[0];
+      try {
+        const res = await fetch("/api/gps", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(entry),
+        });
+        if (!res.ok) break;
+        queueRef.current.shift();
+      } catch {
+        break;
+      }
+    }
+    setQueuedCount(queueRef.current.length);
+  }, []);
 
   const sendGps = useCallback(
     async (shiftId: string) => {
       const pos = latestPositionRef.current;
       if (!pos) return;
+      const entry = {
+        shiftId,
+        latitude: pos.lat,
+        longitude: pos.lng,
+        accuracy: pos.acc,
+        at: Date.now(),
+      };
       try {
-        await fetch("/api/gps", {
+        const res = await fetch("/api/gps", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            shiftId,
-            latitude: pos.lat,
-            longitude: pos.lng,
-            accuracy: pos.acc,
-          }),
+          body: JSON.stringify(entry),
         });
+        if (!res.ok) throw new Error("send failed");
+        // Successful send: also flush any backlog
+        if (queueRef.current.length > 0) await flushQueue();
       } catch {
-        // silently ignore network errors
+        queueRef.current.push(entry);
+        setQueuedCount(queueRef.current.length);
       }
     },
-    []
+    [flushQueue]
   );
+
+  // Retry queued on online
+  useEffect(() => {
+    const onOnline = () => flushQueue();
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [flushQueue]);
 
   const startGps = useCallback(
     (shiftId: string) => {
@@ -232,9 +267,17 @@ export function ShiftController({ userName }: { userName: string }) {
           <h1 className="font-semibold">営業監視システム</h1>
           <p className="text-sm text-text-muted">{userName}</p>
         </div>
-        <Button variant="ghost" onClick={handleLogout}>
-          ログアウト
-        </Button>
+        <div className="flex items-center gap-2">
+          <a
+            href="/settings"
+            className="text-sm text-text-muted hover:text-text px-2 py-1"
+          >
+            設定
+          </a>
+          <Button variant="ghost" onClick={handleLogout}>
+            ログアウト
+          </Button>
+        </div>
       </header>
 
       <div className="flex-1 flex flex-col items-center justify-center p-4 gap-6">
@@ -258,6 +301,11 @@ export function ShiftController({ userName }: { userName: string }) {
               <StatusIndicator active={gpsActive} label="GPS追跡中" />
               <StatusIndicator active={recordingActive} label="録音中" />
             </div>
+            {queuedCount > 0 && (
+              <p className="text-xs text-warning text-center mt-3">
+                ⚠️ 未送信 {queuedCount}件（オンライン復帰後に自動送信）
+              </p>
+            )}
           </Card>
         )}
 

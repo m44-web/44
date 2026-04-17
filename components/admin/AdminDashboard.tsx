@@ -45,10 +45,17 @@ function DashboardContent({ userName }: { userName: string }) {
             <ConnectionBadge />
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-text-muted">{userName}</span>
+            <span className="text-sm text-text-muted hidden sm:inline">
+              {userName}
+            </span>
             <Link href="/admin/employees">
               <Button variant="ghost" className="text-sm">
                 従業員管理
+              </Button>
+            </Link>
+            <Link href="/settings">
+              <Button variant="ghost" className="text-sm">
+                設定
               </Button>
             </Link>
             <Button variant="ghost" onClick={handleLogout} className="text-sm">

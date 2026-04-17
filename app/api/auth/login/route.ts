@@ -31,6 +31,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (user.deactivatedAt) {
+      return NextResponse.json(
+        { error: "このアカウントは無効化されています" },
+        { status: 403 }
+      );
+    }
+
     await createSession(user.id);
 
     return NextResponse.json({

@@ -22,7 +22,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { shiftId, latitude, longitude, accuracy } = parsed.data;
+    const { shiftId, latitude, longitude, accuracy, at } = parsed.data;
 
     db.insert(gpsLogs)
       .values({
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
         latitude,
         longitude,
         accuracy: accuracy ?? null,
-        recordedAt: new Date(),
+        recordedAt: at ? new Date(at) : new Date(),
       })
       .run();
 

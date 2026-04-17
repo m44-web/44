@@ -15,12 +15,14 @@ interface Employee {
   email: string;
   isOnShift: boolean;
   createdAt: number;
+  deactivatedAt: number | null;
 }
 
 export function EmployeeManagement() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [serverError, setServerError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [showDeactivated, setShowDeactivated] = useState(false);
 
   const {
     register,
@@ -69,22 +71,60 @@ export function EmployeeManagement() {
     }
   };
 
+  const handleDeactivate = async (emp: Employee) => {
+    if (!confirm(`${emp.name} を無効化しますか？\n稼働中のシフトも終了されます。`)) return;
+    try {
+      const res = await fetch(`/api/employees/${emp.id}`, { method: "DELETE" });
+      if (res.ok) fetchEmployees();
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleReactivate = async (emp: Employee) => {
+    try {
+      const res = await fetch(`/api/employees/${emp.id}`, { method: "PATCH" });
+      if (res.ok) fetchEmployees();
+    } catch {
+      // ignore
+    }
+  };
+
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     window.location.href = "/";
   };
+
+  const visible = employees.filter((e) =>
+    showDeactivated ? true : !e.deactivatedAt
+  );
 
   return (
     <div className="min-h-screen">
       <header className="bg-surface border-b border-white/10">
         <Container className="flex items-center justify-between py-3">
           <div className="flex items-center gap-4">
+            <Link href="/admin" className="text-text-muted hover:text-text text-sm">
+              ← ダッシュボード
+            </Link>
             <h1 className="font-semibold">従業員管理</h1>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/admin">
+            <a
+              href="/api/export?type=shifts&days=30"
+              className="text-sm px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted"
+            >
+              シフトCSV
+            </a>
+            <a
+              href="/api/export?type=gps&days=7"
+              className="text-sm px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted"
+            >
+              GPS CSV
+            </a>
+            <Link href="/settings">
               <Button variant="ghost" className="text-sm">
-                ダッシュボード
+                設定
               </Button>
             </Link>
             <Button variant="ghost" onClick={handleLogout} className="text-sm">
@@ -157,8 +197,21 @@ export function EmployeeManagement() {
 
         {/* Employee List */}
         <Card>
-          <h2 className="font-semibold mb-4">登録済み従業員 ({employees.length}名)</h2>
-          {employees.length === 0 ? (
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <h2 className="font-semibold">
+              登録済み従業員 ({visible.length}名)
+            </h2>
+            <label className="flex items-center gap-2 text-xs text-text-muted cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showDeactivated}
+                onChange={(e) => setShowDeactivated(e.target.checked)}
+                className="accent-primary"
+              />
+              無効化済みを表示
+            </label>
+          </div>
+          {visible.length === 0 ? (
             <p className="text-text-muted text-sm">従業員はまだ登録されていません</p>
           ) : (
             <div className="overflow-x-auto">
@@ -169,31 +222,57 @@ export function EmployeeManagement() {
                     <th className="pb-2 font-medium">メール</th>
                     <th className="pb-2 font-medium">ステータス</th>
                     <th className="pb-2 font-medium">登録日</th>
+                    <th className="pb-2 font-medium"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {employees.map((emp) => (
-                    <tr key={emp.id}>
-                      <td className="py-3">{emp.name}</td>
+                  {visible.map((emp) => (
+                    <tr key={emp.id} className={emp.deactivatedAt ? "opacity-50" : ""}>
+                      <td className="py-3">
+                        <Link
+                          href={`/admin/employees/${emp.id}`}
+                          className="hover:text-primary"
+                        >
+                          {emp.name}
+                        </Link>
+                      </td>
                       <td className="py-3 text-text-muted">{emp.email}</td>
                       <td className="py-3">
-                        <span
-                          className={`inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full ${
-                            emp.isOnShift
-                              ? "bg-success/20 text-success"
-                              : "bg-white/10 text-text-muted"
-                          }`}
-                        >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              emp.isOnShift ? "bg-success" : "bg-text-muted"
-                            }`}
-                          />
-                          {emp.isOnShift ? "稼働中" : "オフライン"}
-                        </span>
+                        {emp.deactivatedAt ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full bg-danger/20 text-danger">
+                            無効化済み
+                          </span>
+                        ) : emp.isOnShift ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full bg-success/20 text-success">
+                            <span className="w-1.5 h-1.5 rounded-full bg-success" />
+                            稼働中
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full bg-white/10 text-text-muted">
+                            <span className="w-1.5 h-1.5 rounded-full bg-text-muted" />
+                            オフライン
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 text-text-muted">
                         {new Date(emp.createdAt).toLocaleDateString("ja-JP")}
+                      </td>
+                      <td className="py-3 text-right">
+                        {emp.deactivatedAt ? (
+                          <button
+                            onClick={() => handleReactivate(emp)}
+                            className="text-xs px-2 py-1 rounded bg-primary/20 hover:bg-primary/30 text-primary"
+                          >
+                            再有効化
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleDeactivate(emp)}
+                            className="text-xs px-2 py-1 rounded bg-danger/20 hover:bg-danger/30 text-danger"
+                          >
+                            無効化
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

@@ -16,6 +16,7 @@ export const gpsLogSchema = z.object({
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
   accuracy: z.number().optional(),
+  at: z.number().optional(), // client-side timestamp (for queued entries)
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

@@ -7,6 +7,7 @@ export const users = sqliteTable("users", {
   passwordHash: text("password_hash").notNull(),
   role: text("role", { enum: ["admin", "employee"] }).notNull(),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  deactivatedAt: integer("deactivated_at", { mode: "timestamp_ms" }),
 });
 
 export const sessions = sqliteTable("sessions", {

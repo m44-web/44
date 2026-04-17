@@ -55,13 +55,16 @@ export async function getSession() {
       userName: users.name,
       userEmail: users.email,
       userRole: users.role,
+      deactivatedAt: users.deactivatedAt,
     })
     .from(sessions)
     .innerJoin(users, eq(sessions.userId, users.id))
     .where(and(eq(sessions.id, sessionId), gt(sessions.expiresAt, new Date())))
     .get();
 
-  return result ?? null;
+  if (!result) return null;
+  if (result.deactivatedAt) return null;
+  return result;
 }
 
 export async function destroySession() {

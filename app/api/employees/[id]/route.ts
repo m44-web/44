@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { users, shifts, gpsLogs, audioRecordings } from "@/lib/db/schema";
+import { users, shifts, gpsLogs, audioRecordings, sessions } from "@/lib/db/schema";
 import { eq, desc, isNull, and } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 
@@ -89,4 +89,61 @@ export async function GET(
       totalGpsPoints: gpsCount,
     },
   });
+}
+
+// Deactivate an employee (soft delete). Also ends any active shift and invalidates sessions.
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getSession();
+  if (!session || session.userRole !== "admin") {
+    return NextResponse.json({ error: "権限がありません" }, { status: 403 });
+  }
+
+  const { id } = await params;
+
+  const target = db.select().from(users).where(eq(users.id, id)).get();
+  if (!target) {
+    return NextResponse.json(
+      { error: "従業員が見つかりません" },
+      { status: 404 }
+    );
+  }
+  if (target.role !== "employee") {
+    return NextResponse.json(
+      { error: "管理者は無効化できません" },
+      { status: 400 }
+    );
+  }
+
+  const now = new Date();
+
+  db.update(users).set({ deactivatedAt: now }).where(eq(users.id, id)).run();
+
+  // End any active shift
+  db.update(shifts)
+    .set({ endedAt: now })
+    .where(and(eq(shifts.userId, id), isNull(shifts.endedAt)))
+    .run();
+
+  // Invalidate all sessions for this user
+  db.delete(sessions).where(eq(sessions.userId, id)).run();
+
+  return NextResponse.json({ ok: true });
+}
+
+// Re-activate an employee
+export async function PATCH(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getSession();
+  if (!session || session.userRole !== "admin") {
+    return NextResponse.json({ error: "権限がありません" }, { status: 403 });
+  }
+
+  const { id } = await params;
+  db.update(users).set({ deactivatedAt: null }).where(eq(users.id, id)).run();
+  return NextResponse.json({ ok: true });
 }

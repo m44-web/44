@@ -18,6 +18,7 @@ export async function GET() {
       email: users.email,
       role: users.role,
       createdAt: users.createdAt,
+      deactivatedAt: users.deactivatedAt,
     })
     .from(users)
     .where(eq(users.role, "employee"))
@@ -34,6 +35,7 @@ export async function GET() {
     return {
       ...emp,
       createdAt: emp.createdAt.getTime(),
+      deactivatedAt: emp.deactivatedAt?.getTime() ?? null,
       isOnShift: !!activeShift,
       currentShiftId: activeShift?.id ?? null,
     };
