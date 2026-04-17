@@ -189,17 +189,25 @@ export default function ChatPage() {
       </div>
 
       {/* Input area */}
-      <form onSubmit={handleSend} className="flex gap-2">
-        <input
-          type="text"
+      <form onSubmit={handleSend} className="flex gap-2 items-end">
+        <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={selectedChannel === "general" ? "全体連絡を入力..." : `${selectedSite?.name ?? "現場"}への連絡...`}
-          className="flex-1 rounded-xl border border-border bg-sub-bg px-4 py-3 text-text-primary placeholder:text-text-secondary/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend(e as unknown as React.FormEvent);
+            }
+          }}
+          placeholder={selectedChannel === "general" ? "全体連絡を入力... (Shift+Enterで改行)" : `${selectedSite?.name ?? "現場"}への連絡...`}
+          rows={1}
+          className="flex-1 rounded-xl border border-border bg-sub-bg px-4 py-3 text-text-primary placeholder:text-text-secondary/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors resize-none"
+          style={{ maxHeight: "120px", minHeight: "48px" }}
         />
         <button
           type="submit"
           disabled={!input.trim()}
+          aria-label="送信"
           className="px-5 py-3 rounded-xl bg-accent text-white font-medium hover:bg-accent-dark cursor-pointer transition-colors disabled:opacity-40 active:scale-95 shrink-0"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
