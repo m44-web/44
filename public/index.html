@@ -8154,6 +8154,32 @@ window.importBackupJSON = function(){
   },2700);
 })();
 
+/* ── 60. フェーズタブ 数字キー切替 (1-5) ── */
+(function(){
+  var MAP={'1':'all','2':'sales','3':'won','4':'hold','5':'lost'};
+  document.addEventListener('keydown',function(e){
+    if(e.ctrlKey||e.metaKey||e.altKey)return;
+    var t=e.target;
+    if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable))return;
+    var ph=MAP[e.key];
+    if(!ph)return;
+    e.preventDefault();
+    window.curPhase=ph;
+    window.curSt='';
+    var tabs=document.querySelectorAll('#ptabs .ptab');
+    for(var i=0;i<tabs.length;i++){
+      if(tabs[i].getAttribute('data-ph')===ph)tabs[i].classList.add('on');
+      else tabs[i].classList.remove('on');
+    }
+    if(typeof renderChips==='function')renderChips();
+    if(typeof render==='function')render();
+    if(typeof showToast==='function'){
+      var lbl={all:'すべて',sales:'営業',won:'成約/施工',hold:'保留',lost:'失注'}[ph];
+      showToast('⌨ '+lbl);
+    }
+  });
+})();
+
 })();
 </script>
 </body>
