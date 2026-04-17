@@ -145,7 +145,7 @@ export const AppBottomNav = memo(function AppBottomNav() {
               {icons[item.icon](active)}
               <span className="text-[10px] font-medium">{item.label}</span>
               {badgeCount > 0 && (
-                <span className="absolute top-1 right-2 bg-danger text-white text-[9px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1">
+                <span className="absolute top-1 right-2 bg-danger text-white text-[9px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1 animate-in fade-in zoom-in-75 duration-300">
                   {badgeCount > 9 ? "9+" : badgeCount}
                 </span>
               )}
