@@ -184,7 +184,18 @@ export default function SitesPage() {
 
                 <div className="flex items-center gap-2 text-xs flex-wrap">
                   <span className="px-1.5 py-0.5 rounded bg-accent/10 text-accent">{SITE_TYPE_LABELS[site.type]}</span>
-                  <span className="text-text-secondary truncate">{site.address}</span>
+                  {site.address && (
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(site.address)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-text-secondary truncate inline-flex items-center gap-0.5 hover:text-accent"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                      {site.address}
+                    </a>
+                  )}
                 </div>
 
                 {/* Project duration & requirements */}

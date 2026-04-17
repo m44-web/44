@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getGuards, getSites, getShifts, getAttendance, getReports, getShiftRequests } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
-import type { Guard, Site, Shift, AttendanceRecord } from "@/lib/types";
+import type { Shift } from "@/lib/types";
 import { SITE_TYPE_LABELS, SHIFT_STATUS_LABELS, ATTENDANCE_STATUS_LABELS, SKILL_LEVEL_LABELS, SHIFT_TYPE_LABELS } from "@/lib/types";
 
 function downloadCSV(filename: string, headers: string[], rows: string[][]) {
@@ -106,18 +106,24 @@ export default function CsvPage() {
   function exportSalary() {
     const guards = getGuards();
     const shifts = getShifts().filter((s) => s.date.startsWith(selectedMonth) && s.status !== "cancelled");
-    const headers = ["警備員", "日勤回数", "夜勤回数", "日勤時間", "夜勤時間", "日勤時給", "夜勤時給", "日勤合計", "夜勤合計", "総合計"];
+    const attendance = getAttendance().filter((a) => a.date.startsWith(selectedMonth));
+    const headers = ["警備員", "日勤回数", "夜勤回数", "日勤時間(実績)", "夜勤時間(実績)", "日勤時給", "夜勤時給", "日勤合計", "夜勤合計", "総合計"];
+    function calcHFromTimes(start: string, end: string) {
+      const [sh, sm] = start.split(":").map(Number);
+      const [eh, em] = end.split(":").map(Number);
+      let h = eh - sh + (em - sm) / 60; if (h < 0) h += 24; return h;
+    }
     const rows = guards.filter((g) => g.status === "active").map((g) => {
       const myShifts = shifts.filter((s) => s.guardId === g.id);
       const dayShifts = myShifts.filter((s) => s.shiftType !== "night");
       const nightShifts = myShifts.filter((s) => s.shiftType === "night");
-      function calcH(s: { startTime: string; endTime: string }) {
-        const [sh, sm] = s.startTime.split(":").map(Number);
-        const [eh, em] = s.endTime.split(":").map(Number);
-        let h = eh - sh + (em - sm) / 60; if (h < 0) h += 24; return h;
+      function actualH(s: Shift) {
+        const att = attendance.find((a) => a.shiftId === s.id);
+        if (att?.clockIn && att?.clockOut) return calcHFromTimes(att.clockIn, att.clockOut);
+        return calcHFromTimes(s.startTime, s.endTime);
       }
-      const dayH = dayShifts.reduce((s, sh) => s + calcH(sh), 0);
-      const nightH = nightShifts.reduce((s, sh) => s + calcH(sh), 0);
+      const dayH = dayShifts.reduce((sum, sh) => sum + actualH(sh), 0);
+      const nightH = nightShifts.reduce((sum, sh) => sum + actualH(sh), 0);
       const dayPay = Math.round(dayH * g.hourlyRate);
       const nightPay = Math.round(nightH * g.nightHourlyRate);
       return [
@@ -130,12 +136,28 @@ export default function CsvPage() {
     downloadCSV(`salary_${selectedMonth}.csv`, headers, rows);
   }
 
+  function exportReports() {
+    const reports = getReports().filter((r) => r.date.startsWith(selectedMonth));
+    const guards = getGuards();
+    const sites = getSites();
+    const headers = ["日付", "警備員", "現場", "報告内容", "提出日時"];
+    const rows = reports.map((r) => [
+      r.date,
+      guards.find((g) => g.id === r.guardId)?.name ?? "",
+      sites.find((s) => s.id === r.siteId)?.name ?? "",
+      r.content,
+      r.submittedAt,
+    ]);
+    downloadCSV(`reports_${selectedMonth}.csv`, headers, rows);
+  }
+
   const exports = [
     { label: "警備員一覧", desc: "全警備員の基本情報・資格・時給", fn: exportGuards, icon: "users", monthly: false },
     { label: "現場一覧", desc: "全現場の情報・工期・必要資格", fn: exportSites, icon: "building", monthly: false },
     { label: "シフト一覧", desc: "月別シフトの詳細データ", fn: exportShifts, icon: "calendar", monthly: true },
     { label: "勤怠記録", desc: "月別の出退勤記録・勤務時間", fn: exportAttendance, icon: "clock", monthly: true },
-    { label: "給与計算", desc: "月別の警備員ごと給与試算", fn: exportSalary, icon: "yen", monthly: true },
+    { label: "給与計算", desc: "実績時間ベースの月別給与計算", fn: exportSalary, icon: "yen", monthly: true },
+    { label: "日報一覧", desc: "月別の日報提出内容", fn: exportReports, icon: "file", monthly: true },
   ];
 
   return (
