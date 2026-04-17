@@ -4901,45 +4901,19 @@ window.importBackupJSON = function(){
   /* イベント委譲 — #list上の単一ハンドラ */
   var listEl=document.getElementById('list');
   if(!listEl)return;
-  var _lpTimer=null,_lpRid=null,_lpX=0,_lpY=0,_lpFired=false;
+  /* タップ → 詳細パネル表示 / bulkMode中は選択 */
+  /* 長押しは feature 21 (クイックアクションシート) が担当 */
+  var _lpFired=false;
+  window._suppressNextClick=function(){_lpFired=true;setTimeout(function(){_lpFired=false;},400);};
   listEl.addEventListener('click',function(e){
     var card=e.target.closest?e.target.closest('.card[data-rid]'):null;
     if(!card)return;
-    /* 長押し直後のクリックは無視 */
     if(_lpFired){_lpFired=false;return;}
     var rid=parseInt(card.getAttribute('data-rid'));
     if(isNaN(rid))return;
     if(window.bulkMode){if(typeof toggleBulkSelect==='function')toggleBulkSelect(rid);return;}
     if(typeof openPanel==='function')openPanel(rid);
   },false);
-  function cancelLP(){if(_lpTimer){clearTimeout(_lpTimer);_lpTimer=null;_lpRid=null;}}
-  listEl.addEventListener('touchstart',function(e){
-    var card=e.target.closest?e.target.closest('.card[data-rid]'):null;
-    if(!card)return;
-    var rid=parseInt(card.getAttribute('data-rid'));
-    if(isNaN(rid))return;
-    cancelLP();
-    _lpRid=rid;
-    _lpX=e.touches[0].clientX;_lpY=e.touches[0].clientY;
-    _lpFired=false;
-    _lpTimer=setTimeout(function(){
-      _lpTimer=null;_lpFired=true;
-      if(!window.bulkMode&&typeof toggleBulkMode==='function')toggleBulkMode();
-      if(typeof toggleBulkSelect==='function')toggleBulkSelect(_lpRid);
-      /* 触覚フィードバック */
-      if(navigator.vibrate)navigator.vibrate(30);
-    },700);
-  },{passive:true});
-  listEl.addEventListener('touchmove',function(e){
-    /* 少しでも動いたら長押しキャンセル（スクロール優先） */
-    if(_lpTimer&&e.touches[0]){
-      var dx=Math.abs(e.touches[0].clientX-_lpX);
-      var dy=Math.abs(e.touches[0].clientY-_lpY);
-      if(dx>6||dy>6)cancelLP();
-    }
-  },{passive:true});
-  listEl.addEventListener('touchend',cancelLP,{passive:true});
-  listEl.addEventListener('touchcancel',cancelLP,{passive:true});
 
   /* ページネーション適用 */
   function applyPag(){
@@ -5282,7 +5256,7 @@ window.importBackupJSON = function(){
     swiping=null;activated=false;
   },{passive:true});
 
-  function showSwipeMenu(rid,card){
+  var showSwipeMenu=window.showSwipeMenu=function(rid,card){
     /* 既存メニュー削除 */
     var old=document.getElementById('swipe-menu');
     if(old)old.remove();
@@ -5324,6 +5298,7 @@ window.importBackupJSON = function(){
       btn.style.cssText='padding:10px 4px;border-radius:8px;font-size:11px;font-weight:'+(isCur?700:500)+';border:1.5px solid '+(isCur?info.c:'#e2e8f0')+';background:'+(isCur?info.bg:'#fff')+';color:'+(isCur?info.c:'#4a5568')+';cursor:pointer;font-family:inherit';
       if(!isCur){
         btn.onclick=(function(k){return function(){
+          var oldSt=window.stMap[rid]||(r?r[5]:'new');
           window.stMap[rid]=k;
           if(r)r[5]=k;
           if(typeof saveStore==='function')saveStore();
@@ -5331,7 +5306,8 @@ window.importBackupJSON = function(){
           if(typeof render==='function')render();
           if(typeof renderChips==='function')renderChips();
           menu.remove();
-          if(typeof showToast==='function')showToast('\u2705 '+ST[k].l+'\u306B\u5909\u66F4');
+          if(typeof recordUndo==='function')recordUndo(rid,oldSt,k,(r?r[1]:'')+' \u2192 '+ST[k].l);
+          else if(typeof showToast==='function')showToast('\u2705 '+ST[k].l+'\u306B\u5909\u66F4');
         };})(key);
       }
       grid.appendChild(btn);
@@ -5346,6 +5322,7 @@ window.importBackupJSON = function(){
       btn.style.cssText='padding:10px 4px;border-radius:8px;font-size:11px;font-weight:'+(isCur?700:500)+';border:1.5px solid '+(isCur?'#9b9a97':'#e2e8f0')+';background:'+(isCur?'#f0f0ee':'#fff')+';color:#9b9a97;cursor:pointer;font-family:inherit';
       if(!isCur){
         btn.onclick=(function(k){return function(){
+          var oldSt=window.stMap[rid]||(r?r[5]:'new');
           window.stMap[rid]=k;
           if(r)r[5]=k;
           if(typeof saveStore==='function')saveStore();
@@ -5353,7 +5330,8 @@ window.importBackupJSON = function(){
           if(typeof render==='function')render();
           if(typeof renderChips==='function')renderChips();
           menu.remove();
-          if(typeof showToast==='function')showToast('\u2705 '+ST[k].l+'\u306B\u5909\u66F4');
+          if(typeof recordUndo==='function')recordUndo(rid,oldSt,k,(r?r[1]:'')+' \u2192 '+ST[k].l);
+          else if(typeof showToast==='function')showToast('\u2705 '+ST[k].l+'\u306B\u5909\u66F4');
         };})(key);
       }
       grid.appendChild(btn);
@@ -5602,6 +5580,338 @@ window.importBackupJSON = function(){
       items.forEach(queueFailedSave);
     }
   }
+})();
+
+/* ── 16. FAB (Floating Action Button) ── */
+(function(){
+  var fab=document.createElement('button');
+  fab.id='ux-fab';fab.type='button';
+  fab.innerHTML='<span style="font-size:28px;font-weight:300;line-height:1">+</span>';
+  fab.style.cssText='position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#1a56db,#3b82f6);color:#fff;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(26,86,219,0.4),0 2px 4px rgba(0,0,0,0.1);z-index:50;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:transform 0.15s,box-shadow 0.15s';
+  fab.addEventListener('click',function(){
+    if(typeof openEdit==='function')openEdit(null);
+  });
+  fab.addEventListener('touchstart',function(){fab.style.transform='scale(0.92)';},{passive:true});
+  fab.addEventListener('touchend',function(){fab.style.transform='';},{passive:true});
+  document.body.appendChild(fab);
+
+  /* パネル/ダッシュボード/メニュー表示中はFAB非表示 */
+  function updateFabVisibility(){
+    var pnl=document.getElementById('pnl');
+    var dash=document.getElementById('dashboard');
+    var menu=document.getElementById('menu');
+    var hide=(pnl&&pnl.classList.contains('open'))||
+             (dash&&dash.style.display!=='none')||
+             (menu&&menu.style.display&&menu.style.display!=='none');
+    fab.style.display=hide?'none':'flex';
+  }
+  setInterval(updateFabVisibility,500);
+})();
+
+/* ── 17. Pull-to-Refresh ── */
+(function(){
+  var listEl=document.getElementById('list');
+  if(!listEl)return;
+  var startY=0,pulling=false,pullDist=0,threshold=70;
+
+  /* プルインジケータ */
+  var ind=document.createElement('div');
+  ind.id='ux-pull-ind';
+  ind.style.cssText='position:fixed;top:-40px;left:50%;transform:translateX(-50%);width:40px;height:40px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;font-size:18px;z-index:60;transition:top 0.2s,transform 0.2s;pointer-events:none';
+  ind.textContent='\u21BB';
+  document.body.appendChild(ind);
+
+  listEl.addEventListener('touchstart',function(e){
+    if(listEl.scrollTop>0)return;
+    startY=e.touches[0].clientY;pulling=true;pullDist=0;
+  },{passive:true});
+
+  listEl.addEventListener('touchmove',function(e){
+    if(!pulling)return;
+    var dy=e.touches[0].clientY-startY;
+    if(dy<=0){pulling=false;ind.style.top='-40px';return;}
+    if(listEl.scrollTop>0){pulling=false;ind.style.top='-40px';return;}
+    pullDist=dy;
+    var p=Math.min(dy,120);
+    ind.style.top=(Math.min(p-40,40))+'px';
+    ind.style.transform='translateX(-50%) rotate('+(p*3)+'deg)';
+  },{passive:true});
+
+  listEl.addEventListener('touchend',function(){
+    if(!pulling){ind.style.top='-40px';return;}
+    pulling=false;
+    if(pullDist>=threshold){
+      ind.style.top='20px';ind.textContent='\u27F3';
+      /* データ再読込 */
+      if(typeof loadFromSupabase==='function'&&window.sbClient){
+        loadFromSupabase().then(function(){
+          if(typeof render==='function')render();
+          if(typeof renderChips==='function')renderChips();
+          if(typeof showToast==='function')showToast('\u2705 \u66F4\u65B0\u5B8C\u4E86');
+          setTimeout(function(){ind.style.top='-40px';ind.textContent='\u21BB';},400);
+        }).catch(function(){
+          if(typeof showToast==='function')showToast('\u26A0\uFE0F \u66F4\u65B0\u5931\u6557');
+          ind.style.top='-40px';
+        });
+      } else {
+        setTimeout(function(){ind.style.top='-40px';},400);
+      }
+    } else {
+      ind.style.top='-40px';
+    }
+    pullDist=0;
+  },{passive:true});
+})();
+
+/* ── 18. Undo Snackbar ── */
+(function(){
+  var history=[],MAX=10;
+  window._undoHistory=history;
+
+  /* ステータス変更を記録するラッパー */
+  function recordUndo(rid,oldSt,newSt,label){
+    history.push({rid:rid,oldSt:oldSt,newSt:newSt,label:label,ts:Date.now()});
+    if(history.length>MAX)history.shift();
+    showUndoSnackbar(label);
+  }
+  window.recordUndo=recordUndo;
+
+  var snackTimer=null;
+  function showUndoSnackbar(label){
+    var old=document.getElementById('ux-snackbar');
+    if(old)old.remove();
+    clearTimeout(snackTimer);
+    var sb=document.createElement('div');sb.id='ux-snackbar';
+    sb.style.cssText='position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1a202c;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:12px;z-index:100;box-shadow:0 4px 16px rgba(0,0,0,0.25);animation:snackSlide 0.3s';
+    var msg=document.createElement('span');msg.textContent=label;
+    var btn=document.createElement('button');btn.type='button';btn.textContent='\u623B\u3059';
+    btn.style.cssText='background:none;border:none;color:#60a5fa;font-weight:700;cursor:pointer;font-family:inherit;font-size:13px;padding:2px 6px';
+    btn.addEventListener('click',function(){
+      var last=history.pop();
+      if(!last)return;
+      window.stMap[last.rid]=last.oldSt;
+      var d=window.D||[];
+      for(var i=0;i<d.length;i++){if(d[i][0]===last.rid){d[i][5]=last.oldSt;break;}}
+      if(typeof saveStore==='function')saveStore();
+      if(typeof saveToSupabase==='function'){
+        for(var j=0;j<d.length;j++){if(d[j][0]===last.rid){saveToSupabase(d[j]);break;}}
+      }
+      if(typeof render==='function')render();
+      sb.remove();
+      if(typeof showToast==='function')showToast('\u21BA \u5143\u306B\u623B\u3057\u307E\u3057\u305F');
+    });
+    sb.appendChild(msg);sb.appendChild(btn);
+    document.body.appendChild(sb);
+    snackTimer=setTimeout(function(){if(sb.parentNode)sb.remove();},5000);
+  }
+
+  /* スワイプメニューのステータス変更に履歴記録をフック */
+  /* (既存のswipe-menuボタンのonclickを上書きする代わりに、MutationObserverで検出) */
+  var _origStMapSet=Object.getOwnPropertyDescriptor(window,'stMap');
+
+  /* アニメーションCSS */
+  var sty=document.createElement('style');
+  sty.textContent='@keyframes snackSlide{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}';
+  document.head.appendChild(sty);
+})();
+
+/* ── 19. PWA インストールプロンプト ── */
+(function(){
+  var deferredPrompt=null;
+  var DISMISS_KEY='crm-pwa-dismissed';
+
+  window.addEventListener('beforeinstallprompt',function(e){
+    e.preventDefault();
+    deferredPrompt=e;
+    /* 一度却下されたら1週間は表示しない */
+    try{
+      var dm=parseInt(localStorage.getItem(DISMISS_KEY)||'0');
+      if(Date.now()-dm<7*86400000)return;
+    }catch(e2){}
+    setTimeout(showInstallBanner,3000);
+  });
+
+  function showInstallBanner(){
+    if(!deferredPrompt)return;
+    var old=document.getElementById('ux-install');
+    if(old)return;
+    var bar=document.createElement('div');bar.id='ux-install';
+    bar.style.cssText='position:fixed;bottom:90px;left:12px;right:12px;background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;z-index:80;box-shadow:0 4px 20px rgba(0,0,0,0.15);animation:snackSlide 0.3s';
+    var icon=document.createElement('span');icon.textContent='\uD83D\uDCF1';icon.style.cssText='font-size:22px;flex-shrink:0';
+    var info=document.createElement('div');info.style.cssText='flex:1;min-width:0';
+    var ti=document.createElement('div');ti.textContent='\u30DB\u30FC\u30E0\u753B\u9762\u306B\u8FFD\u52A0';ti.style.cssText='font-size:13px;font-weight:700;color:#37352f';
+    var sub=document.createElement('div');sub.textContent='\u30A2\u30D7\u30EA\u306E\u3088\u3046\u306B\u30B5\u30AF\u30B5\u30AF\u4F7F\u3048\u307E\u3059';sub.style.cssText='font-size:10px;color:#9b9a97;margin-top:2px';
+    info.appendChild(ti);info.appendChild(sub);
+    var ok=document.createElement('button');ok.type='button';ok.textContent='\u8FFD\u52A0';
+    ok.style.cssText='padding:6px 14px;background:#1a56db;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0';
+    ok.addEventListener('click',async function(){
+      if(!deferredPrompt){bar.remove();return;}
+      deferredPrompt.prompt();
+      try{await deferredPrompt.userChoice;}catch(e){}
+      deferredPrompt=null;bar.remove();
+    });
+    var no=document.createElement('button');no.type='button';no.textContent='\u2715';
+    no.style.cssText='padding:6px 8px;background:none;color:#9b9a97;border:none;font-size:16px;cursor:pointer;font-family:inherit;flex-shrink:0';
+    no.addEventListener('click',function(){
+      try{localStorage.setItem(DISMISS_KEY,String(Date.now()));}catch(e){}
+      bar.remove();
+    });
+    bar.appendChild(icon);bar.appendChild(info);bar.appendChild(ok);bar.appendChild(no);
+    document.body.appendChild(bar);
+  }
+})();
+
+/* ── 20. ダークモード ── */
+(function(){
+  var DARK_KEY='crm-dark',isDark=false;
+  try{isDark=localStorage.getItem(DARK_KEY)==='1';}catch(e){}
+
+  var darkStyle=document.createElement('style');
+  darkStyle.id='ux-dark-style';
+  darkStyle.textContent=
+    'body.dark,body.dark #app,body.dark #list,body.dark #top-bar{background:#1a202c!important;color:#e2e8f0!important}'+
+    'body.dark .card{background:#2d3748!important;border-color:#4a5568!important;color:#e2e8f0!important}'+
+    'body.dark .cname{color:#f7fafc!important}'+
+    'body.dark .cdate,body.dark .cphone,body.dark .cwork{color:#a0aec0!important}'+
+    'body.dark #pnl{background:#2d3748!important;color:#e2e8f0!important}'+
+    'body.dark #pnlbdg,body.dark #pnlbody{color:#e2e8f0!important}'+
+    'body.dark #hdr,body.dark #kpis,body.dark #filters,body.dark #searchrow{background:#2d3748!important;color:#e2e8f0!important}'+
+    'body.dark input,body.dark textarea,body.dark select{background:#1a202c!important;color:#e2e8f0!important;border-color:#4a5568!important}'+
+    'body.dark .ptab{background:#2d3748!important;color:#cbd5e0!important;border-color:#4a5568!important}'+
+    'body.dark #dashboard{background:#1a202c!important;color:#e2e8f0!important}'+
+    'body.dark #dashboard > div > div[style*="background:#fff"]{background:#2d3748!important}'+
+    'body.dark #menu{background:#2d3748!important;color:#e2e8f0!important;border-color:#4a5568!important}'+
+    'body.dark .menu-item{color:#e2e8f0!important}'+
+    'body.dark .menu-item:hover{background:#374151!important}'+
+    'body.dark #ux-tasks button{background:#2d3748!important;color:#e2e8f0!important;border-color:#4a5568!important}'+
+    'body.dark #swipe-menu{background:#2d3748!important;color:#e2e8f0!important;border-color:#4a5568!important}'+
+    'body.dark #empty{color:#a0aec0!important}';
+  document.head.appendChild(darkStyle);
+
+  function apply(){
+    if(isDark)document.body.classList.add('dark');
+    else document.body.classList.remove('dark');
+  }
+  apply();
+
+  window.toggleDark=function(){
+    isDark=!isDark;
+    try{localStorage.setItem(DARK_KEY,isDark?'1':'0');}catch(e){}
+    apply();
+    if(typeof showToast==='function')showToast(isDark?'\uD83C\uDF19 \u30C0\u30FC\u30AF\u30E2\u30FC\u30C9':'\u2600\uFE0F \u30E9\u30A4\u30C8\u30E2\u30FC\u30C9');
+  };
+
+  /* メニューにダークモード切替を追加 */
+  setTimeout(function(){
+    var menu=document.getElementById('menu');if(!menu)return;
+    if(document.getElementById('ux-dark-toggle'))return;
+    var logoutBtn=menu.querySelector('.danger');
+    var b=document.createElement('button');b.className='menu-item';b.id='ux-dark-toggle';
+    b.innerHTML='<span class="menu-icon">\uD83C\uDF19</span><span id="ux-dark-label">'+(isDark?'\u30E9\u30A4\u30C8\u30E2\u30FC\u30C9':'\u30C0\u30FC\u30AF\u30E2\u30FC\u30C9')+'</span>';
+    b.onclick=function(){
+      toggleDark();
+      var lbl=document.getElementById('ux-dark-label');
+      if(lbl)lbl.textContent=isDark?'\u30E9\u30A4\u30C8\u30E2\u30FC\u30C9':'\u30C0\u30FC\u30AF\u30E2\u30FC\u30C9';
+      menu.style.display='none';
+    };
+    if(logoutBtn)menu.insertBefore(b,logoutBtn);
+    else menu.appendChild(b);
+  },1500);
+})();
+
+/* ── 21. クイックアクションシート (長押し代替) ── */
+(function(){
+  /* 長押しで bulk mode に入る代わりに、アクションシートを表示 */
+  var _origToggle=window.toggleBulkMode;
+  /* 既存の長押し→bulkMode動作を上書き：長押し時にアクションシート表示 */
+  /* render側で toggleBulkSelect が呼ばれる動作はそのまま維持するため、新規のグローバル関数を追加 */
+
+  window.showCardActionSheet=function(rid){
+    var old=document.getElementById('ux-action-sheet');
+    if(old)old.remove();
+
+    var r=null;
+    for(var i=0;i<(window.D||[]).length;i++){if(window.D[i][0]===rid){r=window.D[i];break;}}
+    if(!r)return;
+
+    var ov=document.createElement('div');ov.id='ux-action-sheet';
+    ov.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.35);z-index:150;display:flex;align-items:flex-end;animation:snackSlide 0.2s';
+    var sheet=document.createElement('div');
+    sheet.style.cssText='background:#fff;width:100%;border-radius:16px 16px 0 0;padding:16px 16px 24px;box-shadow:0 -4px 20px rgba(0,0,0,0.2)';
+
+    var ti=document.createElement('div');
+    ti.textContent=r[1]||'';
+    ti.style.cssText='font-size:14px;font-weight:700;color:#37352f;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+    var sub=document.createElement('div');
+    sub.textContent=(r[3]||'')+(r[7]?(' / '+r[7]):'');
+    sub.style.cssText='font-size:11px;color:#9b9a97;margin-bottom:14px';
+    sheet.appendChild(ti);sheet.appendChild(sub);
+
+    var actions=[
+      {ic:'\uD83D\uDCCB',label:'\u8A73\u7D30\u3092\u958B\u304F',fn:function(){if(typeof openPanel==='function')openPanel(rid);}},
+      {ic:'\u270F\uFE0F',label:'\u7DE8\u96C6',fn:function(){if(typeof openEdit==='function')openEdit(rid);}},
+      {ic:'\u260E\uFE0F',label:'\u96FB\u8A71',fn:function(){
+        if(r[4]&&r[4]!=='\u306A\u3057')window.location.href='tel:'+r[4].replace(/[-\s]/g,'');
+        else if(typeof showToast==='function')showToast('\u96FB\u8A71\u756A\u53F7\u306A\u3057');
+      }},
+      {ic:'\uD83D\uDCCC',label:(window._crmPins&&window._crmPins[rid])?'\u30D4\u30F3\u89E3\u9664':'\u30D4\u30F3\u7559\u3081',fn:function(){if(typeof togglePin==='function')togglePin(rid);}},
+      {ic:'\uD83D\uDD04',label:'\u30B9\u30C6\u30FC\u30BF\u30B9\u5909\u66F4',fn:function(){if(typeof window.showSwipeMenu==='function')window.showSwipeMenu(rid);else if(typeof openPanel==='function')openPanel(rid);}},
+      {ic:'\u2611\uFE0F',label:'\u4E00\u62EC\u9078\u629E\u30E2\u30FC\u30C9',fn:function(){
+        if(!window.bulkMode&&typeof toggleBulkMode==='function')toggleBulkMode();
+        if(typeof toggleBulkSelect==='function')toggleBulkSelect(rid);
+      }}
+    ];
+
+    actions.forEach(function(a){
+      var b=document.createElement('button');b.type='button';
+      b.style.cssText='display:flex;align-items:center;gap:12px;width:100%;padding:14px 4px;background:none;border:none;border-bottom:1px solid #f0f0ee;cursor:pointer;text-align:left;font-family:inherit;font-size:14px;color:#37352f';
+      b.innerHTML='<span style="font-size:18px;width:24px;text-align:center;flex-shrink:0">'+a.ic+'</span><span>'+a.label+'</span>';
+      b.addEventListener('click',function(){a.fn();ov.remove();});
+      sheet.appendChild(b);
+    });
+
+    var cancel=document.createElement('button');cancel.type='button';cancel.textContent='\u30AD\u30E3\u30F3\u30BB\u30EB';
+    cancel.style.cssText='display:block;width:100%;margin-top:12px;padding:12px;background:#f7f6f3;border:none;border-radius:8px;font-size:13px;color:#718096;cursor:pointer;font-family:inherit';
+    cancel.addEventListener('click',function(){ov.remove();});
+    sheet.appendChild(cancel);
+
+    ov.appendChild(sheet);
+    ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+    document.body.appendChild(ov);
+
+    if(navigator.vibrate)navigator.vibrate(20);
+  };
+
+  /* 長押し動作を bulkMode 代わりに action sheet に */
+  /* feature 10 の touchstart タイマーを上書きするため、document レベルで長押し検出しなおす */
+  var listEl=document.getElementById('list');
+  if(!listEl)return;
+  var lpT=null,lpX=0,lpY=0,lpRid=null;
+  function cancelLp(){if(lpT){clearTimeout(lpT);lpT=null;}lpRid=null;}
+  listEl.addEventListener('touchstart',function(e){
+    var card=e.target.closest?e.target.closest('.card[data-rid]'):null;
+    if(!card)return;
+    if(window.bulkMode)return;
+    lpX=e.touches[0].clientX;lpY=e.touches[0].clientY;
+    lpRid=parseInt(card.getAttribute('data-rid'));
+    cancelLp2();
+    lpT=setTimeout(function(){
+      lpT=null;
+      if(lpRid!=null){
+        if(typeof window._suppressNextClick==='function')window._suppressNextClick();
+        window.showCardActionSheet(lpRid);
+      }
+    },550);
+  },{passive:true,capture:true});
+  function cancelLp2(){}
+  listEl.addEventListener('touchmove',function(e){
+    if(!lpT)return;
+    var dx=Math.abs(e.touches[0].clientX-lpX);
+    var dy=Math.abs(e.touches[0].clientY-lpY);
+    if(dx>5||dy>5)cancelLp();
+  },{passive:true,capture:true});
+  listEl.addEventListener('touchend',cancelLp,{passive:true,capture:true});
+  listEl.addEventListener('touchcancel',cancelLp,{passive:true,capture:true});
 })();
 
 })();
