@@ -8456,6 +8456,74 @@ window.importBackupJSON = function(){
   };
 })();
 
+/* ── 67. 顧客タイムライン (詳細パネル内) ── */
+(function(){
+  var _origOpen=window.openPanel;
+  if(typeof _origOpen!=='function')return;
+  window.openPanel=function(rid){
+    var r=_origOpen.apply(this,arguments);
+    setTimeout(function(){
+      var pnlbd=document.getElementById('pnlbd');
+      if(!pnlbd)return;
+      var old=document.getElementById('ux-timeline');
+      if(old)old.remove();
+
+      var rec=null,d=window.D||[];
+      for(var i=0;i<d.length;i++){if(d[i][0]===rid){rec=d[i];break;}}
+      if(!rec)return;
+
+      var events=[];
+      if(rec[6])events.push({d:rec[6],l:'AP日',ic:'📅',c:'#2383e2'});
+      if(rec[18])events.push({d:rec[18],l:'契約日',ic:'✅',c:'#059669'});
+      /* editLog から日付抽出 */
+      try{
+        var el=JSON.parse(localStorage.getItem('crm-editlog')||'{}')[rid]||[];
+        el.forEach(function(e){
+          if(e.ts){
+            var dt=new Date(e.ts).toISOString().slice(0,10);
+            events.push({d:dt,l:(e.field||'編集'),ic:'✎',c:'#9b9a97'});
+          }
+        });
+      }catch(e){}
+      /* contactLog から */
+      try{
+        var cl=(window.contactLog||{})[rid]||[];
+        cl.forEach(function(e){
+          if(e.ts){
+            var dt=new Date(e.ts).toISOString().slice(0,10);
+            events.push({d:dt,l:'連絡: '+String(e.note||'').slice(0,20),ic:'📞',c:'#7c3aed'});
+          }
+        });
+      }catch(e){}
+
+      if(events.length===0)return;
+      events.sort(function(a,b){return a.d.localeCompare(b.d);});
+
+      var sec=document.createElement('div');sec.id='ux-timeline';sec.className='psec';
+      sec.style.cssText='margin-top:14px';
+      var ti=document.createElement('div');
+      ti.textContent='📜 タイムライン';
+      ti.style.cssText='font-size:10px;font-weight:700;color:#9b9a97;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px';
+      sec.appendChild(ti);
+
+      var list=document.createElement('div');
+      list.style.cssText='border-left:2px solid #e2e8f0;padding-left:12px;position:relative';
+      events.forEach(function(ev){
+        var row=document.createElement('div');
+        row.style.cssText='position:relative;padding:5px 0 5px 8px;font-size:11px;color:#37352f';
+        var dot=document.createElement('div');
+        dot.style.cssText='position:absolute;left:-17px;top:8px;width:8px;height:8px;border-radius:50%;background:'+ev.c+';border:2px solid #fff;box-shadow:0 0 0 1px '+ev.c;
+        row.innerHTML=ev.ic+' <b>'+ev.d+'</b> — '+ev.l.replace(/</g,'&lt;');
+        row.appendChild(dot);
+        list.appendChild(row);
+      });
+      sec.appendChild(list);
+      pnlbd.appendChild(sec);
+    },100);
+    return r;
+  };
+})();
+
 })();
 </script>
 </body>
