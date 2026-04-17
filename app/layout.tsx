@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { SITE_NAME, SITE_DESCRIPTION } from "@/lib/constants";
 import { AuthProvider } from "@/lib/auth-context";
+import { ToastProvider } from "@/lib/toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,7 +21,9 @@ export default function RootLayout({
     <html lang="ja" className="h-full antialiased">
       <body className="min-h-full font-sans">
         <AuthProvider>
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </AuthProvider>
       </body>
     </html>

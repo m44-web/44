@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { getGuards, getSites, addShift } from "@/lib/store";
-import type { Guard, Site, ShiftType } from "@/lib/types";
+import { getGuards, getSites, addShift, getShifts } from "@/lib/store";
+import type { Guard, Site, Shift, ShiftType } from "@/lib/types";
 import { SHIFT_PREFERENCE_LABELS } from "@/lib/types";
 
 const inputClasses =
@@ -18,6 +18,7 @@ export default function NewShiftPage() {
   const router = useRouter();
   const [guards, setGuards] = useState<Guard[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
+  const [allShifts, setAllShifts] = useState<Shift[]>([]);
   const [guardId, setGuardId] = useState("");
   const [siteId, setSiteId] = useState("");
   const [date, setDate] = useState(todayStr());
@@ -32,7 +33,28 @@ export default function NewShiftPage() {
     setMounted(true);
     setGuards(getGuards().filter((g) => g.status === "active"));
     setSites(getSites().filter((s) => s.status === "active"));
+    setAllShifts(getShifts());
   }, []);
+
+  // Detect conflicts: same guard, same date, overlapping time
+  const conflict = useMemo(() => {
+    if (!guardId || !date) return null;
+    const guardShifts = allShifts.filter((s) => s.guardId === guardId && s.date === date && s.status !== "cancelled");
+    if (guardShifts.length === 0) return null;
+    const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+    const newStart = toMin(startTime);
+    let newEnd = toMin(endTime);
+    if (newEnd <= newStart) newEnd += 24 * 60;
+    for (const s of guardShifts) {
+      const sStart = toMin(s.startTime);
+      let sEnd = toMin(s.endTime);
+      if (sEnd <= sStart) sEnd += 24 * 60;
+      if (newStart < sEnd && sStart < newEnd) {
+        return { shift: s, type: "overlap" as const };
+      }
+    }
+    return { shift: guardShifts[0], type: "same_day" as const };
+  }, [guardId, date, startTime, endTime, allShifts]);
 
   if (!mounted) return null;
 
@@ -55,6 +77,7 @@ export default function NewShiftPage() {
     if (!guardId) errs.guardId = "警備員を選択してください";
     if (!siteId) errs.siteId = "現場を選択してください";
     if (!date) errs.date = "日付を入力してください";
+    if (conflict?.type === "overlap") errs.conflict = "時間が重複するシフトがあります";
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
       return;
@@ -135,6 +158,30 @@ export default function NewShiftPage() {
           <input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClasses} />
           {errors.date && <p className="text-danger text-sm mt-1">{errors.date}</p>}
         </div>
+
+        {/* Conflict warning */}
+        {conflict && (() => {
+          const existingSite = sites.find((s) => s.id === conflict.shift.siteId);
+          return (
+            <div className={`rounded-lg border p-3 flex items-start gap-2 ${
+              conflict.type === "overlap" ? "border-danger/40 bg-danger/5" : "border-warning/40 bg-warning/5"
+            }`}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`shrink-0 mt-0.5 ${conflict.type === "overlap" ? "text-danger" : "text-warning"}`}>
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <div className="text-sm">
+                <p className={`font-semibold ${conflict.type === "overlap" ? "text-danger" : "text-warning"}`}>
+                  {conflict.type === "overlap" ? "時間が重複しています" : "同日に既存シフトあり"}
+                </p>
+                <p className="text-text-secondary text-xs mt-0.5">
+                  {existingSite?.name ?? "—"} / {conflict.shift.startTime}〜{conflict.shift.endTime}（{conflict.shift.shiftType === "night" ? "夜勤" : "日勤"}）
+                </p>
+              </div>
+            </div>
+          );
+        })()}
 
         <div className="grid gap-4 grid-cols-2">
           <div>

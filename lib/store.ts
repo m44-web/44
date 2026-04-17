@@ -528,6 +528,29 @@ export function addHandoverNote(note: Omit<HandoverNote, "id" | "createdAt">): H
   return newNote;
 }
 
+// --- Notification counts ---
+export function getAdminNotificationCounts(): { shiftRequests: number; missingLocation: number } {
+  const pendingRequests = getShiftRequests().filter((r) => r.status === "pending").length;
+  const today = todayStr();
+  const todayShifts = getShifts().filter((s) => s.date === today && s.status !== "cancelled");
+  const guardsWithTodayShift = new Set(todayShifts.map((s) => s.guardId));
+  const twelveHoursAgo = Date.now() - 12 * 60 * 60 * 1000;
+  const recentLocGuards = new Set(getLocations().filter((l) => new Date(l.timestamp).getTime() > twelveHoursAgo).map((l) => l.guardId));
+  const missingLocation = [...guardsWithTodayShift].filter((id) => !recentLocGuards.has(id)).length;
+  return { shiftRequests: pendingRequests, missingLocation };
+}
+
+export function getGuardNotificationCounts(guardId: string): { nextWeekRequest: boolean; pendingHandover: number } {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const daysUntilMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
+  const nextMonday = new Date(now);
+  nextMonday.setDate(now.getDate() + daysUntilMonday);
+  const nextWeekStart = nextMonday.toISOString().split("T")[0];
+  const hasNextWeekRequest = getShiftRequests().some((r) => r.guardId === guardId && r.date >= nextWeekStart);
+  return { nextWeekRequest: !hasNextWeekRequest, pendingHandover: 0 };
+}
+
 // --- Location history for a guard ---
 export function getLocationsByGuard(guardId: string): LocationLog[] {
   return getLocations().filter((l) => l.guardId === guardId).sort((a, b) => b.timestamp.localeCompare(a.timestamp));

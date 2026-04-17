@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getShifts, getGuards, getSites, getAttendance, getShiftsByGuard, getAttendanceByGuard, clockIn, clockOut, addLocation, getLocations } from "@/lib/store";
+import { useToast } from "@/lib/toast";
 import { Card } from "@/components/ui/Card";
 import type { Shift, Guard, Site, AttendanceRecord, LocationLog } from "@/lib/types";
 import { ATTENDANCE_STATUS_LABELS } from "@/lib/types";
@@ -219,6 +220,7 @@ function GuardAttendance({ guardId }: { guardId?: string }) {
   const [sites, setSites] = useState<Site[]>([]);
   const [currentTime, setCurrentTime] = useState(nowTimeStr());
   const [mounted, setMounted] = useState(false);
+  const { showToast } = useToast();
 
   const refreshData = useCallback(() => {
     if (!guardId) return;
@@ -261,12 +263,14 @@ function GuardAttendance({ guardId }: { guardId?: string }) {
     clockIn(shiftId);
     sendLocationOnClock("clock_in");
     refreshData();
+    showToast("上番しました。お気をつけて！", "success");
   }
 
   function handleClockOut(shiftId: string) {
     clockOut(shiftId);
     sendLocationOnClock("clock_out");
     refreshData();
+    showToast("下番しました。お疲れ様でした！", "success");
   }
 
   // Past attendance

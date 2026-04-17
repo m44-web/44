@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getLatestLocations, addLocation, getGuards, getSites, getShifts } from "@/lib/store";
+import { useToast } from "@/lib/toast";
 import { Card } from "@/components/ui/Card";
 import type { LocationLog, Guard, Shift, Site } from "@/lib/types";
 
@@ -18,6 +19,7 @@ function GuardLocationView({ guardId }: { guardId: string }) {
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [lastSent, setLastSent] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     setMounted(true);
@@ -46,15 +48,17 @@ function GuardLocationView({ guardId }: { guardId: string }) {
         });
         setLastSent(now);
         setStatus("success");
+        showToast("位置情報を送信しました", "success");
         setTimeout(() => setStatus("idle"), 3000);
       },
       () => {
         setStatus("error");
+        showToast("位置情報を取得できませんでした", "error");
         setTimeout(() => setStatus("idle"), 3000);
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
-  }, [guardId]);
+  }, [guardId, showToast]);
 
   if (!mounted) return null;
 

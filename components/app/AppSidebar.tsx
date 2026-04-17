@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { getAdminNotificationCounts, getGuardNotificationCounts } from "@/lib/store";
 
 const adminNav = [
   { href: "/dashboard", label: "ダッシュボード", icon: "home" },
@@ -129,6 +131,23 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const nav = user?.role === "admin" ? adminNav : guardNav;
+  const [badges, setBadges] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!user) return;
+    const compute = () => {
+      if (user.role === "admin") {
+        const n = getAdminNotificationCounts();
+        setBadges({ "/shift-requests": n.shiftRequests, "/locations": n.missingLocation });
+      } else if (user.guardId) {
+        const n = getGuardNotificationCounts(user.guardId);
+        setBadges({ "/shift-requests": n.nextWeekRequest ? 1 : 0 });
+      }
+    };
+    compute();
+    const interval = setInterval(compute, 30000);
+    return () => clearInterval(interval);
+  }, [user, pathname]);
 
   return (
     <aside className="hidden md:flex fixed top-0 left-0 bottom-0 w-60 bg-card-bg border-r border-border flex-col z-40">
@@ -141,6 +160,7 @@ export function AppSidebar() {
       <nav className="flex-1 p-3 space-y-1">
         {nav.map((item) => {
           const active = pathname === item.href;
+          const badgeCount = badges[item.href] ?? 0;
           return (
             <Link
               key={item.href}
@@ -152,7 +172,12 @@ export function AppSidebar() {
               }`}
             >
               <span className={active ? "text-accent" : ""}>{icons[item.icon]}</span>
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {badgeCount > 0 && (
+                <span className="bg-danger text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1.5">
+                  {badgeCount > 99 ? "99+" : badgeCount}
+                </span>
+              )}
             </Link>
           );
         })}

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getShiftRequests, getShiftRequestsByGuard, addShiftRequest, updateShiftRequest, getGuards, getSites } from "@/lib/store";
+import { useToast } from "@/lib/toast";
 import { Card } from "@/components/ui/Card";
 import { SHIFT_REQUEST_STATUS_LABELS, SHIFT_REQUEST_STATUS_COLORS } from "@/lib/types";
 import type { ShiftRequest, Guard, Site } from "@/lib/types";
@@ -40,6 +41,7 @@ function GuardShiftRequestView({ guardId }: { guardId: string }) {
   const [requests, setRequests] = useState<ShiftRequest[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const { showToast } = useToast();
 
   function refresh() {
     setRequests(getShiftRequestsByGuard(guardId));
@@ -160,7 +162,11 @@ function GuardShiftRequestView({ guardId }: { guardId: string }) {
           guardId={guardId}
           existingDates={requests.map((r) => r.date)}
           onClose={() => setShowForm(false)}
-          onDone={() => { setShowForm(false); refresh(); }}
+          onDone={(count) => {
+            setShowForm(false);
+            refresh();
+            if (count > 0) showToast(`${count}件のシフト希望を提出しました`, "success");
+          }}
         />
       )}
     </div>
@@ -172,6 +178,7 @@ function AdminShiftRequestView() {
   const [guards, setGuards] = useState<Guard[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
   const [siteSelections, setSiteSelections] = useState<Record<string, string>>({});
+  const { showToast } = useToast();
   const [mounted, setMounted] = useState(false);
 
   function refresh() {
@@ -194,16 +201,18 @@ function AdminShiftRequestView() {
   function handleApprove(id: string) {
     const selectedSiteId = siteSelections[id] || "";
     if (!selectedSiteId) {
-      alert("現場を選択してから承認してください");
+      showToast("現場を選択してから承認してください", "warning");
       return;
     }
     updateShiftRequest(id, { status: "approved" }, selectedSiteId);
     refresh();
+    showToast("シフト希望を承認しました", "success");
   }
 
   function handleReject(id: string) {
     updateShiftRequest(id, { status: "rejected" });
     refresh();
+    showToast("シフト希望を却下しました", "info");
   }
 
   return (
@@ -327,7 +336,7 @@ function AdminShiftRequestView() {
 function ShiftRequestFormModal({
   guardId, existingDates, onClose, onDone,
 }: {
-  guardId: string; existingDates: string[]; onClose: () => void; onDone: () => void;
+  guardId: string; existingDates: string[]; onClose: () => void; onDone: (submittedCount: number) => void;
 }) {
   const nextWeek = getNextWeekDates();
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
@@ -356,17 +365,19 @@ function ShiftRequestFormModal({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (selectedDates.size === 0) return;
+    let submitted = 0;
     selectedDates.forEach((date) => {
       if (existingDates.includes(date)) return;
       if (shiftType === "both") {
-        // Submit two requests: day + night
         addShiftRequest({ guardId, date, startTime: "09:00", endTime: "18:00", notes: (notes.trim() ? notes.trim() + "（日勤）" : "日勤"), status: "pending" });
         addShiftRequest({ guardId, date, startTime: "18:00", endTime: "06:00", notes: (notes.trim() ? notes.trim() + "（夜勤）" : "夜勤"), status: "pending" });
+        submitted += 2;
       } else {
         addShiftRequest({ guardId, date, startTime, endTime, notes: notes.trim(), status: "pending" });
+        submitted += 1;
       }
     });
-    onDone();
+    onDone(submitted);
   }
 
   return (

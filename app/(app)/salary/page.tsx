@@ -44,21 +44,34 @@ export default function SalaryPage() {
   const dayShifts = monthShifts.filter((s) => s.shiftType !== "night");
   const nightShifts = monthShifts.filter((s) => s.shiftType === "night");
 
-  function calcHours(s: Shift): number {
-    const [sh, sm] = s.startTime.split(":").map(Number);
-    const [eh, em] = s.endTime.split(":").map(Number);
+  function calcHoursFromTimes(start: string, end: string): number {
+    const [sh, sm] = start.split(":").map(Number);
+    const [eh, em] = end.split(":").map(Number);
     let hours = eh - sh + (em - sm) / 60;
     if (hours < 0) hours += 24; // overnight
     return hours;
   }
 
+  // Use actual clock-in/out if completed, otherwise scheduled times
+  function calcActualHours(s: Shift): number {
+    const att = attendance.find((a) => a.shiftId === s.id);
+    if (att?.clockIn && att?.clockOut) {
+      return calcHoursFromTimes(att.clockIn, att.clockOut);
+    }
+    return calcHoursFromTimes(s.startTime, s.endTime);
+  }
+
+  function calcHours(s: Shift): number {
+    return calcHoursFromTimes(s.startTime, s.endTime);
+  }
+
   function calcPay(s: Shift): number {
-    const hours = calcHours(s);
+    const hours = s.status === "completed" ? calcActualHours(s) : calcHours(s);
     const rate = s.shiftType === "night" ? nightRate : dayRate;
     return Math.round(hours * rate);
   }
 
-  const completedHours = completedShifts.reduce((sum, s) => sum + calcHours(s), 0);
+  const completedHours = completedShifts.reduce((sum, s) => sum + calcActualHours(s), 0);
   const scheduledHours = scheduledShifts.reduce((sum, s) => sum + calcHours(s), 0);
   const totalHours = completedHours + scheduledHours;
 

@@ -1,9 +1,10 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { getAdminNotificationCounts, getGuardNotificationCounts } from "@/lib/store";
 
 const adminNav = [
   { href: "/dashboard", label: "ホーム", icon: "home" },
@@ -112,22 +113,42 @@ export const AppBottomNav = memo(function AppBottomNav() {
   const pathname = usePathname();
   const { user } = useAuth();
   const nav = user?.role === "admin" ? adminNav : guardNav;
+  const [badges, setBadges] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!user) return;
+    const compute = () => {
+      if (user.role === "admin") {
+        const n = getAdminNotificationCounts();
+        setBadges({ "/locations": n.missingLocation });
+      }
+    };
+    compute();
+    const interval = setInterval(compute, 30000);
+    return () => clearInterval(interval);
+  }, [user, pathname]);
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card-bg border-t border-border z-40 pb-[env(safe-area-inset-bottom)]">
       <div className="flex justify-around items-center h-16">
         {nav.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
+          const badgeCount = badges[item.href] ?? 0;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 min-w-[56px] transition-colors ${
+              className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 min-w-[56px] transition-colors ${
                 active ? "text-accent" : "text-text-secondary"
               }`}
             >
               {icons[item.icon](active)}
               <span className="text-[10px] font-medium">{item.label}</span>
+              {badgeCount > 0 && (
+                <span className="absolute top-1 right-2 bg-danger text-white text-[9px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1">
+                  {badgeCount > 9 ? "9+" : badgeCount}
+                </span>
+              )}
             </Link>
           );
         })}
