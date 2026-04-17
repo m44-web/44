@@ -6,7 +6,9 @@ import { useAuth } from "@/lib/auth-context";
 import {
   getGuards, getSites, getShifts, getAttendance, getShiftsByGuard, getAttendanceByGuard,
   getEquipment, getLending, getReports, getShiftRequests, getLatestLocations, getInterviews,
+  clockIn, clockOut, addLocation,
 } from "@/lib/store";
+import { useToast } from "@/lib/toast";
 import { Card } from "@/components/ui/Card";
 import { DashboardSkeleton } from "@/components/ui/Skeleton";
 import type { Guard, Shift, AttendanceRecord, EquipmentLending, ShiftRequest, LocationLog, InterviewCandidate } from "@/lib/types";
@@ -506,16 +508,13 @@ function GuardDashboard({ guardId }: { guardId: string }) {
                     )}
                   </div>
 
-                  {/* Action button - HUGE */}
+                  {/* Action button - HUGE with direct clock in/out */}
                   {att?.status !== "completed" && (
-                    <Link
-                      href="/attendance"
-                      className={`mt-4 block text-center text-white rounded-xl py-5 text-xl font-bold active:scale-[0.97] transition-transform ${
-                        att?.status === "on_duty" ? "bg-danger" : "bg-accent"
-                      }`}
-                    >
-                      {att?.status === "on_duty" ? "退勤する" : "出勤する"}
-                    </Link>
+                    <QuickClockButton
+                      shiftId={shift.id}
+                      guardId={guardId}
+                      isOnDuty={att?.status === "on_duty"}
+                    />
                   )}
                 </div>
               );
@@ -978,5 +977,55 @@ function SurplusGuards({ activeGuards, shifts }: { activeGuards: Guard[]; shifts
         )}
       </div>
     </div>
+  );
+}
+
+function QuickClockButton({ shiftId, guardId, isOnDuty }: { shiftId: string; guardId: string; isOnDuty: boolean }) {
+  const { showToast } = useToast();
+  const [working, setWorking] = useState(false);
+
+  function sendLocationOnClock(type: "clock_in" | "clock_out") {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => addLocation({
+        guardId,
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        accuracy: pos.coords.accuracy,
+        speed: pos.coords.speed,
+        timestamp: new Date().toISOString(),
+        type,
+      }),
+      () => {},
+      { enableHighAccuracy: true, timeout: 5000 }
+    );
+  }
+
+  function handleClick() {
+    if (working) return;
+    setWorking(true);
+    if (isOnDuty) {
+      clockOut(shiftId);
+      sendLocationOnClock("clock_out");
+      showToast("下番しました。お疲れ様でした！", "success");
+    } else {
+      clockIn(shiftId);
+      sendLocationOnClock("clock_in");
+      showToast("上番しました。お気をつけて！", "success");
+    }
+    // Trigger a page refresh after a short delay for the toast to show
+    setTimeout(() => window.location.reload(), 800);
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={working}
+      className={`mt-4 block w-full text-center text-white rounded-xl py-5 text-xl font-bold active:scale-[0.97] transition-transform cursor-pointer ${
+        isOnDuty ? "bg-danger hover:bg-red-700" : "bg-accent hover:bg-accent-dark"
+      } ${working ? "opacity-70" : ""}`}
+    >
+      {working ? "処理中..." : isOnDuty ? "退勤する（下番報告）" : "出勤する（上番報告）"}
+    </button>
   );
 }
