@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 const schema = z
   .object({
@@ -33,6 +34,23 @@ export function SettingsPanel({
 }) {
   const [serverError, setServerError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [audioChunkMin, setAudioChunkMin] = useState(5);
+  const [gpsIntervalSec, setGpsIntervalSec] = useState(30);
+  const [prefsSaved, setPrefsSaved] = useState(false);
+
+  useEffect(() => {
+    const chunk = localStorage.getItem("audio_chunk_min");
+    if (chunk) setAudioChunkMin(parseInt(chunk, 10));
+    const gps = localStorage.getItem("gps_interval_sec");
+    if (gps) setGpsIntervalSec(parseInt(gps, 10));
+  }, []);
+
+  const savePrefs = () => {
+    localStorage.setItem("audio_chunk_min", String(audioChunkMin));
+    localStorage.setItem("gps_interval_sec", String(gpsIntervalSec));
+    setPrefsSaved(true);
+    setTimeout(() => setPrefsSaved(false), 2000);
+  };
 
   const {
     register,
@@ -82,9 +100,12 @@ export function SettingsPanel({
             </Link>
             <h1 className="font-semibold">設定</h1>
           </div>
-          <Button variant="ghost" onClick={handleLogout} className="text-sm">
-            ログアウト
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="ghost" onClick={handleLogout} className="text-sm">
+              ログアウト
+            </Button>
+          </div>
         </Container>
       </header>
 
@@ -100,6 +121,59 @@ export function SettingsPanel({
             <dd>{userRole === "admin" ? "管理者" : "従業員"}</dd>
           </dl>
         </Card>
+
+        {userRole === "employee" && (
+          <Card>
+            <h2 className="font-semibold mb-1">記録設定</h2>
+            <p className="text-xs text-text-muted mb-4">
+              次回の勤務開始から適用されます。バッテリー消費が気になる場合は間隔を長めに。
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-text-muted mb-1">
+                  GPS送信間隔: {gpsIntervalSec}秒
+                </label>
+                <input
+                  type="range"
+                  min={15}
+                  max={120}
+                  step={5}
+                  value={gpsIntervalSec}
+                  onChange={(e) => setGpsIntervalSec(parseInt(e.target.value, 10))}
+                  className="w-full accent-primary"
+                />
+                <div className="flex justify-between text-xs text-text-muted">
+                  <span>15秒</span>
+                  <span>2分</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-text-muted mb-1">
+                  音声録音チャンク: {audioChunkMin}分
+                </label>
+                <input
+                  type="range"
+                  min={1}
+                  max={15}
+                  step={1}
+                  value={audioChunkMin}
+                  onChange={(e) => setAudioChunkMin(parseInt(e.target.value, 10))}
+                  className="w-full accent-primary"
+                />
+                <div className="flex justify-between text-xs text-text-muted">
+                  <span>1分</span>
+                  <span>15分</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button onClick={savePrefs}>保存</Button>
+                {prefsSaved && (
+                  <span className="text-xs text-success">保存しました</span>
+                )}
+              </div>
+            </div>
+          </Card>
+        )}
 
         <Card>
           <h2 className="font-semibold mb-4">パスワード変更</h2>

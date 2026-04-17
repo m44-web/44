@@ -2,7 +2,7 @@ import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import { db } from "./db";
 import { sessions, users } from "./db/schema";
-import { eq, and, gt } from "drizzle-orm";
+import { eq, and, gt, lt } from "drizzle-orm";
 
 const SALT_LEN = 16;
 const KEY_LEN = 64;
@@ -26,7 +26,22 @@ export function generateId(): string {
   return randomBytes(16).toString("hex");
 }
 
+// Keep cleanup rate-limited to avoid hammering the DB on every login
+let lastCleanup = 0;
+function maybeCleanExpiredSessions() {
+  const now = Date.now();
+  if (now - lastCleanup < 60 * 60 * 1000) return;
+  lastCleanup = now;
+  try {
+    db.delete(sessions).where(lt(sessions.expiresAt, new Date())).run();
+  } catch {
+    // ignore
+  }
+}
+
 export async function createSession(userId: string): Promise<string> {
+  maybeCleanExpiredSessions();
+
   const sessionId = generateId();
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
   db.insert(sessions).values({ id: sessionId, userId, expiresAt }).run();

@@ -58,6 +58,11 @@ function DashboardContent({ userName }: { userName: string }) {
                 従業員管理
               </Button>
             </Link>
+            <Link href="/admin/geofences">
+              <Button variant="ghost" className="text-sm hidden sm:inline-flex">
+                エリア
+              </Button>
+            </Link>
             <Link href="/settings">
               <Button variant="ghost" className="text-sm hidden sm:inline-flex">
                 設定

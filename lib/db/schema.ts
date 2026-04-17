@@ -42,6 +42,16 @@ export const gpsLogs = sqliteTable("gps_logs", {
   recordedAt: integer("recorded_at", { mode: "timestamp_ms" }).notNull(),
 });
 
+export const geofences = sqliteTable("geofences", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  latitude: real("latitude").notNull(),
+  longitude: real("longitude").notNull(),
+  radiusM: real("radius_m").notNull(),
+  type: text("type", { enum: ["allowed", "forbidden"] }).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+});
+
 export const audioRecordings = sqliteTable("audio_recordings", {
   id: text("id").primaryKey(),
   shiftId: text("shift_id")

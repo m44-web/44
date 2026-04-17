@@ -182,7 +182,7 @@ export function EmployeeMap() {
           </label>
         </div>
       </div>
-      <div className="h-[400px] w-full">
+      <div className="h-[400px] sm:h-[450px] lg:h-[500px] w-full">
         {mapReady && (
           <MapContainer
             center={center}

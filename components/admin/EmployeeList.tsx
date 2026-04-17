@@ -20,6 +20,7 @@ interface Location {
     message: string;
     distanceLast10Min: number;
   };
+  geofence: { violation: boolean; matches: Array<{ name: string; type: string }> } | null;
 }
 
 const statusStyles: Record<
@@ -92,6 +93,7 @@ export function EmployeeList() {
   }, [lastEvent, fetchData]);
 
   const locMap = new Map(locations.map((l) => [l.userId, l.activity]));
+  const fenceMap = new Map(locations.map((l) => [l.userId, l.geofence]));
 
   let onShift = employees.filter((e) => e.isOnShift);
   const offShift = employees.filter((e) => !e.isOnShift);
@@ -149,8 +151,10 @@ export function EmployeeList() {
           <div className="space-y-2">
             {onShift.map((emp) => {
               const activity = locMap.get(emp.id);
+              const fence = fenceMap.get(emp.id);
               const style = activity ? statusStyles[activity.status] : statusStyles.no_gps;
               const isWarning = activity?.status === "idle" || activity?.status === "stale";
+              const isFenceViolation = fence?.violation === true;
               return (
                 <Link
                   key={emp.id}
@@ -165,13 +169,17 @@ export function EmployeeList() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-medium text-sm truncate">{emp.name}</p>
-                      {isWarning && (
-                        <span className="text-xs">⚠️</span>
-                      )}
+                      {isWarning && <span className="text-xs">⚠️</span>}
+                      {isFenceViolation && <span className="text-xs" title="エリア違反">🚫</span>}
                     </div>
                     <p className={`text-xs ${style.label}`}>
                       {activity?.message ?? "GPS待機中"}
                     </p>
+                    {isFenceViolation && (
+                      <p className="text-xs text-danger mt-0.5">
+                        エリア違反
+                      </p>
+                    )}
                   </div>
                 </Link>
               );

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { gpsLogs, users, shifts } from "@/lib/db/schema";
+import { gpsLogs, users, shifts, geofences } from "@/lib/db/schema";
 import { eq, isNull, desc, and, gte } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
-import { evaluateActivity } from "@/lib/activity";
+import { evaluateActivity, haversineMeters } from "@/lib/activity";
 
 const LOOKBACK_MS = 15 * 60 * 1000; // 過去15分のGPSを取得
 
@@ -26,6 +26,7 @@ export async function GET() {
     .all();
 
   const windowStart = new Date(Date.now() - LOOKBACK_MS);
+  const fences = db.select().from(geofences).all();
 
   const locations = activeShifts.map((shift) => {
     // Latest GPS for display
@@ -60,6 +61,41 @@ export async function GET() {
       }))
     );
 
+    let geofenceStatus: {
+      violation: boolean;
+      matches: Array<{ id: string; name: string; type: string }>;
+    } | null = null;
+
+    if (latestGps && fences.length > 0) {
+      const matches = fences
+        .map((f) => ({
+          id: f.id,
+          name: f.name,
+          type: f.type,
+          distance: haversineMeters(
+            f.latitude,
+            f.longitude,
+            latestGps.latitude,
+            latestGps.longitude
+          ),
+          radius: f.radiusM,
+        }))
+        .filter((f) => f.distance <= f.radius);
+
+      const allowedFences = fences.filter((f) => f.type === "allowed");
+      const insideAnyAllowed = matches.some((m) => m.type === "allowed");
+      const insideForbidden = matches.some((m) => m.type === "forbidden");
+
+      const violation =
+        insideForbidden ||
+        (allowedFences.length > 0 && !insideAnyAllowed);
+
+      geofenceStatus = {
+        violation,
+        matches: matches.map((m) => ({ id: m.id, name: m.name, type: m.type })),
+      };
+    }
+
     return {
       userId: shift.userId,
       userName: shift.userName,
@@ -74,6 +110,7 @@ export async function GET() {
           }
         : null,
       activity,
+      geofence: geofenceStatus,
     };
   });
 

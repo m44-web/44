@@ -7,7 +7,17 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ShiftTimer } from "./ShiftTimer";
 import { StatusIndicator } from "./StatusIndicator";
 
-const GPS_INTERVAL_MS = 30_000;
+function getGpsIntervalMs(): number {
+  if (typeof window === "undefined") return 30_000;
+  const stored = localStorage.getItem("gps_interval_sec");
+  return stored ? parseInt(stored, 10) * 1000 : 30_000;
+}
+
+function getAudioChunkMs(): number {
+  if (typeof window === "undefined") return 5 * 60 * 1000;
+  const stored = localStorage.getItem("audio_chunk_min");
+  return stored ? parseInt(stored, 10) * 60 * 1000 : 5 * 60 * 1000;
+}
 
 interface ShiftState {
   id: string;
@@ -137,11 +147,11 @@ export function ShiftController({ userName }: { userName: string }) {
         { enableHighAccuracy: true, maximumAge: 10000 }
       );
 
-      // Send GPS immediately and then every 30s
+      // Send GPS immediately and then every N seconds
       setTimeout(() => sendGps(shiftId), 2000);
       gpsIntervalRef.current = setInterval(
         () => sendGps(shiftId),
-        GPS_INTERVAL_MS
+        getGpsIntervalMs()
       );
     },
     [sendGps]
@@ -192,8 +202,8 @@ export function ShiftController({ userName }: { userName: string }) {
           }
         };
 
-        // 5 minute chunks
-        recorder.start(5 * 60 * 1000);
+        // N minute chunks (default 5)
+        recorder.start(getAudioChunkMs());
         setRecordingActive(true);
       } catch {
         setRecordingActive(false);
