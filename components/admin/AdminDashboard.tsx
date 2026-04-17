@@ -10,6 +10,7 @@ import { ShiftTimeline } from "./ShiftTimeline";
 import { Toasts } from "./Toasts";
 import { AlertWatcher } from "./AlertWatcher";
 import { CommandPalette } from "./CommandPalette";
+import { ActivityFeed } from "./ActivityFeed";
 import { AdminNav } from "./AdminNav";
 
 function ConnectionBadge() {
@@ -51,6 +52,7 @@ function DashboardContent({ userName }: { userName: string }) {
           </div>
           <div className="space-y-6">
             <EmployeeList />
+            <ActivityFeed />
             <AudioPanel />
           </div>
         </div>
