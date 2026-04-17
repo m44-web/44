@@ -21,22 +21,30 @@ export function TrendChart({ trend }: { trend: TrendPoint[] }) {
   if (trend.length === 0) return null;
 
   const maxMs = Math.max(...trend.map((t) => t.workedMs), 1);
-  const width = 100;
-  const height = 60;
-  const barWidth = width / trend.length;
-  const gap = 2;
+  const workedDays = trend.filter((t) => t.workedMs > 0);
+  const avgMs = workedDays.length > 0
+    ? workedDays.reduce((s, t) => s + t.workedMs, 0) / workedDays.length
+    : 0;
+  const avgPct = maxMs > 0 ? (avgMs / maxMs) * 100 : 0;
 
   return (
-    <div className="bg-surface rounded-xl border border-white/10 p-4 col-span-full">
+    <div className="bg-surface rounded-xl border border-white/10 p-4 col-span-full" role="img" aria-label="過去7日間の勤務時間チャート">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-medium text-text-muted">
           過去7日間の勤務時間
         </h3>
-        <p className="text-xs text-text-muted">
-          ピーク: {formatHours(maxMs)}
-        </p>
+        <div className="flex items-center gap-3 text-xs text-text-muted">
+          <span>平均: {formatHours(avgMs)}</span>
+          <span>ピーク: {formatHours(maxMs)}</span>
+        </div>
       </div>
-      <div className="flex items-end gap-1 h-24">
+      <div className="flex items-end gap-1 h-24 relative">
+        {avgMs > 0 && (
+          <div
+            className="absolute left-0 right-0 border-t border-dashed border-text-muted/30 pointer-events-none"
+            style={{ bottom: `${avgPct}%` }}
+          />
+        )}
         {trend.map((point) => {
           const heightPct = maxMs > 0 ? (point.workedMs / maxMs) * 100 : 0;
           const isToday = point.date === new Date().toISOString().slice(0, 10);
