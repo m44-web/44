@@ -8180,6 +8180,63 @@ window.importBackupJSON = function(){
   });
 })();
 
+/* ── 61. ハプティックフィードバック (主要操作) ── */
+(function(){
+  if(!navigator.vibrate)return;
+  var HK='crm-haptic';
+  var enabled=true;
+  try{enabled=localStorage.getItem(HK)!=='0';}catch(e){}
+
+  window.haptic=function(kind){
+    if(!enabled||!navigator.vibrate)return;
+    try{
+      if(kind==='light')navigator.vibrate(10);
+      else if(kind==='medium')navigator.vibrate(25);
+      else if(kind==='heavy')navigator.vibrate(50);
+      else if(kind==='success')navigator.vibrate([20,30,20]);
+      else if(kind==='error')navigator.vibrate([50,40,50,40,50]);
+      else navigator.vibrate(15);
+    }catch(e){}
+  };
+
+  /* 成約時のsuccess振動 */
+  var _origSave=window.saveToSupabase;
+  if(typeof _origSave==='function'){
+    window.saveToSupabase=async function(r){
+      if(r&&r[5]==='contracted')window.haptic('success');
+      return _origSave.apply(this,arguments);
+    };
+  }
+
+  /* トースト表示時に軽い振動 */
+  var _origToast=window.showToast;
+  if(typeof _origToast==='function'){
+    window.showToast=function(msg,dur){
+      if(typeof msg==='string'){
+        if(msg.indexOf('⚠')>=0||msg.indexOf('エラー')>=0)window.haptic('error');
+        else window.haptic('light');
+      }
+      return _origToast.apply(this,arguments);
+    };
+  }
+
+  window.toggleHaptic=function(){
+    enabled=!enabled;
+    try{localStorage.setItem(HK,enabled?'1':'0');}catch(e){}
+    if(typeof showToast==='function')showToast(enabled?'📳 振動: ON':'📳 振動: OFF');
+  };
+
+  setTimeout(function(){
+    var menu=document.getElementById('menu');if(!menu)return;
+    if(document.getElementById('ux-haptic-btn'))return;
+    var lb=menu.querySelector('.danger');
+    var b=document.createElement('button');b.className='menu-item';b.id='ux-haptic-btn';
+    b.innerHTML='<span class="menu-icon">📳</span>振動フィードバック';
+    b.onclick=function(){window.toggleHaptic();menu.style.display='none';};
+    if(lb)menu.insertBefore(b,lb);else menu.appendChild(b);
+  },2800);
+})();
+
 })();
 </script>
 </body>
