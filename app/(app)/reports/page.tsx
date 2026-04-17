@@ -39,7 +39,7 @@ function GuardReportsView({ guardId }: { guardId: string }) {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-bold">にっぽう</h1>
+      <h1 className="text-2xl font-bold">日報</h1>
 
       {/* Big create button */}
       <button
@@ -52,17 +52,17 @@ function GuardReportsView({ guardId }: { guardId: string }) {
           <line x1="12" y1="18" x2="12" y2="12" />
           <line x1="9" y1="15" x2="15" y2="15" />
         </svg>
-        にっぽうを かく
+        日報を作成
       </button>
 
       {reports.length === 0 ? (
         <Card className="text-center !py-8">
-          <p className="text-lg text-text-secondary">にっぽうは まだ ありません</p>
-          <p className="text-sm text-text-secondary mt-1">しごとが おわったら にっぽうを かきましょう</p>
+          <p className="text-lg text-text-secondary">日報はまだありません</p>
+          <p className="text-sm text-text-secondary mt-1">勤務終了後に日報を作成してください</p>
         </Card>
       ) : (
         <div className="space-y-3">
-          <p className="text-sm text-text-secondary">{reports.length}けん の にっぽう</p>
+          <p className="text-sm text-text-secondary">{reports.length}件の日報</p>
           {reports.sort((a, b) => b.date.localeCompare(a.date)).map((report) => {
             const site = sites.find((s) => s.id === report.siteId);
             return (
@@ -107,6 +107,7 @@ function AdminReportsView() {
   const [guards, setGuards] = useState<Guard[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [search, setSearch] = useState("");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -118,20 +119,44 @@ function AdminReportsView() {
 
   if (!mounted) return null;
 
-  const filtered = selectedDate
-    ? reports.filter((r) => r.date === selectedDate)
-    : reports;
+  const filtered = reports.filter((r) => {
+    const dateMatch = !selectedDate || r.date === selectedDate;
+    if (!search.trim()) return dateMatch;
+    const guard = guards.find((g) => g.id === r.guardId);
+    const site = sites.find((s) => s.id === r.siteId);
+    const term = search.trim();
+    const matchesSearch =
+      r.content.includes(term) ||
+      (guard?.name.includes(term) ?? false) ||
+      (site?.name.includes(term) ?? false);
+    return dateMatch && matchesSearch;
+  });
 
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">日報一覧</h1>
 
-      <input
-        type="date"
-        value={selectedDate}
-        onChange={(e) => setSelectedDate(e.target.value)}
-        className={inputClasses}
-      />
+      <div className="grid gap-2 sm:grid-cols-2">
+        <input
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          className={inputClasses}
+        />
+        <input
+          type="text"
+          placeholder="警備員・現場・内容で検索..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className={inputClasses}
+        />
+      </div>
+
+      {selectedDate && (
+        <button onClick={() => setSelectedDate("")} className="text-xs text-accent hover:underline cursor-pointer">
+          日付指定を解除（すべて表示）
+        </button>
+      )}
 
       <p className="text-sm text-text-secondary">{filtered.length}件</p>
 
@@ -215,12 +240,12 @@ function ReportFormModal({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <form onSubmit={handleSubmit} className="relative w-full max-w-md bg-card-bg border border-border rounded-t-xl sm:rounded-xl p-5 space-y-4 max-h-[85vh] overflow-y-auto">
-        <h2 className="text-xl font-bold">にっぽうを かく</h2>
+        <h2 className="text-xl font-bold">日報を作成</h2>
 
         <div>
-          <label className="block text-base font-medium text-text-primary mb-2">どの しごと？</label>
+          <label className="block text-base font-medium text-text-primary mb-2">対象のシフト</label>
           <select value={shiftId} onChange={(e) => setShiftId(e.target.value)} className={`${inputClasses} !py-4 !text-base appearance-none cursor-pointer`} required>
-            <option value="">えらんでください</option>
+            <option value="">選択してください</option>
             {shifts.filter((s) => s.status !== "cancelled").slice(0, 20).map((s) => {
               const site = sites.find((st) => st.id === s.siteId);
               return (
@@ -231,11 +256,11 @@ function ReportFormModal({
         </div>
 
         <div>
-          <label className="block text-base font-medium text-text-primary mb-2">ほうこく ないよう <span className="text-danger">*</span></label>
+          <label className="block text-base font-medium text-text-primary mb-2">報告内容 <span className="text-danger">*</span></label>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="きょうの しごとの ないよう を かいてください..."
+            placeholder="本日の勤務内容を記入してください..."
             rows={5}
             className={`${inputClasses} !text-base resize-vertical`}
             required
@@ -243,7 +268,7 @@ function ReportFormModal({
         </div>
 
         <div>
-          <label className="block text-base font-medium text-text-primary mb-2">しゃしん</label>
+          <label className="block text-base font-medium text-text-primary mb-2">写真添付</label>
           <input
             ref={fileRef}
             type="file"
@@ -262,7 +287,7 @@ function ReportFormModal({
               <circle cx="8.5" cy="8.5" r="1.5" />
               <polyline points="21 15 16 10 5 21" />
             </svg>
-            しゃしんを ついか
+            写真を追加
           </button>
           {attachments.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-3">

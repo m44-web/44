@@ -206,6 +206,9 @@ function AdminDashboard() {
         </Card>
       </div>
 
+      {/* Monthly work hours */}
+      <MonthlyHoursSummary guards={activeGuards} shifts={thisMonthShifts} todayAttendance={todayAttendance} />
+
       {/* Today's shifts detail */}
       <div>
         <div className="flex items-center justify-between mb-2">
@@ -684,6 +687,60 @@ function EmergencyContacts() {
 }
 
 const DAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
+
+function MonthlyHoursSummary({ guards, shifts, todayAttendance }: {
+  guards: Guard[]; shifts: Shift[]; todayAttendance: AttendanceRecord[];
+}) {
+  const summary = useMemo(() => {
+    function calcH(s: Shift): number {
+      const [sh, sm] = s.startTime.split(":").map(Number);
+      const [eh, em] = s.endTime.split(":").map(Number);
+      let h = eh - sh + (em - sm) / 60;
+      if (h < 0) h += 24;
+      return h;
+    }
+    const stats = guards.map((g) => {
+      const myShifts = shifts.filter((s) => s.guardId === g.id);
+      const hours = myShifts.reduce((sum, s) => sum + calcH(s), 0);
+      return { guard: g, shifts: myShifts.length, hours };
+    }).sort((a, b) => b.hours - a.hours);
+    const totalHours = stats.reduce((sum, s) => sum + s.hours, 0);
+    const maxHours = stats[0]?.hours ?? 0;
+    return { stats: stats.slice(0, 5), totalHours, maxHours };
+  }, [guards, shifts]);
+
+  if (summary.stats.length === 0) return null;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-sm font-semibold text-text-secondary">今月の稼働時間</h2>
+        <span className="text-xs text-text-secondary">合計 {summary.totalHours.toFixed(1)}h</span>
+      </div>
+      <Card>
+        <div className="space-y-2">
+          {summary.stats.map(({ guard, shifts: shiftCount, hours }) => {
+            const percent = summary.maxHours > 0 ? (hours / summary.maxHours) * 100 : 0;
+            return (
+              <div key={guard.id} className="flex items-center gap-2 text-xs">
+                <span className="w-20 truncate font-medium text-text-primary">{guard.name}</span>
+                <div className="flex-1 h-5 bg-sub-bg rounded-full overflow-hidden relative">
+                  <div
+                    className="h-full bg-accent/70 rounded-full transition-all"
+                    style={{ width: `${percent}%` }}
+                  />
+                  <span className="absolute inset-0 flex items-center px-2 font-mono text-[10px] text-text-primary">
+                    {hours.toFixed(1)}h ({shiftCount}件)
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+    </div>
+  );
+}
 
 type ActivityItem = {
   id: string;
