@@ -100,11 +100,12 @@ export function ShiftHistory() {
               placeholder="従業員名で検索"
               className="px-3 py-2 bg-surface-light border border-white/10 rounded-lg text-sm min-w-[220px]"
             />
-            <div className="flex rounded-lg overflow-hidden border border-white/10 text-xs">
+            <div className="flex rounded-lg overflow-hidden border border-white/10 text-xs" role="group" aria-label="ステータスフィルター">
               {(["all", "active", "completed"] as const).map((s) => (
                 <button
                   key={s}
                   onClick={() => setStatus(s)}
+                  aria-pressed={status === s}
                   className={`px-3 py-1.5 ${
                     status === s
                       ? "bg-primary text-white"
@@ -124,7 +125,9 @@ export function ShiftHistory() {
           ) : filtered.length === 0 ? (
             <p className="text-text-muted text-sm">該当するシフトがありません</p>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-text-muted border-b border-white/10">
@@ -172,18 +175,49 @@ export function ShiftHistory() {
                   })}
                 </tbody>
               </table>
-              {nextCursor && (
-                <div className="mt-4 text-center">
-                  <button
-                    onClick={loadMore}
-                    disabled={loadingMore}
-                    className="px-4 py-2 text-sm bg-white/5 hover:bg-white/10 rounded-lg text-text-muted disabled:opacity-50"
-                  >
-                    {loadingMore ? "読み込み中..." : "さらに読み込む"}
-                  </button>
-                </div>
-              )}
             </div>
+
+            {/* Mobile card list */}
+            <div className="sm:hidden space-y-2">
+              {filtered.map((shift) => {
+                const end = shift.endedAt ?? Date.now();
+                return (
+                  <Link
+                    key={shift.id}
+                    href={`/admin/shifts/${shift.id}`}
+                    className="block p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium text-sm">{shift.userName}</span>
+                      {shift.endedAt ? (
+                        <span className="text-xs font-mono text-text-muted">
+                          {formatDuration(end - shift.startedAt)}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-success">勤務中</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-text-muted">
+                      {formatDateTime(shift.startedAt)}
+                      {shift.endedAt ? ` 〜 ${formatDateTime(shift.endedAt)}` : ""}
+                    </p>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {nextCursor && (
+              <div className="mt-4 text-center">
+                <button
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="px-4 py-2 text-sm bg-white/5 hover:bg-white/10 rounded-lg text-text-muted disabled:opacity-50"
+                >
+                  {loadingMore ? "読み込み中..." : "さらに読み込む"}
+                </button>
+              </div>
+            )}
+            </>
           )}
         </Card>
       </Container>
