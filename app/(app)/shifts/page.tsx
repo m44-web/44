@@ -105,6 +105,12 @@ export default function ShiftsPage() {
     showToast("シフトをキャンセルしました", "info");
   }
 
+  function handleConfirm(shift: Shift) {
+    updateShift(shift.id, { status: "confirmed" });
+    refreshShifts();
+    showToast("シフトを確定しました", "success");
+  }
+
   if (!mounted) return null;
 
   function prevMonth() {
@@ -332,19 +338,28 @@ export default function ShiftsPage() {
                         </div>
                         {user?.role === "admin" && shift.status !== "completed" && shift.status !== "cancelled" && (
                           <div className="flex gap-2 pt-2 border-t border-border">
+                            {shift.status === "scheduled" && (
+                              <button
+                                onClick={() => handleConfirm(shift)}
+                                className="flex-1 text-xs py-1.5 rounded-lg border border-accent/30 text-accent hover:bg-accent/10 transition-colors cursor-pointer inline-flex items-center justify-center gap-1"
+                              >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
+                                確定
+                              </button>
+                            )}
                             <button
                               onClick={() => handleDuplicate(shift)}
                               className="flex-1 text-xs py-1.5 rounded-lg border border-border text-text-secondary hover:text-accent hover:border-accent/30 transition-colors cursor-pointer inline-flex items-center justify-center gap-1"
                             >
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
-                              翌日に複製
+                              複製
                             </button>
                             <button
                               onClick={() => handleCancel(shift)}
                               className="flex-1 text-xs py-1.5 rounded-lg border border-border text-text-secondary hover:text-danger hover:border-danger/30 transition-colors cursor-pointer inline-flex items-center justify-center gap-1"
                             >
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>
-                              キャンセル
+                              取消
                             </button>
                           </div>
                         )}
