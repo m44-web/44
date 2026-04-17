@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getChatGeneral, getChatBySite, addChatMessage, getSites, getHandoverBySite, addHandoverNote, getShiftsByGuard } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
+import { Avatar } from "@/components/ui/Avatar";
 import type { ChatMessage, Site, HandoverNote } from "@/lib/types";
 
 export default function ChatPage() {
@@ -155,8 +156,9 @@ export default function ChatPage() {
             const isMe = msg.senderId === user.id;
             const isAdmin = msg.senderRole === "admin";
             return (
-              <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[80%] ${isMe ? "order-1" : ""}`}>
+              <div key={msg.id} className={`flex gap-2 ${isMe ? "justify-end" : "justify-start"}`}>
+                {!isMe && <Avatar name={msg.senderName} size="sm" className="mt-4" />}
+                <div className={`max-w-[75%] ${isMe ? "order-1" : ""}`}>
                   {!isMe && (
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <span className={`text-xs font-medium ${isAdmin ? "text-accent" : "text-text-primary"}`}>

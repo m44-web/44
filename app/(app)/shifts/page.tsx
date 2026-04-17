@@ -46,7 +46,7 @@ export default function ShiftsPage() {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [guards, setGuards] = useState<Guard[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
-  const [viewMode, setViewMode] = useState<"calendar" | "list">(user?.role === "admin" ? "calendar" : "list");
+  const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
@@ -122,29 +122,25 @@ export default function ShiftsPage() {
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">シフト管理</h1>
         <div className="flex items-center gap-2">
-          {user?.role === "admin" && (
-            <>
-              <div className="flex rounded-lg border border-border overflow-hidden">
-                <button
-                  onClick={() => setViewMode("calendar")}
-                  className={`px-3 py-1.5 text-sm cursor-pointer transition-colors ${viewMode === "calendar" ? "bg-accent text-white" : "text-text-secondary hover:bg-sub-bg"}`}
-                >
-                  カレンダー
-                </button>
-                <button
-                  onClick={() => setViewMode("list")}
-                  className={`px-3 py-1.5 text-sm cursor-pointer transition-colors ${viewMode === "list" ? "bg-accent text-white" : "text-text-secondary hover:bg-sub-bg"}`}
-                >
-                  リスト
-                </button>
-              </div>
-              <Button href="/shifts/new" size="sm">シフト作成</Button>
-            </>
-          )}
+          <div className="flex rounded-lg border border-border overflow-hidden">
+            <button
+              onClick={() => setViewMode("calendar")}
+              className={`px-3 py-1.5 text-sm cursor-pointer transition-colors ${viewMode === "calendar" ? "bg-accent text-white" : "text-text-secondary hover:bg-sub-bg"}`}
+            >
+              カレンダー
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={`px-3 py-1.5 text-sm cursor-pointer transition-colors ${viewMode === "list" ? "bg-accent text-white" : "text-text-secondary hover:bg-sub-bg"}`}
+            >
+              リスト
+            </button>
+          </div>
+          {user?.role === "admin" && <Button href="/shifts/new" size="sm">シフト作成</Button>}
         </div>
       </div>
 
-      {viewMode === "calendar" && user?.role === "admin" ? (
+      {viewMode === "calendar" ? (
         <div className="space-y-4">
           {/* Month navigation */}
           <div className="flex items-center justify-between">

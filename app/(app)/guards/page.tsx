@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getGuards, getShifts, getLending, getEquipment, getAttendance } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Avatar } from "@/components/ui/Avatar";
 import type { Guard, Shift, EquipmentLending, AttendanceRecord } from "@/lib/types";
 import { SKILL_LEVEL_LABELS, SKILL_LEVEL_COLORS } from "@/lib/types";
 
@@ -118,9 +119,7 @@ export default function GuardsPage() {
                 {/* Header row */}
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
-                      <span className="text-sm font-bold text-accent">{guard.name.charAt(0)}</span>
-                    </div>
+                    <Avatar name={guard.name} size="md" />
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <p className="font-semibold text-text-primary truncate">{guard.name}</p>
