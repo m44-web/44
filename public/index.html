@@ -8051,6 +8051,45 @@ window.importBackupJSON = function(){
   };
 })();
 
+/* ── 58. スマートアラート (停滞/長期入金待ち 自動表示) ── */
+(function(){
+  var LK='crm-alert-last';
+  var DAY=86400000;
+  function getLast(){try{return parseInt(localStorage.getItem(LK)||'0');}catch(e){return 0;}}
+  function setLast(){try{localStorage.setItem(LK,String(Date.now()));}catch(e){}}
+
+  function checkAlerts(){
+    if(Date.now()-getLast()<4*3600*1000)return; /* 4時間に1回 */
+    var d=window.D||[],del=window.deletedIds||{};
+    var stale30=0,wp14=0,noContact7=0;
+    for(var i=0;i<d.length;i++){
+      if(del[d[i][0]])continue;
+      var r=d[i],st=(typeof gst==='function')?gst(r):(r[5]||'new');
+      var s=(window.ST||{})[st]||{};
+      var ds=(typeof days==='function')?days(r[6]):0;
+      if(s.ph==='sales'&&ds>=30)stale30++;
+      if(st==='waiting_payment'&&ds>=14)wp14++;
+      if(s.ph==='sales'&&ds>=7)noContact7++;
+    }
+    var msgs=[];
+    if(stale30>0)msgs.push('30日以上停滞: '+stale30+'件');
+    if(wp14>0)msgs.push('入金待ち2週間超: '+wp14+'件');
+    if(msgs.length>0){
+      setTimeout(function(){
+        if(typeof showToast==='function')showToast('⚠ '+msgs.join(' / '),4500);
+      },2500);
+    }
+    setLast();
+  }
+
+  /* ロード後1回チェック */
+  setTimeout(checkAlerts,5000);
+  /* タブ復帰時に再チェック */
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden)checkAlerts();
+  });
+})();
+
 })();
 </script>
 </body>
