@@ -70,19 +70,19 @@ export function ShiftController({ userName }: { userName: string }) {
   }, []);
 
   const flushQueue = useCallback(async () => {
-    while (queueRef.current.length > 0) {
-      const entry = queueRef.current[0];
-      try {
-        const res = await fetch("/api/gps", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(entry),
-        });
-        if (!res.ok) break;
-        queueRef.current.shift();
-      } catch {
-        break;
+    if (queueRef.current.length === 0) return;
+    const batch = queueRef.current.slice(0, 50);
+    try {
+      const res = await fetch("/api/gps/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(batch),
+      });
+      if (res.ok) {
+        queueRef.current.splice(0, batch.length);
       }
+    } catch {
+      // keep in queue
     }
     setQueuedCount(queueRef.current.length);
   }, []);
