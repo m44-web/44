@@ -33,6 +33,7 @@ export function AdminNav({ userName }: { userName?: string }) {
             onClick={() => setMobileOpen((o) => !o)}
             className="sm:hidden p-1.5 rounded hover:bg-white/10 text-text-muted"
             aria-label="メニュー"
+            aria-expanded={mobileOpen}
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
               {mobileOpen ? (
