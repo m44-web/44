@@ -6457,6 +6457,238 @@ window.importBackupJSON = function(){
   },2200);
 })();
 
+/* ── 32. スクロールトップボタン ── */
+(function(){
+  var listEl=document.getElementById('list');
+  if(!listEl)return;
+  var btn=document.createElement('button');btn.id='ux-totop';btn.type='button';
+  btn.textContent='\u2191';btn.title='\u4E0A\u306B\u623B\u308B';
+  btn.style.cssText='position:fixed;bottom:90px;right:20px;width:40px;height:40px;border-radius:50%;background:rgba(55,53,47,0.85);color:#fff;border:none;font-size:18px;font-weight:700;cursor:pointer;z-index:45;box-shadow:0 2px 8px rgba(0,0,0,0.2);opacity:0;pointer-events:none;transition:opacity 0.2s;font-family:inherit';
+  btn.addEventListener('click',function(){
+    listEl.scrollTo({top:0,behavior:'smooth'});
+  });
+  document.body.appendChild(btn);
+  var raf=null;
+  listEl.addEventListener('scroll',function(){
+    if(raf)return;
+    raf=requestAnimationFrame(function(){
+      raf=null;
+      var show=listEl.scrollTop>400;
+      btn.style.opacity=show?'1':'0';
+      btn.style.pointerEvents=show?'auto':'none';
+    });
+  },{passive:true});
+})();
+
+/* ── 33. 案件複製 ── */
+(function(){
+  window.duplicateCase=function(rid){
+    var d=window.D||[],src=null;
+    for(var i=0;i<d.length;i++){if(d[i][0]===rid){src=d[i];break;}}
+    if(!src)return;
+    if(typeof openEdit!=='function'){if(typeof showToast==='function')showToast('\u30B3\u30D4\u30FC\u6A5F\u80FD\u672A\u5BFE\u5FDC');return;}
+    openEdit(null);
+    /* フォーム要素に既存値をコピー（名前以外） */
+    setTimeout(function(){
+      var FIELDS_MAP={'age':2,'area':3,'phone':4,'work':8,'ap_comment':9,'cl_comment':10,'type':13,'estimate':14,'address':15,'cl_person':16,'extra':17};
+      Object.keys(FIELDS_MAP).forEach(function(k){
+        var el=document.getElementById('ef-'+k);
+        if(el)el.value=src[FIELDS_MAP[k]]||'';
+      });
+      /* 名前にコピー元を示すプレフィックス */
+      var nm=document.getElementById('ef-name');
+      if(nm)nm.value=(src[1]||'')+'(\u30B3\u30D4\u30FC)';
+      if(typeof showToast==='function')showToast('\uD83D\uDCCB \u9805\u76EE\u3092\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F');
+    },200);
+  };
+
+  /* アクションシートに「複製」を追加 */
+  var _origShow=window.showCardActionSheet;
+  if(typeof _origShow==='function'){
+    window.showCardActionSheet=function(rid){
+      _origShow(rid);
+      setTimeout(function(){
+        var ov=document.getElementById('ux-action-sheet');if(!ov)return;
+        var sheet=ov.querySelector('div > div')||ov.firstElementChild.firstElementChild;
+        if(!sheet)return;
+        /* 重複防止 */
+        if(ov.querySelector('[data-action="dup"]'))return;
+        /* キャンセルボタンの直前に挿入 */
+        var cancel=ov.querySelector('button[style*="background:#f7f6f3"]')||sheet.lastChild;
+        var b=document.createElement('button');b.type='button';b.setAttribute('data-action','dup');
+        b.style.cssText='display:flex;align-items:center;gap:12px;width:100%;padding:14px 4px;background:none;border:none;border-bottom:1px solid #f0f0ee;cursor:pointer;text-align:left;font-family:inherit;font-size:14px;color:#37352f';
+        b.innerHTML='<span style="font-size:18px;width:24px;text-align:center;flex-shrink:0">\uD83D\uDCCB</span><span>\u3053\u306E\u6848\u4EF6\u3092\u8907\u88FD</span>';
+        b.addEventListener('click',function(){duplicateCase(rid);ov.remove();});
+        if(cancel&&cancel.parentNode)cancel.parentNode.insertBefore(b,cancel);
+        else sheet.appendChild(b);
+      },20);
+    };
+  }
+})();
+
+/* ── 34. 重複検出 (新規保存時に類似案件を警告) ── */
+(function(){
+  /* 正規化: スペース/記号を除去 */
+  function normStr(s){return String(s||'').replace(/[\s\-\(\)\.\u3000]/g,'').toLowerCase();}
+
+  function findSimilar(name,phone){
+    var d=window.D||[],del=window.deletedIds||{};
+    var n1=normStr(name),p1=normStr(phone);
+    var hits=[];
+    for(var i=0;i<d.length;i++){
+      if(del[d[i][0]])continue;
+      var n2=normStr(d[i][1]),p2=normStr(d[i][4]);
+      var score=0;
+      if(n1&&n2&&n1===n2)score+=2;
+      else if(n1&&n2&&n2.indexOf(n1)>=0&&n1.length>=2)score+=1;
+      if(p1&&p2&&p1===p2&&p1.length>=6)score+=3;
+      if(score>=2)hits.push({r:d[i],score:score});
+    }
+    hits.sort(function(a,b){return b.score-a.score;});
+    return hits.slice(0,3);
+  }
+
+  /* saveEdit をラップして新規時のみチェック */
+  var _origSaveEdit=window.saveEdit;
+  if(typeof _origSaveEdit==='function'){
+    window.saveEdit=function(){
+      if(window.editId)return _origSaveEdit();
+      var nm=(document.getElementById('ef-name')||{}).value||'';
+      var ph=(document.getElementById('ef-phone')||{}).value||'';
+      if(!nm.trim())return _origSaveEdit();
+      var hits=findSimilar(nm,ph);
+      if(hits.length===0||window._dupBypass)return _origSaveEdit();
+      var names=hits.map(function(h){return '\u30FB'+(h.r[1]||'')+' ('+(h.r[3]||'')+')';}).join('\n');
+      if(confirm('\u26A0\uFE0F \u4F3C\u305F\u6848\u4EF6\u304C '+hits.length+'\u4EF6\u3042\u308A\u307E\u3059:\n\n'+names+'\n\n\u305D\u308C\u3067\u3082\u65B0\u898F\u767B\u9332\u3057\u307E\u3059\u304B\uFF1F')){
+        window._dupBypass=true;
+        try{return _origSaveEdit();}finally{window._dupBypass=false;}
+      }
+    };
+  }
+})();
+
+/* ── 35. 編集中の自動ドラフト保存 ── */
+(function(){
+  var DK='crm-draft';
+  var saveTimer=null;
+  function collect(){
+    var o={};
+    var inputs=document.querySelectorAll('[id^="ef-"]');
+    for(var i=0;i<inputs.length;i++){
+      if(inputs[i].value)o[inputs[i].id]=inputs[i].value;
+    }
+    return o;
+  }
+  function saveDraft(){
+    try{
+      var data=collect();
+      if(Object.keys(data).length===0)return;
+      data._ts=Date.now();
+      data._editId=window.editId||null;
+      localStorage.setItem(DK,JSON.stringify(data));
+    }catch(e){}
+  }
+  function clearDraft(){try{localStorage.removeItem(DK);}catch(e){}}
+
+  /* 編集パネル内の全inputを監視して3秒後に保存 */
+  document.addEventListener('input',function(e){
+    var t=e.target;if(!t||!t.id||t.id.indexOf('ef-')!==0)return;
+    clearTimeout(saveTimer);
+    saveTimer=setTimeout(saveDraft,3000);
+  });
+
+  /* 保存/キャンセル時にドラフト削除 */
+  var _origSave=window.saveEdit;
+  if(typeof _origSave==='function'){
+    window.saveEdit=function(){var r=_origSave.apply(this,arguments);clearDraft();return r;};
+  }
+
+  /* openEdit 時に、新規ドラフトがあれば復元確認 */
+  var _origOpenEdit=window.openEdit;
+  if(typeof _origOpenEdit==='function'){
+    window.openEdit=function(id){
+      var r=_origOpenEdit.apply(this,arguments);
+      setTimeout(function(){
+        try{
+          var raw=localStorage.getItem(DK);
+          if(!raw)return;
+          var d=JSON.parse(raw);
+          /* 新規編集かつドラフトも新規かつ24時間以内 */
+          if(id||d._editId||!d._ts||Date.now()-d._ts>86400000){return;}
+          if(!confirm('\uD83D\uDCDD \u4FDD\u5B58\u3055\u308C\u3066\u3044\u306A\u3044\u4E0B\u66F8\u304D\u304C\u3042\u308A\u307E\u3059\u3002\u5FA9\u5143\u3057\u307E\u3059\u304B\uFF1F'))return;
+          Object.keys(d).forEach(function(k){
+            if(k.charAt(0)==='_')return;
+            var el=document.getElementById(k);
+            if(el)el.value=d[k];
+          });
+        }catch(e){}
+      },150);
+      return r;
+    };
+  }
+})();
+
+/* ── 36. 担当者別 KPI ミニパネル (ダッシュボードに追加) ── */
+(function(){
+  var _origDash=window.openDashboard;
+  if(typeof _origDash!=='function')return;
+  window.openDashboard=function(){
+    _origDash.apply(this,arguments);
+    setTimeout(function(){
+      try{
+        var modals=document.querySelectorAll('[style*="z-index"]');
+        var modal=null;
+        for(var i=modals.length-1;i>=0;i--){
+          if(modals[i].style.cssText.indexOf('z-index:110')>=0||modals[i].style.cssText.indexOf('z-index: 110')>=0){modal=modals[i];break;}
+        }
+        if(!modal)return;
+        if(modal.querySelector('[data-ux="person-kpi"]'))return;
+
+        var d=window.D||[],del=window.deletedIds||{};
+        var all=d.filter(function(r){return !del[r[0]];});
+        var ST=window.ST||{};
+        /* 担当者集計 */
+        var byPerson={};
+        all.forEach(function(r){
+          var p=(r[7]||'').trim()||(r[16]||'').trim();if(!p||p==='nan')return;
+          if(!byPerson[p])byPerson[p]={total:0,sales:0,won:0,stale:0,est:0};
+          var st2=(typeof gst==='function')?gst(r):(r[5]||'new');
+          var s=ST[st2]||{};
+          byPerson[p].total++;
+          if(s.ph==='sales'){byPerson[p].sales++;if(typeof days==='function'&&days(r[6])>=7)byPerson[p].stale++;}
+          if(s.ph==='won')byPerson[p].won++;
+          var est=parseFloat(String(r[14]||'').replace(/[^\d.]/g,''));
+          if(!isNaN(est))byPerson[p].est+=est;
+        });
+        var arr=Object.keys(byPerson).map(function(p){var v=byPerson[p];v.name=p;v.winRate=v.total>0?Math.round(v.won/v.total*100):0;return v;});
+        arr.sort(function(a,b){return b.won-a.won||b.total-a.total;});
+        if(arr.length===0)return;
+
+        var c=document.createElement('div');c.setAttribute('data-ux','person-kpi');
+        c.style.cssText='background:#fff;border-radius:12px;padding:14px;margin:0 16px 8px';
+        c.innerHTML='<div style="font-size:11px;font-weight:800;color:#a0aec0;margin-bottom:12px">\u62C5\u5F53\u8005\u5225 KPI</div>';
+        var tbl=document.createElement('div');
+        var hdr=document.createElement('div');
+        hdr.style.cssText='display:grid;grid-template-columns:1fr 40px 40px 40px 48px;gap:4px;font-size:9px;color:#9b9a97;padding:4px 0;border-bottom:1px solid #f0f0ee;font-weight:700';
+        hdr.innerHTML='<div>\u62C5\u5F53</div><div style="text-align:right">\u7DCF</div><div style="text-align:right">\u6210\u7D04</div><div style="text-align:right">\u505C\u6EDE</div><div style="text-align:right">\u52DD\u7387</div>';
+        tbl.appendChild(hdr);
+        arr.slice(0,10).forEach(function(p){
+          var row=document.createElement('div');
+          row.style.cssText='display:grid;grid-template-columns:1fr 40px 40px 40px 48px;gap:4px;font-size:11px;color:#4a5568;padding:6px 0;border-bottom:1px solid #f7fafc;align-items:center';
+          row.innerHTML='<div style="font-weight:600;color:#37352f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(p.name||'').replace(/</g,'&lt;')+'</div>'+
+            '<div style="text-align:right">'+p.total+'</div>'+
+            '<div style="text-align:right;color:#0f7b6c;font-weight:700">'+p.won+'</div>'+
+            '<div style="text-align:right;color:'+(p.stale>0?'#c53030':'#718096')+'">'+p.stale+'</div>'+
+            '<div style="text-align:right;font-weight:700;color:'+(p.winRate>=30?'#0f7b6c':p.winRate>=10?'#d97706':'#9b9a97')+'">'+p.winRate+'%</div>';
+          tbl.appendChild(row);
+        });
+        c.appendChild(tbl);
+        modal.appendChild(c);
+      }catch(e){}
+    },250);
+  };
+})();
+
 })();
 </script>
 </body>
