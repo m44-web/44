@@ -33,6 +33,8 @@ function NewShiftForm() {
   const [guardId, setGuardId] = useState("");
   const [siteId, setSiteId] = useState("");
   const [date, setDate] = useState(initialDate);
+  const [multiDates, setMultiDates] = useState<Set<string>>(new Set());
+  const [multiMode, setMultiMode] = useState(false);
   const [shiftType, setShiftType] = useState<ShiftType>("day");
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("18:00");
@@ -87,14 +89,26 @@ function NewShiftForm() {
     const errs: Record<string, string> = {};
     if (!guardId) errs.guardId = "警備員を選択してください";
     if (!siteId) errs.siteId = "現場を選択してください";
-    if (!date) errs.date = "日付を入力してください";
-    if (conflict?.type === "overlap") errs.conflict = "時間が重複するシフトがあります";
+    const dates = multiMode ? Array.from(multiDates) : [date];
+    if (dates.length === 0) errs.date = "日付を選択してください";
+    if (!multiMode && conflict?.type === "overlap") errs.conflict = "時間が重複するシフトがあります";
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
       return;
     }
-    addShift({ guardId, siteId, date, startTime, endTime, shiftType, status: "scheduled", notes: notes.trim() });
+    for (const d of dates) {
+      addShift({ guardId, siteId, date: d, startTime, endTime, shiftType, status: "scheduled", notes: notes.trim() });
+    }
     router.push("/shifts");
+  }
+
+  function toggleMultiDate(d: string) {
+    setMultiDates((prev) => {
+      const next = new Set(prev);
+      if (next.has(d)) next.delete(d);
+      else next.add(d);
+      return next;
+    });
   }
 
   return (
@@ -164,11 +178,36 @@ function NewShiftForm() {
         </div>
 
         <div>
-          <label htmlFor="date" className={labelClasses}>
-            日付 <span className="text-danger">*</span>
-          </label>
-          <input id="date" type="date" value={date} min={todayStr()} onChange={(e) => setDate(e.target.value)} className={inputClasses} />
+          <div className="flex items-center justify-between mb-1.5">
+            <label htmlFor="date" className="block text-sm font-medium text-text-primary">
+              日付 <span className="text-danger">*</span>
+            </label>
+            <div className="flex rounded-lg border border-border overflow-hidden text-xs">
+              <button
+                type="button"
+                onClick={() => setMultiMode(false)}
+                className={`px-2.5 py-1 cursor-pointer transition-colors ${!multiMode ? "bg-accent text-white" : "text-text-secondary hover:bg-sub-bg"}`}
+              >
+                単一
+              </button>
+              <button
+                type="button"
+                onClick={() => setMultiMode(true)}
+                className={`px-2.5 py-1 cursor-pointer transition-colors ${multiMode ? "bg-accent text-white" : "text-text-secondary hover:bg-sub-bg"}`}
+              >
+                複数日付
+              </button>
+            </div>
+          </div>
+          {!multiMode ? (
+            <input id="date" type="date" value={date} min={todayStr()} onChange={(e) => setDate(e.target.value)} className={inputClasses} />
+          ) : (
+            <MultiDatePicker selected={multiDates} onToggle={toggleMultiDate} />
+          )}
           {errors.date && <p className="text-danger text-sm mt-1">{errors.date}</p>}
+          {multiMode && multiDates.size > 0 && (
+            <p className="text-xs text-accent mt-1">{multiDates.size}日分のシフトを一括作成します</p>
+          )}
         </div>
 
         {/* Conflict warning */}
@@ -213,10 +252,88 @@ function NewShiftForm() {
 
         <div className="pt-2">
           <button type="submit" className="w-full bg-accent text-white font-semibold rounded-lg px-4 py-3 hover:bg-accent-dark transition-colors cursor-pointer">
-            シフトを作成
+            シフトを作成{multiMode && multiDates.size > 1 ? `（${multiDates.size}件）` : ""}
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function MultiDatePicker({ selected, onToggle }: { selected: Set<string>; onToggle: (d: string) => void }) {
+  const [monthOffset, setMonthOffset] = useState(0);
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + monthOffset;
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startPad = firstDay.getDay();
+  const totalDays = lastDay.getDate();
+  const today = todayStr();
+  const days: (number | null)[] = [];
+  for (let i = 0; i < startPad; i++) days.push(null);
+  for (let i = 1; i <= totalDays; i++) days.push(i);
+  const dayLabels = ["日", "月", "火", "水", "木", "金", "土"];
+
+  function pad2(n: number) { return String(n).padStart(2, "0"); }
+  function dateStr(day: number) { return `${firstDay.getFullYear()}-${pad2(firstDay.getMonth() + 1)}-${pad2(day)}`; }
+
+  function selectWeekdays() {
+    for (let i = 1; i <= totalDays; i++) {
+      const d = new Date(firstDay.getFullYear(), firstDay.getMonth(), i);
+      const weekday = d.getDay();
+      if (weekday >= 1 && weekday <= 5) {
+        const ds = dateStr(i);
+        if (ds >= today && !selected.has(ds)) onToggle(ds);
+      }
+    }
+  }
+
+  return (
+    <div className="border border-border rounded-lg p-2 bg-sub-bg">
+      <div className="flex items-center justify-between mb-2">
+        <button type="button" onClick={() => setMonthOffset((m) => m - 1)} className="p-1 rounded hover:bg-card-bg text-text-secondary cursor-pointer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
+        </button>
+        <p className="text-sm font-semibold">{firstDay.getFullYear()}年 {firstDay.getMonth() + 1}月</p>
+        <button type="button" onClick={() => setMonthOffset((m) => m + 1)} className="p-1 rounded hover:bg-card-bg text-text-secondary cursor-pointer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
+        </button>
+      </div>
+      <div className="flex gap-1 mb-2 text-[10px]">
+        <button type="button" onClick={selectWeekdays} className="px-2 py-0.5 rounded bg-accent/10 text-accent cursor-pointer">平日全選択</button>
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center">
+        {dayLabels.map((l, i) => (
+          <div key={l} className={`text-[10px] py-0.5 ${i === 0 ? "text-danger" : i === 6 ? "text-accent" : "text-text-secondary"}`}>{l}</div>
+        ))}
+        {days.map((d, i) => {
+          if (d === null) return <div key={`p-${i}`} />;
+          const ds = dateStr(d);
+          const isSelected = selected.has(ds);
+          const isPast = ds < today;
+          const isToday = ds === today;
+          const weekday = new Date(ds + "T00:00:00").getDay();
+          return (
+            <button
+              key={d}
+              type="button"
+              disabled={isPast}
+              onClick={() => onToggle(ds)}
+              className={`text-xs py-1.5 rounded cursor-pointer transition-colors ${
+                isPast ? "text-text-secondary/30 cursor-not-allowed" :
+                isSelected ? "bg-accent text-white font-bold" :
+                isToday ? "bg-accent/10 text-accent font-semibold" :
+                weekday === 0 ? "text-danger hover:bg-card-bg" :
+                weekday === 6 ? "text-accent hover:bg-card-bg" :
+                "text-text-primary hover:bg-card-bg"
+              }`}
+            >
+              {d}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
