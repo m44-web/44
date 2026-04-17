@@ -11,6 +11,7 @@ import { Toasts } from "./Toasts";
 import { AlertWatcher } from "./AlertWatcher";
 import { CommandPalette } from "./CommandPalette";
 import { ActivityFeed } from "./ActivityFeed";
+import { KeyboardHelp } from "./KeyboardHelp";
 import { AdminNav } from "./AdminNav";
 
 function ConnectionBadge() {
@@ -59,6 +60,7 @@ function DashboardContent({ userName }: { userName: string }) {
       </Container>
       <Toasts />
       <CommandPalette />
+      <KeyboardHelp />
     </div>
   );
 }
