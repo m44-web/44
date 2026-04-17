@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 
 type ConfirmOptions = {
   title?: string;
@@ -30,6 +30,17 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     resolverRef.current = null;
     setState(null);
   }, []);
+
+  // ESC key closes dialog as "cancel"
+  useEffect(() => {
+    if (!state?.open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") handleResolve(false);
+      if (e.key === "Enter") handleResolve(true);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [state?.open, handleResolve]);
 
   return (
     <ConfirmContext value={{ confirm }}>

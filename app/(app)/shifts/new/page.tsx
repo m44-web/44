@@ -167,7 +167,7 @@ function NewShiftForm() {
           <label htmlFor="date" className={labelClasses}>
             日付 <span className="text-danger">*</span>
           </label>
-          <input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClasses} />
+          <input id="date" type="date" value={date} min={todayStr()} onChange={(e) => setDate(e.target.value)} className={inputClasses} />
           {errors.date && <p className="text-danger text-sm mt-1">{errors.date}</p>}
         </div>
 

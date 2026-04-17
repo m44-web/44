@@ -47,6 +47,8 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="admin@lsecurity.jp"
               required
+              autoFocus
+              autoComplete="email"
               className="w-full rounded-lg border border-border bg-sub-bg px-4 py-3 text-text-primary placeholder:text-text-secondary/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors"
             />
           </div>
@@ -62,6 +64,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="パスワード"
               required
+              autoComplete="current-password"
               className="w-full rounded-lg border border-border bg-sub-bg px-4 py-3 text-text-primary placeholder:text-text-secondary/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors"
             />
           </div>
