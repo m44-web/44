@@ -8,6 +8,7 @@ import { useToast } from "@/lib/toast";
 import { useConfirm } from "@/lib/confirm";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { Shift, Guard, Site } from "@/lib/types";
 import { SHIFT_STATUS_LABELS, SHIFT_TYPE_LABELS } from "@/lib/types";
 
@@ -359,7 +360,13 @@ export default function ShiftsPage() {
         /* List view */
         <div>
           {dates.length === 0 ? (
-            <Card><p className="text-text-secondary text-center py-8">シフトはありません</p></Card>
+            <EmptyState
+              icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>}
+              title="シフトはありません"
+              description={user?.role === "admin" ? "シフトを作成して警備員に配置を割り当てましょう" : "管理者がシフトを作成するとここに表示されます"}
+              actionLabel={user?.role === "admin" ? "シフトを作成" : undefined}
+              actionHref={user?.role === "admin" ? "/shifts/new" : undefined}
+            />
           ) : (
             <div className="space-y-5">
               {dates.map((date) => (

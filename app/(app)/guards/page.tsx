@@ -6,6 +6,7 @@ import { getGuards, getShifts, getLending, getEquipment, getAttendance } from "@
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { Guard, Shift, EquipmentLending, AttendanceRecord } from "@/lib/types";
 import { SKILL_LEVEL_LABELS, SKILL_LEVEL_COLORS } from "@/lib/types";
 
@@ -110,6 +111,15 @@ export default function GuardsPage() {
       </div>
 
       {/* Guard list */}
+      {filtered.length === 0 ? (
+        <EmptyState
+          icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>}
+          title={search || filterStatus !== "all" ? "条件に該当する警備員がいません" : "警備員が登録されていません"}
+          description={search || filterStatus !== "all" ? "検索条件を変更してください" : "最初の警備員を登録してシフト管理を始めましょう"}
+          actionLabel={!search && filterStatus === "all" ? "警備員を登録" : undefined}
+          actionHref={!search && filterStatus === "all" ? "/guards/new" : undefined}
+        />
+      ) : (
       <div className="space-y-2">
         {filtered.map((guard) => {
           const { todayShift, thisMonthShifts, activeLending, todayAttendance } = getGuardStats(guard.id);
@@ -205,6 +215,7 @@ export default function GuardsPage() {
           );
         })}
       </div>
+      )}
     </div>
   );
 }

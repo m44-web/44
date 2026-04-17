@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getSites, getShifts, getGuards } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { Site, Shift, Guard } from "@/lib/types";
 import { SITE_TYPE_LABELS } from "@/lib/types";
 
@@ -154,6 +155,15 @@ export default function SitesPage() {
         <span className="text-sm text-text-secondary ml-auto">{filtered.length}件</span>
       </div>
 
+      {filtered.length === 0 ? (
+        <EmptyState
+          icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="2" width="16" height="20" rx="2" /><path d="M9 22v-4h6v4" /><path d="M8 6h.01M16 6h.01M8 10h.01M16 10h.01M8 14h.01M16 14h.01" /></svg>}
+          title={search || filterStatus !== "all" ? "条件に該当する現場がありません" : "現場が登録されていません"}
+          description={search || filterStatus !== "all" ? "検索条件を変更してください" : "最初の現場を登録してください"}
+          actionLabel={!search && filterStatus === "all" ? "現場を登録" : undefined}
+          actionHref={!search && filterStatus === "all" ? "/sites/new" : undefined}
+        />
+      ) : (
       <div className="space-y-2">
         {filtered.map((site) => {
           const { todayShifts, monthShifts, uniqueGuardCount } = getSiteStats(site.id);
@@ -251,6 +261,7 @@ export default function SitesPage() {
           );
         })}
       </div>
+      )}
     </div>
   );
 }
