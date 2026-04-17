@@ -8612,6 +8612,87 @@ window.importBackupJSON = function(){
   window.addEventListener('resize',position);
 })();
 
+/* ── 69. 自動バックアップ (週1ローカル、3世代保持) ── */
+(function(){
+  var BK='crm-auto-backup';
+  var LK='crm-auto-backup-last';
+  var WEEK=7*86400000;
+
+  function getBackups(){try{return JSON.parse(localStorage.getItem(BK)||'[]');}catch(e){return [];}}
+  function saveBackups(b){try{localStorage.setItem(BK,JSON.stringify(b));}catch(e){}}
+  function getLast(){try{return parseInt(localStorage.getItem(LK)||'0');}catch(e){return 0;}}
+  function setLast(){try{localStorage.setItem(LK,String(Date.now()));}catch(e){}}
+
+  function doBackup(){
+    if(Date.now()-getLast()<WEEK)return;
+    try{
+      var d=window.D||[];
+      var snap={ts:Date.now(),count:d.length,data:d.map(function(r){return r.slice();})};
+      var b=getBackups();
+      b.unshift(snap);
+      b=b.slice(0,3); /* 3世代まで */
+      saveBackups(b);
+      setLast();
+      if(typeof showToast==='function')showToast('💾 自動バックアップ作成 ('+d.length+'件)');
+    }catch(e){}
+  }
+
+  window.restoreBackup=function(idx){
+    var b=getBackups();
+    if(!b[idx])return;
+    if(!confirm(b[idx].count+'件のバックアップ ('+new Date(b[idx].ts).toLocaleString()+') から復元しますか?\n現在のデータは上書きされます。'))return;
+    try{
+      window.D=b[idx].data.map(function(r){return r.slice();});
+      if(typeof saveStore==='function')saveStore();
+      if(typeof render==='function')render();
+      if(typeof showToast==='function')showToast('✅ バックアップから復元しました');
+    }catch(e){
+      if(typeof showToast==='function')showToast('⚠ 復元に失敗しました');
+    }
+  };
+
+  window.openBackupList=function(){
+    var b=getBackups();
+    var old=document.getElementById('ux-bk-modal');if(old)old.remove();
+    var ov=document.createElement('div');ov.id='ux-bk-modal';
+    ov.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:170;display:flex;align-items:center;justify-content:center;padding:16px';
+    var pa=document.createElement('div');
+    pa.style.cssText='background:#fff;border-radius:12px;padding:18px;max-width:340px;width:100%;max-height:80vh;overflow-y:auto';
+    pa.innerHTML='<div style="font-size:14px;font-weight:800;margin-bottom:12px">💾 自動バックアップ</div>';
+    if(b.length===0){pa.innerHTML+='<div style="color:#9b9a97;font-size:12px;text-align:center;padding:20px">まだバックアップがありません</div>';}
+    else{
+      b.forEach(function(snap,i){
+        var row=document.createElement('div');
+        row.style.cssText='padding:10px;border:1px solid #e2e8f0;border-radius:6px;margin-bottom:6px;font-size:12px';
+        row.innerHTML='<div><b>'+new Date(snap.ts).toLocaleString()+'</b></div><div style="color:#718096;font-size:11px">'+snap.count+'件</div>';
+        var btn=document.createElement('button');btn.type='button';btn.textContent='復元';
+        btn.style.cssText='margin-top:6px;padding:4px 10px;background:#2383e2;color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer';
+        btn.addEventListener('click',function(){window.restoreBackup(i);ov.remove();});
+        row.appendChild(btn);
+        pa.appendChild(row);
+      });
+    }
+    var cl=document.createElement('button');cl.textContent='閉じる';
+    cl.style.cssText='margin-top:10px;padding:8px 12px;background:#f7f6f3;border:none;border-radius:6px;width:100%;cursor:pointer';
+    cl.addEventListener('click',function(){ov.remove();});
+    pa.appendChild(cl);
+    ov.appendChild(pa);
+    document.body.appendChild(ov);
+  };
+
+  setTimeout(doBackup,8000);
+
+  setTimeout(function(){
+    var menu=document.getElementById('menu');if(!menu)return;
+    if(document.getElementById('ux-bk-btn'))return;
+    var lb=menu.querySelector('.danger');
+    var b=document.createElement('button');b.className='menu-item';b.id='ux-bk-btn';
+    b.innerHTML='<span class="menu-icon">💾</span>バックアップ履歴';
+    b.onclick=function(){window.openBackupList();menu.style.display='none';};
+    if(lb)menu.insertBefore(b,lb);else menu.appendChild(b);
+  },3000);
+})();
+
 })();
 </script>
 </body>
