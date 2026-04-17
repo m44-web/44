@@ -571,6 +571,29 @@ export function ShiftController({ userName }: { userName: string }) {
             )}
           </Card>
         )}
+
+        {!shift && myStats && (
+          <Card className="w-full max-w-sm">
+            <h3 className="text-sm font-medium text-text-muted mb-3">データエクスポート</h3>
+            <div className="flex gap-2">
+              <a
+                href="/api/my/export?type=shifts&days=30"
+                download
+                className="flex-1 text-center text-xs px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors"
+              >
+                シフト履歴 (CSV)
+              </a>
+              <a
+                href="/api/my/export?type=gps&days=30"
+                download
+                className="flex-1 text-center text-xs px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors"
+              >
+                GPSログ (CSV)
+              </a>
+            </div>
+            <p className="text-[10px] text-text-muted text-center mt-2">過去30日分</p>
+          </Card>
+        )}
       </div>
       <SessionGuard />
     </div>
