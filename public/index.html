@@ -8090,6 +8090,70 @@ window.importBackupJSON = function(){
   });
 })();
 
+/* ── 59. フィルタ済みCSVエクスポート ── */
+(function(){
+  window.exportCSVFiltered=function(){
+    if(typeof vd!=='function'||typeof ST==='undefined'||typeof gst!=='function'){
+      if(typeof exportCSV==='function')exportCSV();
+      return;
+    }
+    var all=vd();
+    var dfrom=((document.getElementById('dfrom')||{}).value)||'';
+    var dto=((document.getElementById('dto')||{}).value)||'';
+    if(dfrom||dto){
+      all=all.filter(function(r){
+        var rd=r[6]||'';
+        if(dfrom&&rd<dfrom)return false;
+        if(dto&&rd>dto)return false;
+        return true;
+      });
+    }
+    var filtered=all.filter(function(r){
+      var st=gst(r),s=ST[st]||{};
+      if(window.curPhase&&window.curPhase!=='all'&&s.ph!==window.curPhase)return false;
+      if(window.curSt&&st!==window.curSt)return false;
+      if(window.curPerson){
+        var ap=(r[7]||'').trim(),cl=(r[16]||'').trim();
+        if(ap!==window.curPerson&&cl!==window.curPerson)return false;
+      }
+      if(window.srch){
+        var q=String(window.srch).toLowerCase(),found=false;
+        var ff=[r[1],r[3],r[8],r[7],r[4],r[15]];
+        for(var i=0;i<ff.length;i++){if(ff[i]&&String(ff[i]).toLowerCase().indexOf(q)>=0){found=true;break;}}
+        if(!found)return false;
+      }
+      return true;
+    });
+    var header=['案件番号','顧客名','年齢','エリア','電話','ステータス','ステータス名','AP日','AP担当','施工内容','AP備考','CL備考','見積金額','住所','CL担当','契約日','種別'];
+    var rows=[header];
+    filtered.forEach(function(r){
+      var stL=(ST[gst(r)]||{}).l||gst(r);
+      rows.push([r[0],r[1],r[2],r[3],r[4],gst(r),stL,r[6],r[7],String(r[8]||'').replace(/\n/g,' '),String(r[9]||'').replace(/\n/g,' '),String(r[10]||'').replace(/\n/g,' '),r[14],r[15],r[16],r[18],r[13]]);
+    });
+    var csv=rows.map(function(row){
+      return row.map(function(v){var s=String(v==null?'':v).replace(/"/g,'""');return s.indexOf(',')>=0||s.indexOf('\n')>=0||s.indexOf('"')>=0?'"'+s+'"':s;}).join(',');
+    }).join('\n');
+    var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');a.href=url;
+    a.download='北海工務店_CRM_絞り込み_'+new Date().toISOString().slice(0,10)+'.csv';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    if(typeof showToast==='function')showToast('📥 絞込'+filtered.length+'件をCSV出力');
+  };
+
+  setTimeout(function(){
+    var menu=document.getElementById('menu');if(!menu)return;
+    if(document.getElementById('ux-exp-filt'))return;
+    var exp=menu.querySelector('[onclick*="exportCSV"]');
+    var b=document.createElement('button');b.className='menu-item';b.id='ux-exp-filt';
+    b.innerHTML='<span class="menu-icon">📊</span>絞込結果をCSV出力';
+    b.onclick=function(){exportCSVFiltered();menu.style.display='none';};
+    if(exp)exp.parentNode.insertBefore(b,exp);
+    else{var lb=menu.querySelector('.danger');if(lb)menu.insertBefore(b,lb);else menu.appendChild(b);}
+  },2700);
+})();
+
 })();
 </script>
 </body>
