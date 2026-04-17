@@ -260,6 +260,16 @@ function AdminDashboard() {
         )}
       </div>
 
+      {/* Today's activity feed */}
+      <ActivityFeed
+        guards={guards}
+        sites={sites}
+        todayAttendance={todayAttendance}
+        reports={reports}
+        shiftRequests={shiftRequests}
+        today={today}
+      />
+
       {/* Training guards */}
       {(() => {
         const trainingGuards = guards.filter((g) => g.trainingStatus && g.trainingStatus !== "none");
@@ -674,6 +684,97 @@ function EmergencyContacts() {
 }
 
 const DAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
+
+type ActivityItem = {
+  id: string;
+  icon: "clock_in" | "clock_out" | "report" | "request";
+  title: string;
+  detail: string;
+  time: string;
+  sortKey: string;
+};
+
+function ActivityFeed({ guards, sites, todayAttendance, reports, shiftRequests, today }: {
+  guards: Guard[]; sites: Array<{ id: string; name: string }>; todayAttendance: AttendanceRecord[];
+  reports: Array<{ id: string; guardId: string; siteId: string; date: string; submittedAt: string; content: string }>;
+  shiftRequests: ShiftRequest[]; today: string;
+}) {
+  const items: ActivityItem[] = useMemo(() => {
+    const result: ActivityItem[] = [];
+    const guardName = (id: string) => guards.find((g) => g.id === id)?.name ?? "—";
+    const siteName = (id: string) => sites.find((s) => s.id === id)?.name ?? "—";
+
+    for (const a of todayAttendance) {
+      if (a.clockIn) result.push({
+        id: `${a.id}-in`, icon: "clock_in",
+        title: `${guardName(a.guardId)} が上番`,
+        detail: `${siteName(a.siteId)}`,
+        time: a.clockIn, sortKey: `${today}T${a.clockIn}`,
+      });
+      if (a.clockOut) result.push({
+        id: `${a.id}-out`, icon: "clock_out",
+        title: `${guardName(a.guardId)} が下番`,
+        detail: `${siteName(a.siteId)}`,
+        time: a.clockOut, sortKey: `${today}T${a.clockOut}`,
+      });
+    }
+    for (const r of reports.filter((r) => r.date === today)) {
+      result.push({
+        id: r.id, icon: "report",
+        title: `${guardName(r.guardId)} が日報を提出`,
+        detail: siteName(r.siteId),
+        time: r.submittedAt.slice(11, 16),
+        sortKey: r.submittedAt,
+      });
+    }
+    for (const req of shiftRequests.filter((r) => r.createdAt === today && r.status === "pending")) {
+      result.push({
+        id: req.id, icon: "request",
+        title: `${guardName(req.guardId)} がシフト希望`,
+        detail: `${req.date} ${req.startTime}〜${req.endTime}`,
+        time: "",
+        sortKey: `${today}T23:59`,
+      });
+    }
+    return result.sort((a, b) => b.sortKey.localeCompare(a.sortKey)).slice(0, 8);
+  }, [guards, sites, todayAttendance, reports, shiftRequests, today]);
+
+  const iconMap: Record<ActivityItem["icon"], { node: React.ReactNode; color: string }> = {
+    clock_in: { node: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>, color: "text-success bg-success/10" },
+    clock_out: { node: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>, color: "text-accent bg-accent/10" },
+    report: { node: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>, color: "text-warning bg-warning/10" },
+    request: { node: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>, color: "text-purple-400 bg-purple-500/10" },
+  };
+
+  return (
+    <div>
+      <h2 className="text-sm font-semibold text-text-secondary mb-2">本日のアクティビティ</h2>
+      {items.length === 0 ? (
+        <Card className="!py-3"><p className="text-xs text-text-secondary text-center">まだ本日の活動はありません</p></Card>
+      ) : (
+        <Card>
+          <div className="space-y-2">
+            {items.map((item) => {
+              const { node, color } = iconMap[item.icon];
+              return (
+                <div key={item.id} className="flex items-center gap-2.5 text-xs">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${color}`}>
+                    {node}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-text-primary font-medium truncate">{item.title}</p>
+                    <p className="text-text-secondary text-[10px] truncate">{item.detail}</p>
+                  </div>
+                  {item.time && <span className="text-text-secondary font-mono text-[10px] shrink-0">{item.time}</span>}
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
 
 function SurplusGuards({ activeGuards, shifts }: { activeGuards: Guard[]; shifts: Shift[] }) {
   const [weekOffset, setWeekOffset] = useState(0);
