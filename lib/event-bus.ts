@@ -17,7 +17,9 @@ export type AppEvent =
   | { type: "gps_update"; userId: string; userName: string; latitude: number; longitude: number }
   | { type: "shift_start"; userId: string; userName: string }
   | { type: "shift_end"; userId: string; userName: string }
-  | { type: "audio_upload"; userId: string; userName: string; recordingId: string };
+  | { type: "audio_upload"; userId: string; userName: string; recordingId: string }
+  | { type: "activity_alert"; userId: string; userName: string; status: string; message: string }
+  | { type: "geofence_alert"; userId: string; userName: string; message: string };
 
 export function emitEvent(event: AppEvent) {
   eventBus.emit("app_event", event);

@@ -70,7 +70,16 @@ export function StatsBar() {
   }, [lastEvent, fetchStats]);
 
   if (!stats) {
-    return null;
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="bg-surface rounded-xl border border-white/10 p-4">
+            <div className="h-3 bg-white/5 rounded w-16 mb-2 animate-pulse" />
+            <div className="h-6 bg-white/10 rounded w-20 animate-pulse" />
+          </div>
+        ))}
+      </div>
+    );
   }
 
   return (

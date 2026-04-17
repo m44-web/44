@@ -88,6 +88,16 @@ function formatTime(ts: number) {
   return new Date(ts).toLocaleTimeString("ja-JP");
 }
 
+function relativeTime(ts: number): string {
+  const diffSec = Math.floor((Date.now() - ts) / 1000);
+  if (diffSec < 5) return "たった今";
+  if (diffSec < 60) return `${diffSec}秒前`;
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}分前`;
+  const diffHour = Math.floor(diffMin / 60);
+  return `${diffHour}時間前`;
+}
+
 export function EmployeeMap() {
   const [locations, setLocations] = useState<EmployeeLocation[]>([]);
   const [trails, setTrails] = useState<Trail[]>([]);
@@ -238,7 +248,7 @@ export function EmployeeMap() {
                       <br />
                       <span style={{ color }}>● {loc.activity.message}</span>
                       <br />
-                      最終更新: {formatTime(loc.gps!.recordedAt)}
+                      最終更新: {relativeTime(loc.gps!.recordedAt)} ({formatTime(loc.gps!.recordedAt)})
                       {loc.gps!.accuracy && (
                         <>
                           <br />

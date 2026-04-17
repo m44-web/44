@@ -40,6 +40,22 @@ function toastFromEvent(event: AppEvent, id: number): Toast | null {
         icon: "🎤",
         tone: "info",
       };
+    case "activity_alert":
+      return {
+        id,
+        type: event.type,
+        message: `${event.userName}: ${event.message}`,
+        icon: "⚠️",
+        tone: "warning",
+      };
+    case "geofence_alert":
+      return {
+        id,
+        type: event.type,
+        message: `${event.userName}: ${event.message}`,
+        icon: "🚫",
+        tone: "warning",
+      };
     default:
       return null;
   }

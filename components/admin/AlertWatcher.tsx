@@ -66,6 +66,14 @@ export function AlertWatcher() {
         if (!res.ok) return;
         const data: { locations: Location[] } = await res.json();
 
+        // Update tab title with alert count
+        const alertCount = data.locations.filter(
+          (l) => l.activity.status === "idle" || l.activity.status === "stale"
+        ).length;
+        document.title = alertCount > 0
+          ? `(${alertCount}) 営業監視システム`
+          : "営業監視システム";
+
         const currentIds = new Set<string>();
         for (const loc of data.locations) {
           if (loc.activity.status === "idle" || loc.activity.status === "stale") {

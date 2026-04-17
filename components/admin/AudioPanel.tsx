@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Card } from "@/components/ui/Card";
 import { useRealtime } from "./RealtimeProvider";
+import { relativeTime } from "@/lib/time";
 
 interface Recording {
   id: string;
@@ -63,8 +64,8 @@ export function AudioPanel() {
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <p className="font-medium text-sm">{rec.userName}</p>
-                  <p className="text-xs text-text-muted">
-                    {formatDateTime(rec.recordedAt)}
+                  <p className="text-xs text-text-muted" title={formatDateTime(rec.recordedAt)}>
+                    {relativeTime(rec.recordedAt)}
                   </p>
                 </div>
                 <button

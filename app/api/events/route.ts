@@ -2,6 +2,10 @@ export const dynamic = "force-dynamic";
 
 import { getSession } from "@/lib/auth";
 import { eventBus, AppEvent } from "@/lib/event-bus";
+import { startAlertMonitor } from "@/lib/alert-monitor";
+
+// Kick off the background alert monitor on first SSE connection
+startAlertMonitor();
 
 export async function GET() {
   const session = await getSession();
