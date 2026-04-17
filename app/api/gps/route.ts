@@ -34,6 +34,13 @@ export async function POST(request: Request) {
 
     const { shiftId, latitude, longitude, accuracy, at } = parsed.data;
 
+    if (accuracy && accuracy > 500) {
+      return NextResponse.json(
+        { error: "GPS精度が低すぎます", accuracy },
+        { status: 422 }
+      );
+    }
+
     db.insert(gpsLogs)
       .values({
         shiftId,
@@ -53,7 +60,7 @@ export async function POST(request: Request) {
       longitude,
     });
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, lowAccuracy: accuracy ? accuracy > 100 : false });
   } catch {
     return NextResponse.json(
       { error: "GPS送信に失敗しました" },

@@ -41,6 +41,7 @@ export function ShiftController({ userName }: { userName: string }) {
     Array<{ shiftId: string; latitude: number; longitude: number; accuracy?: number; at: number }>
   >([]);
   const [queuedCount, setQueuedCount] = useState(0);
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
   const [permState, setPermState] = useState<PermissionState | "unknown">(
     "unknown"
   );
@@ -175,6 +176,7 @@ export function ShiftController({ userName }: { userName: string }) {
             acc: position.coords.accuracy,
           };
           setGpsActive(true);
+          setGpsAccuracy(Math.round(position.coords.accuracy));
         },
         () => setGpsActive(false),
         { enableHighAccuracy: true, maximumAge: 10000 }
@@ -405,12 +407,22 @@ export function ShiftController({ userName }: { userName: string }) {
               <span className={isOnline ? "text-success" : "text-danger"}>
                 {isOnline ? "● オンライン" : "● オフライン"}
               </span>
+              {gpsAccuracy !== null && (
+                <span className={gpsAccuracy > 100 ? "text-warning" : "text-success"}>
+                  📍 {gpsAccuracy}m
+                </span>
+              )}
               {batteryLevel !== null && (
                 <span className={batteryLevel <= 15 ? "text-danger" : batteryLevel <= 30 ? "text-warning" : "text-text-muted"}>
                   🔋 {batteryLevel}%
                 </span>
               )}
             </div>
+            {gpsAccuracy !== null && gpsAccuracy > 100 && (
+              <p className="text-xs text-warning text-center mt-2">
+                ⚠️ GPS精度が低い状態です（{gpsAccuracy}m）。屋外に出ると改善します。
+              </p>
+            )}
             {!isOnline && (
               <p className="text-xs text-warning text-center mt-2">
                 ⚠️ オフラインです。GPSデータはキューに保存されています。

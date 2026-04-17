@@ -37,6 +37,12 @@ export function SettingsPanel({
   const [audioChunkMin, setAudioChunkMin] = useState(5);
   const [gpsIntervalSec, setGpsIntervalSec] = useState(30);
   const [prefsSaved, setPrefsSaved] = useState(false);
+  const [cleanupInfo, setCleanupInfo] = useState<{
+    deletableRecords: { gps: number; audit: number; audio: number };
+    retentionDays: { gps: number; audit: number; audio: number };
+  } | null>(null);
+  const [cleanupResult, setCleanupResult] = useState<string | null>(null);
+  const [cleaningUp, setCleaningUp] = useState(false);
 
   useEffect(() => {
     const chunk = localStorage.getItem("audio_chunk_min");
@@ -44,6 +50,35 @@ export function SettingsPanel({
     const gps = localStorage.getItem("gps_interval_sec");
     if (gps) setGpsIntervalSec(parseInt(gps, 10));
   }, []);
+
+  useEffect(() => {
+    if (userRole !== "admin") return;
+    fetch("/api/admin/cleanup")
+      .then((r) => r.json())
+      .then(setCleanupInfo)
+      .catch(() => {});
+  }, [userRole]);
+
+  const runCleanup = async () => {
+    if (!confirm("古いデータを削除しますか？この操作は元に戻せません。")) return;
+    setCleaningUp(true);
+    setCleanupResult(null);
+    try {
+      const res = await fetch("/api/admin/cleanup", { method: "POST" });
+      const data = await res.json();
+      setCleanupResult(
+        `GPS: ${data.gpsDeleted}件, 監査: ${data.auditDeleted}件, 音声: ${data.audioDeleted}件 を削除しました`
+      );
+      fetch("/api/admin/cleanup")
+        .then((r) => r.json())
+        .then(setCleanupInfo)
+        .catch(() => {});
+    } catch {
+      setCleanupResult("クリーンアップに失敗しました");
+    } finally {
+      setCleaningUp(false);
+    }
+  };
 
   const savePrefs = () => {
     localStorage.setItem("audio_chunk_min", String(audioChunkMin));
@@ -172,6 +207,45 @@ export function SettingsPanel({
                 )}
               </div>
             </div>
+          </Card>
+        )}
+
+        {userRole === "admin" && cleanupInfo && (
+          <Card>
+            <h2 className="font-semibold mb-1">データ保持ポリシー</h2>
+            <p className="text-xs text-text-muted mb-4">
+              保持期間を超えた古いデータを削除できます。
+            </p>
+            <div className="grid grid-cols-3 gap-3 text-sm mb-4">
+              <div className="bg-white/5 rounded-lg p-3">
+                <p className="text-xs text-text-muted">GPSログ</p>
+                <p className="font-bold">{cleanupInfo.deletableRecords.gps}件</p>
+                <p className="text-[10px] text-text-muted">{cleanupInfo.retentionDays.gps}日以上前</p>
+              </div>
+              <div className="bg-white/5 rounded-lg p-3">
+                <p className="text-xs text-text-muted">監査ログ</p>
+                <p className="font-bold">{cleanupInfo.deletableRecords.audit}件</p>
+                <p className="text-[10px] text-text-muted">{cleanupInfo.retentionDays.audit}日以上前</p>
+              </div>
+              <div className="bg-white/5 rounded-lg p-3">
+                <p className="text-xs text-text-muted">音声録音</p>
+                <p className="font-bold">{cleanupInfo.deletableRecords.audio}件</p>
+                <p className="text-[10px] text-text-muted">{cleanupInfo.retentionDays.audio}日以上前</p>
+              </div>
+            </div>
+            {cleanupResult && (
+              <div className="p-2 bg-success/10 border border-success/30 rounded-lg text-success text-xs mb-3">
+                {cleanupResult}
+              </div>
+            )}
+            <Button
+              onClick={runCleanup}
+              loading={cleaningUp}
+              variant="danger"
+              className="text-sm"
+            >
+              古いデータを削除
+            </Button>
           </Card>
         )}
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRealtime } from "./RealtimeProvider";
 import { TrendChart } from "./TrendChart";
 
@@ -10,6 +10,7 @@ interface Stats {
   todayShifts: number;
   todayWorkedMs: number;
   todayRecordings: number;
+  todayGpsPoints: number;
   weekShifts: number;
   weekWorkedMs: number;
   weekUniqueUsers: number;
@@ -27,15 +28,18 @@ function StatCard({
   label,
   value,
   accent,
+  sub,
 }: {
   label: string;
   value: string | number;
   accent?: string;
+  sub?: string;
 }) {
   return (
     <div className="bg-surface rounded-xl border border-white/10 p-4 min-w-0">
       <p className="text-xs text-text-muted mb-1">{label}</p>
       <p className={`text-xl font-bold ${accent ?? ""}`}>{value}</p>
+      {sub && <p className="text-[10px] text-text-muted mt-0.5">{sub}</p>}
     </div>
   );
 }
@@ -82,6 +86,16 @@ export function StatsBar() {
     );
   }
 
+  const avgShiftMs = useMemo(() => {
+    if (stats.todayShifts === 0) return 0;
+    return Math.round(stats.todayWorkedMs / stats.todayShifts);
+  }, [stats.todayWorkedMs, stats.todayShifts]);
+
+  const utilizationPct = useMemo(() => {
+    if (stats.totalEmployees === 0) return 0;
+    return Math.round((stats.activeNow / stats.totalEmployees) * 100);
+  }, [stats.activeNow, stats.totalEmployees]);
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -89,9 +103,14 @@ export function StatsBar() {
           label="稼働中"
           value={`${stats.activeNow} / ${stats.totalEmployees}`}
           accent="text-success"
+          sub={`稼働率 ${utilizationPct}%`}
         />
         <StatCard label="本日のシフト" value={stats.todayShifts} />
-        <StatCard label="本日の勤務時間" value={formatHours(stats.todayWorkedMs)} />
+        <StatCard
+          label="本日の勤務時間"
+          value={formatHours(stats.todayWorkedMs)}
+          sub={stats.todayShifts > 0 ? `平均 ${formatHours(avgShiftMs)}` : undefined}
+        />
         <StatCard label="本日の録音数" value={stats.todayRecordings} />
         <StatCard label="今週の稼働人数" value={stats.weekUniqueUsers} />
         <StatCard label="今週の勤務時間" value={formatHours(stats.weekWorkedMs)} />
