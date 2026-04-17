@@ -8,6 +8,7 @@ import {
   getEquipment, getLending, getReports, getShiftRequests, getLatestLocations, getInterviews,
 } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
+import { DashboardSkeleton } from "@/components/ui/Skeleton";
 import type { Guard, Shift, AttendanceRecord, EquipmentLending, ShiftRequest, LocationLog, InterviewCandidate } from "@/lib/types";
 import { ATTENDANCE_STATUS_LABELS, SHIFT_STATUS_LABELS, TRAINING_STATUS_LABELS, TRAINING_STATUS_COLORS, INTERVIEW_STATUS_LABELS, INTERVIEW_STATUS_COLORS } from "@/lib/types";
 
@@ -21,7 +22,7 @@ export default function DashboardPage() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  if (!mounted || !user) return null;
+  if (!mounted || !user) return <DashboardSkeleton />;
 
   if (user.role === "admin") return <AdminDashboard />;
   return <GuardDashboard guardId={user.guardId ?? ""} />;

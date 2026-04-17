@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { AppSidebar } from "@/components/app/AppSidebar";
 import { AppBottomNav } from "@/components/app/AppBottomNav";
 import { AppHeader } from "@/components/app/AppHeader";
+import { OfflineIndicator } from "@/components/app/OfflineIndicator";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -20,7 +21,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-primary">
-        <div className="text-accent text-lg">読み込み中...</div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-12 h-12 border-4 border-accent/20 border-t-accent rounded-full animate-spin" />
+          <p className="text-text-secondary text-sm">読み込み中...</p>
+        </div>
       </div>
     );
   }
@@ -29,6 +33,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex bg-primary">
+      <OfflineIndicator />
       <AppSidebar />
       <div className="flex-1 flex flex-col min-h-screen md:ml-60">
         <AppHeader />

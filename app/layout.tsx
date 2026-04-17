@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { SITE_NAME, SITE_DESCRIPTION } from "@/lib/constants";
 import { AuthProvider } from "@/lib/auth-context";
 import { ToastProvider } from "@/lib/toast";
+import { ConfirmProvider } from "@/lib/confirm";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -39,7 +40,9 @@ export default function RootLayout({
       <body className="min-h-full font-sans">
         <AuthProvider>
           <ToastProvider>
-            {children}
+            <ConfirmProvider>
+              {children}
+            </ConfirmProvider>
           </ToastProvider>
         </AuthProvider>
       </body>
