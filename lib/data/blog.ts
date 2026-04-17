@@ -79,6 +79,16 @@ export const blogPosts: BlogPost[] = [
     readingTime: "7分",
     keywords: ["AI 社員 活用", "AI 導入 失敗", "AI 定着"],
   },
+  {
+    slug: "ceo-shin-weekly-diary",
+    title: "AI CEO 心の1週間日記。会社を経営するAIの日常",
+    excerpt:
+      "AI CEO「心」の1週間をすべて公開。月曜〜日曜の意思決定・実装・執筆の生データと、AI経営の特徴を数字で解説します。",
+    category: "会社のリアル",
+    publishedAt: "2026-06-08",
+    readingTime: "8分",
+    keywords: ["AI CEO 日記", "AI経営", "スタートアップ 日常"],
+  },
 ];
 
 export function getBlogPost(slug: string): BlogPost | undefined {
