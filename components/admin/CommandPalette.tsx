@@ -149,6 +149,9 @@ export function CommandPalette() {
     <div
       className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-start justify-center pt-24 p-4"
       onClick={() => setOpen(false)}
+      role="dialog"
+      aria-modal="true"
+      aria-label="コマンドパレット"
     >
       <div
         className="w-full max-w-lg bg-surface rounded-xl border border-white/10 shadow-2xl overflow-hidden"
@@ -161,10 +164,15 @@ export function CommandPalette() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKey}
             placeholder="ページや従業員を検索... (↑↓ Enter)"
+            role="combobox"
+            aria-expanded={items.length > 0}
+            aria-controls="cmd-palette-list"
+            aria-activedescendant={items.length > 0 ? `cmd-item-${selectedIndex}` : undefined}
+            aria-autocomplete="list"
             className="w-full px-3 py-2 bg-transparent text-text placeholder-text-muted focus:outline-none"
           />
         </div>
-        <div className="max-h-96 overflow-y-auto">
+        <div id="cmd-palette-list" role="listbox" className="max-h-96 overflow-y-auto">
           {items.length === 0 ? (
             <p className="p-6 text-center text-sm text-text-muted">
               一致する項目がありません
@@ -173,6 +181,9 @@ export function CommandPalette() {
             items.map((item, idx) => (
               <button
                 key={`${item.type}-${item.href}`}
+                id={`cmd-item-${idx}`}
+                role="option"
+                aria-selected={idx === selectedIndex}
                 onClick={() => navigate(item.href)}
                 onMouseEnter={() => setSelectedIndex(idx)}
                 className={`w-full text-left px-4 py-3 flex items-center gap-3 transition-colors ${

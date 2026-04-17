@@ -88,10 +88,11 @@ export function Toasts() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm">
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm" role="status" aria-live="polite">
       {toasts.map((toast) => (
         <div
           key={toast.id}
+          role={toast.tone === "warning" ? "alert" : "status"}
           className={`flex items-center gap-3 p-3 pr-4 rounded-lg border shadow-lg backdrop-blur-sm animate-slide-in ${toneStyles[toast.tone]}`}
         >
           <span className="text-lg">{toast.icon}</span>

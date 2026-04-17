@@ -142,7 +142,9 @@ export function EmployeeList() {
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <h2 className="font-semibold">従業員ステータス</h2>
         <div className="flex items-center gap-2">
+          <label className="sr-only" htmlFor="emp-sort">並び順</label>
           <select
+            id="emp-sort"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortBy)}
             className="text-xs bg-surface-light border border-white/10 rounded px-1.5 py-1 text-text-muted"
@@ -150,21 +152,24 @@ export function EmployeeList() {
             <option value="status">重要度順</option>
             <option value="name">名前順</option>
           </select>
-          <div className="flex rounded-lg overflow-hidden border border-white/10 text-xs">
+          <div className="flex rounded-lg overflow-hidden border border-white/10 text-xs" role="group" aria-label="フィルター">
             <button
               onClick={() => setFilter("all")}
+              aria-pressed={filter === "all"}
               className={`px-2 py-1 ${filter === "all" ? "bg-primary text-white" : "text-text-muted hover:bg-white/5"}`}
             >
               全て
             </button>
             <button
               onClick={() => setFilter("active")}
+              aria-pressed={filter === "active"}
               className={`px-2 py-1 ${filter === "active" ? "bg-primary text-white" : "text-text-muted hover:bg-white/5"}`}
             >
               稼働中
             </button>
             <button
               onClick={() => setFilter("alert")}
+              aria-pressed={filter === "alert"}
               className={`px-2 py-1 ${filter === "alert" ? "bg-warning text-white" : "text-text-muted hover:bg-white/5"}`}
             >
               ⚠ ({alertCount})

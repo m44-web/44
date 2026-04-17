@@ -84,7 +84,9 @@ export function AudioPanel() {
 
       {uniqueUsers.length > 1 && (
         <div className="mb-3">
+          <label className="sr-only" htmlFor="audio-filter">従業員フィルター</label>
           <select
+            id="audio-filter"
             value={filterUser}
             onChange={(e) => setFilterUser(e.target.value)}
             className="text-xs bg-surface-light border border-white/10 rounded px-2 py-1 text-text-muted w-full"
@@ -131,13 +133,14 @@ export function AudioPanel() {
                     <button
                       onClick={cycleSpeed}
                       className="px-1.5 py-1 text-[10px] font-mono bg-white/10 rounded text-text-muted hover:bg-white/20"
-                      title="再生速度"
+                      aria-label={`再生速度 ${speed}倍速`}
                     >
                       {speed}x
                     </button>
                   )}
                   <button
                     onClick={() => handlePlay(rec.id)}
+                    aria-label={playing === rec.id ? `${rec.userName}の録音を停止` : `${rec.userName}の録音を再生`}
                     className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
                       playing === rec.id
                         ? "bg-danger/20 hover:bg-danger/30 text-danger"

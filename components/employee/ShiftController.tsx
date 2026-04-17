@@ -369,13 +369,13 @@ export function ShiftController({ userName }: { userName: string }) {
 
       <div className="flex-1 flex flex-col items-center justify-center p-4 gap-6">
         {error && (
-          <div className="w-full max-w-sm p-3 bg-danger/10 border border-danger/30 rounded-lg text-danger text-sm text-center">
+          <div role="alert" className="w-full max-w-sm p-3 bg-danger/10 border border-danger/30 rounded-lg text-danger text-sm text-center">
             {error}
           </div>
         )}
 
         {permState === "denied" && (
-          <div className="w-full max-w-sm p-3 bg-warning/10 border border-warning/30 rounded-lg text-warning text-sm">
+          <div role="alert" className="w-full max-w-sm p-3 bg-warning/10 border border-warning/30 rounded-lg text-warning text-sm">
             <p className="font-semibold">⚠️ 位置情報の許可が必要です</p>
             <p className="text-xs mt-1 text-warning/80">
               ブラウザの設定から位置情報を許可してください。設定 → プライバシーとセキュリティ → 位置情報。

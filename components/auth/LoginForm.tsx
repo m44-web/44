@@ -55,12 +55,14 @@ export function LoginForm() {
           id="email"
           type="email"
           autoComplete="email"
+          aria-invalid={!!errors.email}
+          aria-describedby={errors.email ? "email-error" : undefined}
           {...register("email")}
           className="w-full px-4 py-2.5 bg-surface-light border border-white/10 rounded-lg text-text placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary"
           placeholder="admin@example.com"
         />
         {errors.email && (
-          <p className="mt-1 text-sm text-danger">{errors.email.message}</p>
+          <p id="email-error" className="mt-1 text-sm text-danger" role="alert">{errors.email.message}</p>
         )}
       </div>
 
@@ -72,17 +74,19 @@ export function LoginForm() {
           id="password"
           type="password"
           autoComplete="current-password"
+          aria-invalid={!!errors.password}
+          aria-describedby={errors.password ? "password-error" : undefined}
           {...register("password")}
           className="w-full px-4 py-2.5 bg-surface-light border border-white/10 rounded-lg text-text placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary"
           placeholder="••••••"
         />
         {errors.password && (
-          <p className="mt-1 text-sm text-danger">{errors.password.message}</p>
+          <p id="password-error" className="mt-1 text-sm text-danger" role="alert">{errors.password.message}</p>
         )}
       </div>
 
       {serverError && (
-        <div className="p-3 bg-danger/10 border border-danger/30 rounded-lg text-danger text-sm">
+        <div role="alert" className="p-3 bg-danger/10 border border-danger/30 rounded-lg text-danger text-sm">
           {serverError}
         </div>
       )}

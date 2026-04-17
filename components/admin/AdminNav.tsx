@@ -41,7 +41,7 @@ export function AdminNav({ userName }: { userName?: string }) {
               )}
             </svg>
           </button>
-          <nav className="hidden sm:flex items-center gap-1 overflow-x-auto">
+          <nav aria-label="メインナビゲーション" className="hidden sm:flex items-center gap-1 overflow-x-auto">
             {navItems.map((item) => {
               const active = item.exact
                 ? pathname === item.href
@@ -50,6 +50,7 @@ export function AdminNav({ userName }: { userName?: string }) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={active ? "page" : undefined}
                   className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors ${
                     active
                       ? "bg-primary/20 text-primary font-medium"
@@ -82,7 +83,7 @@ export function AdminNav({ userName }: { userName?: string }) {
 
       {mobileOpen && (
         <div className="sm:hidden border-t border-white/10 bg-surface">
-          <nav className="flex flex-col py-1">
+          <nav aria-label="モバイルナビゲーション" className="flex flex-col py-1">
             {navItems.map((item) => {
               const active = item.exact
                 ? pathname === item.href
@@ -92,6 +93,7 @@ export function AdminNav({ userName }: { userName?: string }) {
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
+                  aria-current={active ? "page" : undefined}
                   className={`px-4 py-2.5 text-sm transition-colors ${
                     active
                       ? "bg-primary/10 text-primary font-medium"

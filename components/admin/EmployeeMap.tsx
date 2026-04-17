@@ -247,6 +247,7 @@ export function EmployeeMap() {
             <select
               value={highlightUser}
               onChange={(e) => setHighlightUser(e.target.value)}
+              aria-label="従業員ハイライト"
               className="text-xs bg-surface-light border border-white/10 rounded px-1.5 py-1 text-text-muted"
             >
               <option value="">全員表示</option>
