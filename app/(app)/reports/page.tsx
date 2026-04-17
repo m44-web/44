@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getReports, getReportsByGuard, addReport, getShiftsByGuard, getShifts, getGuards, getSites } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
 import { Lightbox } from "@/components/ui/Lightbox";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { DailyReport, Guard, Site, Shift } from "@/lib/types";
 
 const inputClasses =
@@ -58,10 +59,13 @@ function GuardReportsView({ guardId }: { guardId: string }) {
       </button>
 
       {reports.length === 0 ? (
-        <Card className="text-center !py-8">
-          <p className="text-lg text-text-secondary">日報はまだありません</p>
-          <p className="text-sm text-text-secondary mt-1">勤務終了後に日報を作成してください</p>
-        </Card>
+        <EmptyState
+          icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="12" y1="18" x2="12" y2="12" /><line x1="9" y1="15" x2="15" y2="15" /></svg>}
+          title="日報はまだありません"
+          description="勤務終了後に日報を作成してください"
+          actionLabel="日報を作成"
+          onAction={() => setShowForm(true)}
+        />
       ) : (
         <div className="space-y-3">
           <p className="text-sm text-text-secondary">{reports.length}件の日報</p>
@@ -192,7 +196,11 @@ function AdminReportsView() {
       <p className="text-sm text-text-secondary">{filtered.length}件</p>
 
       {filtered.length === 0 ? (
-        <Card><p className="text-text-secondary text-center py-6 text-sm">この日の日報はありません</p></Card>
+        <EmptyState
+          icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>}
+          title={search.trim() ? "該当する日報がありません" : "この日の日報はありません"}
+          description={search.trim() ? "検索条件を変更してください" : "警備員が勤務後に日報を提出するとここに表示されます"}
+        />
       ) : (
         <div className="space-y-2">
           {filtered.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt)).map((report) => {
