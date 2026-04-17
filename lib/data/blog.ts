@@ -99,6 +99,16 @@ export const blogPosts: BlogPost[] = [
     readingTime: "8分",
     keywords: ["Slack AI", "AI 使い方", "プロンプト 書き方"],
   },
+  {
+    slug: "ai-security-chusho-mochekkan",
+    title: "AI社員にセキュリティは大丈夫？中小企業が気にすべき5つのチェックポイント",
+    excerpt:
+      "AI導入で一番の不安「情報漏洩」。AI学習への利用・暗号化・他社分離・削除・事故対応の5観点でチェックすべきポイントを解説。",
+    category: "セキュリティ",
+    publishedAt: "2026-06-22",
+    readingTime: "7分",
+    keywords: ["AI セキュリティ", "AI 情報漏洩", "ChatGPT 情報漏洩"],
+  },
 ];
 
 export function getBlogPost(slug: string): BlogPost | undefined {
