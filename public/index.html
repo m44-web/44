@@ -7834,6 +7834,45 @@ window.importBackupJSON = function(){
   },{passive:true});
 })();
 
+/* ── 54. データ検証ヘルパー ── */
+(function(){
+  window.validatePhone=function(p){
+    if(!p||p==='なし')return true;
+    var s=String(p).replace(/[-\s]/g,'');
+    return /^0\d{9,10}$/.test(s);
+  };
+  window.validateEstimate=function(v){
+    if(!v)return true;
+    var n=String(v).replace(/[^\d]/g,'');
+    return n.length>0&&parseInt(n)<10000000000;
+  };
+  window.validateDate=function(d){
+    if(!d)return true;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return false;
+    var dt=new Date(d);
+    return !isNaN(dt.getTime())&&d===dt.toISOString().slice(0,10);
+  };
+  /* 保存前にバリデーション警告 */
+  var _origSave=window.saveToSupabase;
+  if(typeof _origSave==='function'){
+    window.saveToSupabase=async function(r){
+      try{
+        if(r){
+          var issues=[];
+          if(r[4]&&r[4]!=='なし'&&!window.validatePhone(r[4]))issues.push('電話番号形式');
+          if(r[14]&&!window.validateEstimate(r[14]))issues.push('見積金額');
+          if(r[6]&&!window.validateDate(r[6]))issues.push('AP日形式');
+          if(r[18]&&!window.validateDate(r[18]))issues.push('契約日形式');
+          if(issues.length>0&&typeof showToast==='function'){
+            showToast('⚠ 検証警告: '+issues.join('/'),3000);
+          }
+        }
+      }catch(e){}
+      return _origSave.apply(this,arguments);
+    };
+  }
+})();
+
 })();
 </script>
 </body>
