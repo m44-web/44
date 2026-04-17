@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -107,7 +108,7 @@ const icons: Record<string, (active: boolean) => React.ReactNode> = {
   ),
 };
 
-export function AppBottomNav() {
+export const AppBottomNav = memo(function AppBottomNav() {
   const pathname = usePathname();
   const { user } = useAuth();
   const nav = user?.role === "admin" ? adminNav : guardNav;
@@ -133,4 +134,4 @@ export function AppBottomNav() {
       </div>
     </nav>
   );
-}
+});

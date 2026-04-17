@@ -18,27 +18,38 @@
   --font-display: "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "Hiragino Sans", sans-serif;
 }
 
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeSpeed;
+}
+
 body {
   background-color: #F8FAFC;
   color: #1E293B;
 }
 
+/* GPU-accelerated transforms for interactive elements */
+button, a {
+  transform: translateZ(0);
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #F8FAFC;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
   background: #CBD5E1;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  border-radius: 2px;
 }
 
 ::selection {
@@ -51,4 +62,11 @@ body {
   button, a, select, input[type="checkbox"] {
     min-height: 44px;
   }
+}
+
+/* Off-screen content optimization */
+.space-y-5 > :nth-child(n+6),
+.space-y-4 > :nth-child(n+8) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 200px;
 }

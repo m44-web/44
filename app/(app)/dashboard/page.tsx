@@ -8,7 +8,7 @@ import {
   getEquipment, getLending, getReports, getShiftRequests, getLatestLocations, getInterviews,
 } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
-import type { Guard, Site, Shift, AttendanceRecord, EquipmentLending, DailyReport, ShiftRequest, LocationLog, InterviewCandidate } from "@/lib/types";
+import type { Guard, Shift, AttendanceRecord, EquipmentLending, ShiftRequest, LocationLog, InterviewCandidate } from "@/lib/types";
 import { ATTENDANCE_STATUS_LABELS, SHIFT_STATUS_LABELS, TRAINING_STATUS_LABELS, TRAINING_STATUS_COLORS, INTERVIEW_STATUS_LABELS, INTERVIEW_STATUS_COLORS } from "@/lib/types";
 
 function todayStr() {
@@ -18,47 +18,35 @@ function todayStr() {
 export default function DashboardPage() {
   const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
-  const [data, setData] = useState<{
-    guards: Guard[]; sites: Site[]; shifts: Shift[]; todayShifts: Shift[];
-    todayAttendance: AttendanceRecord[]; allAttendance: AttendanceRecord[];
-    lending: EquipmentLending[]; reports: DailyReport[]; shiftRequests: ShiftRequest[];
-    locations: LocationLog[]; interviews: InterviewCandidate[];
-  } | null>(null);
 
-  useEffect(() => {
-    setMounted(true);
+  useEffect(() => { setMounted(true); }, []);
+
+  if (!mounted || !user) return null;
+
+  if (user.role === "admin") return <AdminDashboard />;
+  return <GuardDashboard guardId={user.guardId ?? ""} />;
+}
+
+function AdminDashboard() {
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  const data = useMemo(() => {
     const today = todayStr();
     const allShifts = getShifts();
-    setData({
+    return {
       guards: getGuards(),
       sites: getSites(),
       shifts: allShifts,
       todayShifts: allShifts.filter((s) => s.date === today && s.status !== "cancelled"),
       todayAttendance: getAttendance().filter((a) => a.date === today),
-      allAttendance: getAttendance(),
       lending: getLending().filter((l) => !l.returnDate),
       reports: getReports(),
       shiftRequests: getShiftRequests(),
       locations: getLatestLocations(),
       interviews: getInterviews(),
-    });
-  }, [user]);
+    };
+  }, []);
 
-  if (!mounted || !data) return null;
-
-  if (user?.role === "admin") {
-    return <AdminDashboard data={data} />;
-  }
-  return <GuardDashboard guardId={user?.guardId ?? ""} data={data} />;
-}
-
-function AdminDashboard({ data }: { data: {
-  guards: Guard[]; sites: Site[]; shifts: Shift[]; todayShifts: Shift[];
-  todayAttendance: AttendanceRecord[]; allAttendance: AttendanceRecord[];
-  lending: EquipmentLending[]; reports: DailyReport[]; shiftRequests: ShiftRequest[];
-  locations: LocationLog[]; interviews: InterviewCandidate[];
-}}) {
-  const [weekOffset, setWeekOffset] = useState(0);
   const { guards, sites, shifts, todayShifts, todayAttendance, lending, reports, shiftRequests, locations, interviews } = data;
   const today = todayStr();
   const thisMonth = today.slice(0, 7);
@@ -231,7 +219,7 @@ function AdminDashboard({ data }: { data: {
               const guard = guards.find((g) => g.id === shift.guardId);
               const site = sites.find((s) => s.id === shift.siteId);
               const att = todayAttendance.find((a) => a.shiftId === shift.id);
-              const loc = data.locations.find((l) => l.guardId === shift.guardId);
+              const loc = locations.find((l) => l.guardId === shift.guardId);
               const hasRecentLoc = loc && (Date.now() - new Date(loc.timestamp).getTime()) < 12 * 60 * 60 * 1000;
               return (
                 <Card key={shift.id} className="!py-3">
@@ -373,44 +361,48 @@ function AdminDashboard({ data }: { data: {
   );
 }
 
-function GuardDashboard({ guardId, data }: { guardId: string; data: {
-  guards: Guard[]; sites: Site[]; shifts: Shift[]; todayShifts: Shift[];
-  todayAttendance: AttendanceRecord[]; allAttendance: AttendanceRecord[];
-  reports: DailyReport[]; shiftRequests: ShiftRequest[];
-}}) {
-  const { sites, todayAttendance, shiftRequests } = data;
-  const today = todayStr();
-  const thisMonth = today.slice(0, 7);
-  const guard = data.guards.find((g) => g.id === guardId);
+function GuardDashboard({ guardId }: { guardId: string }) {
+  const computed = useMemo(() => {
+    const today = todayStr();
+    const thisMonth = today.slice(0, 7);
+    const guard = getGuards().find((g) => g.id === guardId);
+    const sites = getSites();
+    const myShifts = getShiftsByGuard(guardId);
+    const myTodayShifts = myShifts.filter((s) => s.date === today && s.status !== "cancelled");
+    const todayAttendance = getAttendance().filter((a) => a.date === today);
+    const allAttendance = getAttendanceByGuard(guardId);
+    const shiftRequests = getShiftRequests();
+    const myThisMonthShifts = myShifts.filter((s) => s.date.startsWith(thisMonth) && s.status !== "cancelled");
+    const myUpcoming = myShifts.filter((s) => s.date > today && s.status !== "cancelled").sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3);
 
-  const myTodayShifts = data.todayShifts.filter((s) => s.guardId === guardId);
-  const myShifts = data.shifts.filter((s) => s.guardId === guardId);
-  const myThisMonthShifts = myShifts.filter((s) => s.date.startsWith(thisMonth) && s.status !== "cancelled");
-  const myUpcoming = myShifts.filter((s) => s.date > today && s.status !== "cancelled").sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3);
+    function calcHours(s: Shift): number {
+      const [sh, sm] = s.startTime.split(":").map(Number);
+      const [eh, em] = s.endTime.split(":").map(Number);
+      let hours = eh - sh + (em - sm) / 60;
+      if (hours < 0) hours += 24;
+      return hours;
+    }
 
-  function calcHours(s: Shift): number {
-    const [sh, sm] = s.startTime.split(":").map(Number);
-    const [eh, em] = s.endTime.split(":").map(Number);
-    let hours = eh - sh + (em - sm) / 60;
-    if (hours < 0) hours += 24;
-    return hours;
-  }
+    const monthlyHours = myThisMonthShifts.reduce((sum, s) => sum + calcHours(s), 0);
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const daysUntilMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
+    const nextMonday = new Date(now);
+    nextMonday.setDate(now.getDate() + daysUntilMonday);
+    const nextWeekStart = nextMonday.toISOString().split("T")[0];
 
-  const monthlyHours = myThisMonthShifts.reduce((sum, s) => sum + calcHours(s), 0);
-  const monthlyPay = Math.round(monthlyHours * (guard?.hourlyRate ?? 1000));
+    return {
+      today, guard, sites, myShifts, myTodayShifts, todayAttendance, allAttendance,
+      shiftRequests, myThisMonthShifts, myUpcoming, monthlyHours,
+      monthlyPay: Math.round(monthlyHours * (guard?.hourlyRate ?? 1000)),
+      hasNextWeekRequest: shiftRequests.some((r) => r.guardId === guardId && r.date >= nextWeekStart),
+    };
+  }, [guardId]);
 
-  // Next week shift request check
-  const now = new Date();
-  const dayOfWeek = now.getDay();
-  const daysUntilMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
-  const nextMonday = new Date(now);
-  nextMonday.setDate(now.getDate() + daysUntilMonday);
-  const nextWeekStart = nextMonday.toISOString().split("T")[0];
-  const hasNextWeekRequest = shiftRequests.some(
-    (r) => r.guardId === guardId && r.date >= nextWeekStart
-  );
+  const { today, guard, sites, myShifts, myTodayShifts, todayAttendance, allAttendance,
+    shiftRequests, myThisMonthShifts, myUpcoming, monthlyHours, monthlyPay, hasNextWeekRequest } = computed;
 
-  const dayLabels = ["日", "月", "火", "水", "木", "金", "土"];
+  const dayLabels = DAY_LABELS;
 
   return (
     <div className="space-y-5">
@@ -538,7 +530,7 @@ function GuardDashboard({ guardId, data }: { guardId: string; data: {
         yesterday.setDate(yesterday.getDate() - 1);
         const yStr = yesterday.toISOString().split("T")[0];
         const yShifts = myShifts.filter((s) => s.date === yStr && s.status !== "cancelled");
-        const yAtt = data.allAttendance.filter((a) => a.guardId === guardId && a.date === yStr);
+        const yAtt = allAttendance.filter((a) => a.guardId === guardId && a.date === yStr);
         if (yShifts.length === 0) return null;
         const allCompleted = yShifts.every((s) => yAtt.some((a) => a.shiftId === s.id && a.status === "completed"));
         if (allCompleted) {

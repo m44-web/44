@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import type { User } from "./types";
 import { getCurrentUser, setCurrentUser, login as storeLogin, initializeStore } from "./store";
 
@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
-  function login(email: string, password: string): boolean {
+  const login = useCallback((email: string, password: string): boolean => {
     const found = storeLogin(email, password);
     if (found) {
       setUser(found);
@@ -32,15 +32,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return true;
     }
     return false;
-  }
+  }, []);
 
-  function logout() {
+  const logout = useCallback(() => {
     setUser(null);
     setCurrentUser(null);
-  }
+  }, []);
+
+  const value = useMemo(() => ({ user, loading, login, logout }), [user, loading, login, logout]);
 
   return (
-    <AuthContext value={{ user, loading, login, logout }}>
+    <AuthContext value={value}>
       {children}
     </AuthContext>
   );

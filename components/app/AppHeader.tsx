@@ -1,8 +1,9 @@
 "use client";
 
+import { memo } from "react";
 import { useAuth } from "@/lib/auth-context";
 
-export function AppHeader() {
+export const AppHeader = memo(function AppHeader() {
   const { user, logout } = useAuth();
 
   return (
@@ -28,4 +29,4 @@ export function AppHeader() {
       </div>
     </header>
   );
-}
+});
