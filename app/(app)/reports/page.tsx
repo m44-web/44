@@ -142,9 +142,30 @@ function AdminReportsView() {
     return dateMatch && matchesSearch;
   });
 
+  // Monthly summary
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  const monthReports = reports.filter((r) => r.date.startsWith(thisMonth));
+  const uniqueGuardsMonth = new Set(monthReports.map((r) => r.guardId)).size;
+  const uniqueDaysMonth = new Set(monthReports.map((r) => r.date)).size;
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">日報一覧</h1>
+
+      <div className="grid grid-cols-3 gap-2">
+        <Card className="text-center !py-2.5">
+          <p className="text-[10px] text-text-secondary">今月の提出数</p>
+          <p className="text-lg font-bold text-accent">{monthReports.length}</p>
+        </Card>
+        <Card className="text-center !py-2.5">
+          <p className="text-[10px] text-text-secondary">提出した警備員</p>
+          <p className="text-lg font-bold text-text-primary">{uniqueGuardsMonth}名</p>
+        </Card>
+        <Card className="text-center !py-2.5">
+          <p className="text-[10px] text-text-secondary">提出日数</p>
+          <p className="text-lg font-bold text-success">{uniqueDaysMonth}日</p>
+        </Card>
+      </div>
 
       <div className="grid gap-2 sm:grid-cols-2">
         <input
