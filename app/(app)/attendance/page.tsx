@@ -60,7 +60,7 @@ function AdminAttendance() {
     };
   }, []);
 
-  const { attendance, dateShifts, onDuty, completed, absent, notYetClocked, locationsByGuard } = useMemo(() => {
+  const { attendance, dateShifts, onDuty, completed, absent, notYetClocked, locationsByGuard, anomalies } = useMemo(() => {
     const allAtt = allAttendance.filter((a) => a.date === selectedDate);
     const ds = shifts.filter((s) => s.date === selectedDate && s.status !== "cancelled");
     const scheduledGuardIds = new Set(ds.map((s) => s.guardId));
@@ -72,6 +72,40 @@ function AdminAttendance() {
       locMap.get(l.guardId)!.push(l);
     }
     for (const arr of locMap.values()) arr.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    // Detect anomalies
+    const now = new Date();
+    const isToday = selectedDate === todayStr();
+    const anomalyList: { attId: string; guardName: string; kind: "missing_clockout" | "excessive_hours" | "stuck_on_duty"; detail: string }[] = [];
+    for (const a of allAtt) {
+      const guard = guards.find((g) => g.id === a.guardId);
+      const guardName = guard?.name ?? "—";
+      const shift = ds.find((s) => s.id === a.shiftId);
+      if (a.status === "on_duty" && a.clockIn && !a.clockOut && shift) {
+        // Past shift end time but still on_duty
+        const [eh, em] = shift.endTime.split(":").map(Number);
+        const endMin = eh * 60 + em;
+        const [ih, im] = a.clockIn.split(":").map(Number);
+        const startMin = ih * 60 + im;
+        const shouldBeDoneBy = endMin < startMin ? endMin + 24 * 60 : endMin;
+        const nowMin = now.getHours() * 60 + now.getMinutes();
+        const currentTotal = isToday ? nowMin : 24 * 60;
+        if (currentTotal > shouldBeDoneBy + 30) {
+          anomalyList.push({ attId: a.id, guardName, kind: "stuck_on_duty", detail: `予定終了から${Math.floor((currentTotal - shouldBeDoneBy) / 60)}時間超過` });
+        }
+      }
+      if (a.clockIn && a.clockOut) {
+        const [ih, im] = a.clockIn.split(":").map(Number);
+        const [oh, om] = a.clockOut.split(":").map(Number);
+        let h = oh - ih + (om - im) / 60;
+        if (h < 0) h += 24;
+        if (h > 14) {
+          anomalyList.push({ attId: a.id, guardName, kind: "excessive_hours", detail: `${h.toFixed(1)}時間勤務（通常超過）` });
+        }
+      }
+      if (!isToday && a.status === "on_duty" && !a.clockOut) {
+        anomalyList.push({ attId: a.id, guardName, kind: "missing_clockout", detail: "下番打刻が未完了" });
+      }
+    }
     // Apply guard search filter to visible rows (but not to status counters — those should reflect reality)
     const term = guardSearch.trim();
     const filteredAtt = term
@@ -88,6 +122,7 @@ function AdminAttendance() {
       absent: allAtt.filter((a) => a.status === "absent").length,
       notYetClocked: [...scheduledGuardIds].filter((id) => !attendedGuardIds.has(id)),
       locationsByGuard: locMap,
+      anomalies: anomalyList,
     };
   }, [allAttendance, shifts, locations, selectedDate, guardSearch, guards]);
 
@@ -189,6 +224,28 @@ function AdminAttendance() {
           <p className="text-lg font-bold text-warning">{notYetClocked.length}</p>
         </Card>
       </div>
+
+      {/* Anomalies */}
+      {anomalies && anomalies.length > 0 && (
+        <Card className="!border-danger/30 !bg-danger/5 !py-3">
+          <p className="text-sm font-medium text-danger mb-1 flex items-center gap-1.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+            勤怠異常の可能性（{anomalies.length}件）
+          </p>
+          <div className="space-y-1">
+            {anomalies.map((a) => {
+              const kindLabel = a.kind === "missing_clockout" ? "下番忘れ" : a.kind === "excessive_hours" ? "長時間勤務" : "超過勤務中";
+              return (
+                <div key={a.attId + a.kind} className="flex items-center gap-2 text-xs">
+                  <span className="px-1.5 py-0.5 rounded bg-danger/10 text-danger font-medium shrink-0">{kindLabel}</span>
+                  <span className="text-text-primary">{a.guardName}</span>
+                  <span className="text-text-secondary">{a.detail}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       {/* Not yet clocked in */}
       {notYetClocked.length > 0 && selectedDate === todayStr() && (

@@ -254,21 +254,37 @@ export default function SitesPage() {
                   </div>
                 )}
 
+                {site.requiredGuards > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between text-[11px] mb-1">
+                      <span className="text-text-secondary">本日の配置</span>
+                      <span className={`font-medium ${
+                        todayShifts.length >= site.requiredGuards ? "text-success" :
+                        todayShifts.length === 0 ? "text-danger" : "text-warning"
+                      }`}>
+                        {todayShifts.length}/{site.requiredGuards}名
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 bg-sub-bg rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all ${
+                          todayShifts.length >= site.requiredGuards ? "bg-success" :
+                          todayShifts.length === 0 ? "bg-danger" : "bg-warning"
+                        }`}
+                        style={{ width: `${Math.min(100, (todayShifts.length / Math.max(1, site.requiredGuards)) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
                 {todayShifts.length > 0 && (
                   <div className="flex items-center gap-2 text-xs bg-success/5 rounded-lg px-2.5 py-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-success" />
-                    <span className="text-success">
-                      本日 {todayShifts.length}/{site.requiredGuards ?? "?"}名配置
-                    </span>
                     <span className="text-text-secondary">
                       {todayShifts.map((s) => {
                         const g = guards.find((gg) => gg.id === s.guardId);
                         return g?.name?.split(" ")[0];
                       }).filter(Boolean).join("、")}
                     </span>
-                    {todayShifts.length < (site.requiredGuards ?? 0) && (
-                      <span className="text-danger font-medium ml-auto">人員不足</span>
-                    )}
                   </div>
                 )}
 

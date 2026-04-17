@@ -108,11 +108,32 @@ function GuardHandoverView({ guardId, userName }: { guardId: string; userName: s
 
       {showForm && (
         <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <p className="text-xs font-medium text-text-secondary mb-1.5">テンプレート（タップで追加）</p>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { label: "異常なし", text: "本日、特に異常はありませんでした。引き続きよろしくお願いします。" },
+                { label: "不審者対応", text: "[時刻]頃、[場所]にて不審者を目撃。声かけを行い退去を確認。引き続き警戒をお願いします。" },
+                { label: "設備不良", text: "[場所]の[設備]に不具合を発見。応急処置済み。管理者に報告要。" },
+                { label: "巡回報告", text: "定時巡回[回数]回実施。異常なし。" },
+                { label: "来訪者対応", text: "[時刻]頃、[来訪者名]様が来訪。用件: [内容]。対応済み。" },
+              ].map((tpl) => (
+                <button
+                  key={tpl.label}
+                  type="button"
+                  onClick={() => setContent((prev) => prev ? `${prev}\n\n${tpl.text}` : tpl.text)}
+                  className="text-xs px-2.5 py-1 rounded-full bg-accent/10 text-accent hover:bg-accent/20 cursor-pointer transition-colors"
+                >
+                  + {tpl.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="次の人に伝えたいことを書いてください..."
-            rows={4}
+            rows={5}
             className={`${inputClasses} resize-vertical`}
             required
           />

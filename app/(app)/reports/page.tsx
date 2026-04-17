@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getReports, getReportsByGuard, addReport, getShiftsByGuard, getShifts, getGuards, getSites } from "@/lib/store";
+import { useToast } from "@/lib/toast";
 import { Card } from "@/components/ui/Card";
 import { Lightbox } from "@/components/ui/Lightbox";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -277,6 +278,7 @@ function ReportFormModal({
   const [attachments, setAttachments] = useState<{ name: string; dataUrl: string }[]>([]);
   const [draftRestored, setDraftRestored] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useToast();
 
   // Restore draft on mount
   useEffect(() => {
@@ -307,16 +309,61 @@ function ReportFormModal({
   const selectedShift = shifts.find((s) => s.id === shiftId);
   const siteId = selectedShift?.siteId ?? "";
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function compressImage(file: File, maxDim = 1600, quality = 0.82): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const ratio = maxDim / Math.max(width, height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { URL.revokeObjectURL(url); reject(new Error("canvas unavailable")); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        URL.revokeObjectURL(url);
+        resolve(dataUrl);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("image decode failed")); };
+      img.src = url;
+    });
+  }
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files) return;
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setAttachments((prev) => [...prev, { name: file.name, dataUrl: reader.result as string }]);
-      };
-      reader.readAsDataURL(file);
-    });
+    const MAX_BYTES = 8 * 1024 * 1024; // 8MB before compression
+    const MAX_ATTACHMENTS = 5;
+    const list = Array.from(files);
+    for (const file of list) {
+      if (attachments.length >= MAX_ATTACHMENTS) {
+        showToast(`添付は最大${MAX_ATTACHMENTS}件までです`, "warning");
+        break;
+      }
+      if (file.size > MAX_BYTES) {
+        showToast(`${file.name}が大きすぎます（上限${Math.round(MAX_BYTES / 1024 / 1024)}MB）`, "error");
+        continue;
+      }
+      try {
+        const dataUrl = file.type.startsWith("image/")
+          ? await compressImage(file)
+          : await new Promise<string>((res, rej) => {
+              const r = new FileReader();
+              r.onload = () => res(r.result as string);
+              r.onerror = () => rej(r.error);
+              r.readAsDataURL(file);
+            });
+        setAttachments((prev) => [...prev, { name: file.name, dataUrl }]);
+      } catch {
+        showToast(`${file.name}の読み込みに失敗しました`, "error");
+      }
+    }
     e.target.value = "";
   }
 

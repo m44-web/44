@@ -54,18 +54,65 @@ export function CommandPalette() {
   const [guards, setGuards] = useState<Guard[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
 
+  const [shortcutHelp, setShortcutHelp] = useState(false);
+
   useEffect(() => {
+    // g-prefix chord shortcuts: g then d = dashboard, g s = shifts, etc.
+    let gPressed = false;
+    let gTimer: ReturnType<typeof setTimeout> | null = null;
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setOpen((v) => !v);
-      } else if (e.key === "Escape" && open) {
-        setOpen(false);
+        return;
+      }
+      if (e.key === "Escape") {
+        if (shortcutHelp) setShortcutHelp(false);
+        else if (open) setOpen(false);
+        return;
+      }
+      if (e.key === "?" && e.shiftKey && !open) {
+        const target = e.target as HTMLElement;
+        if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+        e.preventDefault();
+        setShortcutHelp(true);
+        return;
+      }
+      // chord: g then letter
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+      if (!gPressed && e.key.toLowerCase() === "g" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        gPressed = true;
+        if (gTimer) clearTimeout(gTimer);
+        gTimer = setTimeout(() => { gPressed = false; }, 1000);
+        return;
+      }
+      if (gPressed) {
+        gPressed = false;
+        if (gTimer) { clearTimeout(gTimer); gTimer = null; }
+        const map: Record<string, string> = {
+          d: "/dashboard",
+          s: "/shifts",
+          a: "/attendance",
+          r: "/reports",
+          c: "/chat",
+          g: "/guards",
+          l: "/locations",
+          h: "/handover",
+        };
+        const href = map[e.key.toLowerCase()];
+        if (href) {
+          e.preventDefault();
+          router.push(href);
+        }
       }
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      if (gTimer) clearTimeout(gTimer);
+    };
+  }, [open, shortcutHelp, router]);
 
   useEffect(() => {
     if (open) {
@@ -103,11 +150,46 @@ export function CommandPalette() {
     if (activeIndex >= items.length) setActiveIndex(0);
   }, [items.length, activeIndex]);
 
-  if (!open) return null;
-
   function navigate(href: string) {
     setOpen(false);
     router.push(href);
+  }
+
+  if (!open && !shortcutHelp) return null;
+
+  if (shortcutHelp && !open) {
+    const shortcuts: { keys: string; label: string }[] = [
+      { keys: "⌘ K / Ctrl K", label: "コマンドパレットを開く" },
+      { keys: "g → d", label: "ダッシュボードへ" },
+      { keys: "g → s", label: "シフト管理へ" },
+      { keys: "g → a", label: "勤怠管理へ" },
+      { keys: "g → r", label: "日報へ" },
+      { keys: "g → c", label: "チャットへ" },
+      { keys: "g → g", label: "警備員名簿へ" },
+      { keys: "g → l", label: "位置確認へ" },
+      { keys: "g → h", label: "引継ぎノートへ" },
+      { keys: "?", label: "このヘルプを表示" },
+      { keys: "ESC", label: "モーダルを閉じる" },
+    ];
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+        <div className="absolute inset-0 bg-black/60" onClick={() => setShortcutHelp(false)} />
+        <div className="relative w-full max-w-md bg-card-bg border border-border rounded-xl shadow-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <p className="text-sm font-semibold text-text-primary">キーボードショートカット</p>
+            <kbd className="text-[10px] text-text-secondary bg-sub-bg rounded px-1.5 py-0.5 border border-border">ESC</kbd>
+          </div>
+          <div className="p-4 space-y-2">
+            {shortcuts.map((s) => (
+              <div key={s.keys} className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-text-primary">{s.label}</span>
+                <kbd className="text-[11px] text-text-secondary bg-sub-bg rounded px-2 py-0.5 border border-border font-mono">{s.keys}</kbd>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   function handleKey(e: React.KeyboardEvent) {
@@ -183,7 +265,9 @@ export function CommandPalette() {
         <div className="px-4 py-2 border-t border-border text-[10px] text-text-secondary flex items-center gap-3">
           <span><kbd className="bg-sub-bg rounded px-1 py-0.5 border border-border">↑↓</kbd> 移動</span>
           <span><kbd className="bg-sub-bg rounded px-1 py-0.5 border border-border">Enter</kbd> 選択</span>
-          <span className="ml-auto"><kbd className="bg-sub-bg rounded px-1 py-0.5 border border-border">⌘K</kbd> 呼び出し</span>
+          <button type="button" onClick={() => { setOpen(false); setShortcutHelp(true); }} className="ml-auto hover:text-accent cursor-pointer transition-colors">
+            <kbd className="bg-sub-bg rounded px-1 py-0.5 border border-border">?</kbd> ショートカット
+          </button>
         </div>
       </div>
     </div>

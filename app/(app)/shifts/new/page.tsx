@@ -213,6 +213,46 @@ function NewShiftForm() {
           )}
         </div>
 
+        {/* Site existing shifts preview for the selected date */}
+        {siteId && !multiMode && date && (() => {
+          const sitePreview = sites.find((s) => s.id === siteId);
+          const existingSiteShifts = allShifts
+            .filter((s) => s.siteId === siteId && s.date === date && s.status !== "cancelled")
+            .sort((a, b) => a.startTime.localeCompare(b.startTime));
+          const required = sitePreview?.requiredGuards ?? 0;
+          return (
+            <div className="rounded-lg border border-border bg-sub-bg/30 p-3 space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <p className="font-medium text-text-primary">{sitePreview?.name} / {date}の配置</p>
+                {required > 0 && (
+                  <span className={`font-medium ${
+                    existingSiteShifts.length >= required ? "text-success" :
+                    existingSiteShifts.length === 0 ? "text-danger" : "text-warning"
+                  }`}>
+                    {existingSiteShifts.length}/{required}名
+                  </span>
+                )}
+              </div>
+              {existingSiteShifts.length === 0 ? (
+                <p className="text-xs text-text-secondary">この日のシフトはまだありません</p>
+              ) : (
+                <div className="space-y-0.5">
+                  {existingSiteShifts.map((s) => {
+                    const g = guards.find((gg) => gg.id === s.guardId);
+                    return (
+                      <div key={s.id} className="flex items-center gap-2 text-xs">
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${s.shiftType === "night" ? "bg-purple-400" : "bg-warning"}`} />
+                        <span className="text-text-primary font-medium">{g?.name ?? "—"}</span>
+                        <span className="text-text-secondary font-mono">{s.startTime}〜{s.endTime}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Conflict warning */}
         {conflict && (() => {
           const existingSite = sites.find((s) => s.id === conflict.shift.siteId);
@@ -236,6 +276,33 @@ function NewShiftForm() {
             </div>
           );
         })()}
+
+        <div>
+          <label className={labelClasses}>時間プリセット</label>
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
+            {([
+              { label: "早番 7-16", start: "07:00", end: "16:00", type: "day" as ShiftType },
+              { label: "日勤 9-18", start: "09:00", end: "18:00", type: "day" as ShiftType },
+              { label: "遅番 13-22", start: "13:00", end: "22:00", type: "day" as ShiftType },
+              { label: "夜勤 18-6", start: "18:00", end: "06:00", type: "night" as ShiftType },
+              { label: "夜勤 22-7", start: "22:00", end: "07:00", type: "night" as ShiftType },
+            ]).map((p) => {
+              const active = startTime === p.start && endTime === p.end;
+              return (
+                <button
+                  key={p.label}
+                  type="button"
+                  onClick={() => { setStartTime(p.start); setEndTime(p.end); setShiftType(p.type); }}
+                  className={`text-xs py-1.5 rounded-lg border cursor-pointer transition-colors ${
+                    active ? "border-accent bg-accent/10 text-accent font-medium" : "border-border text-text-secondary hover:border-accent/30"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         <div className="grid gap-4 grid-cols-2">
           <div>

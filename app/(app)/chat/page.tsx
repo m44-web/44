@@ -100,6 +100,35 @@ export default function ChatPage() {
     return `${d.getMonth() + 1}/${d.getDate()} ${time}`;
   }
 
+  function renderMessageContent(content: string, myName: string): React.ReactNode {
+    // Split by mention pattern (@name or @全員)
+    const parts: React.ReactNode[] = [];
+    const re = /@(\S+)/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    let idx = 0;
+    while ((match = re.exec(content)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(<span key={idx++}>{content.slice(lastIndex, match.index)}</span>);
+      }
+      const mentionTarget = match[1];
+      const isForMe = mentionTarget === myName || mentionTarget === "全員" || mentionTarget === "all";
+      parts.push(
+        <span
+          key={idx++}
+          className={`font-medium px-1 rounded ${isForMe ? "bg-warning/30 text-warning" : "bg-accent/15 text-accent"}`}
+        >
+          @{mentionTarget}
+        </span>
+      );
+      lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < content.length) {
+      parts.push(<span key={idx++}>{content.slice(lastIndex)}</span>);
+    }
+    return parts.length > 0 ? parts : content;
+  }
+
   const selectedSite = sites.find((s) => s.id === selectedChannel);
 
   return (
@@ -197,7 +226,7 @@ export default function ChatPage() {
                         ? "bg-accent/10 border border-accent/20 text-text-primary rounded-bl-md"
                         : "bg-card-bg border border-border text-text-primary rounded-bl-md"
                   }`}>
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    <p className="text-sm whitespace-pre-wrap">{renderMessageContent(msg.content, user.name)}</p>
                   </div>
                   <p className={`text-[10px] text-text-secondary mt-0.5 ${isMe ? "text-right" : ""}`}>
                     {formatTime(msg.timestamp)}
@@ -220,7 +249,7 @@ export default function ChatPage() {
               handleSend(e as unknown as React.FormEvent);
             }
           }}
-          placeholder={selectedChannel === "general" ? "全体連絡を入力... (Shift+Enterで改行)" : `${selectedSite?.name ?? "現場"}への連絡...`}
+          placeholder={selectedChannel === "general" ? "全体連絡を入力... @名前 でメンション (Shift+Enterで改行)" : `${selectedSite?.name ?? "現場"}への連絡... @名前 でメンション`}
           rows={1}
           className="flex-1 rounded-xl border border-border bg-sub-bg px-4 py-3 text-text-primary placeholder:text-text-secondary/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors resize-none"
           style={{ maxHeight: "120px", minHeight: "48px" }}

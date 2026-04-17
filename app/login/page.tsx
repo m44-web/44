@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+
+const LAST_EMAIL_KEY = "lsecurity_last_email";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -12,6 +14,12 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = localStorage.getItem(LAST_EMAIL_KEY);
+    if (saved) setEmail(saved);
+  }, []);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (loading) return;
@@ -19,6 +27,7 @@ export default function LoginPage() {
     setLoading(true);
     const success = login(email, password);
     if (success) {
+      try { localStorage.setItem(LAST_EMAIL_KEY, email); } catch {}
       router.push("/dashboard");
     } else {
       setError("メールアドレスが見つかりません");
