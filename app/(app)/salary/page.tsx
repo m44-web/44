@@ -155,9 +155,13 @@ export default function SalaryPage() {
           <div className="space-y-2">
             {monthShifts.sort((a, b) => a.date.localeCompare(b.date)).map((shift) => {
               const site = sites.find((s) => s.id === shift.siteId);
-              const hours = calcHours(shift);
+              const scheduledHours = calcHours(shift);
+              const actualHours = calcActualHours(shift);
               const pay = calcPay(shift);
               const isNight = shift.shiftType === "night";
+              const isCompleted = shift.status === "completed";
+              const showActual = isCompleted && Math.abs(actualHours - scheduledHours) > 0.01;
+              const att = attendance.find((a) => a.shiftId === shift.id);
               return (
                 <Card key={shift.id} className="flex items-center justify-between gap-3 !py-4">
                   <div className="min-w-0">
@@ -170,16 +174,26 @@ export default function SalaryPage() {
                       </span>
                     </div>
                     <p className="text-sm text-text-secondary">
-                      {shift.startTime}〜{shift.endTime}　{site?.name ?? "—"}
+                      予定 {shift.startTime}〜{shift.endTime}　{site?.name ?? "—"}
                     </p>
+                    {isCompleted && att?.clockIn && att?.clockOut && (
+                      <p className="text-xs text-success mt-0.5">
+                        実績 {att.clockIn}〜{att.clockOut}
+                      </p>
+                    )}
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-lg font-bold text-text-primary">¥{pay.toLocaleString()}</p>
-                    <p className="text-xs text-text-secondary">{hours.toFixed(1)}h × ¥{(isNight ? nightRate : dayRate).toLocaleString()}</p>
+                    <p className="text-xs text-text-secondary">
+                      {(isCompleted ? actualHours : scheduledHours).toFixed(1)}h × ¥{(isNight ? nightRate : dayRate).toLocaleString()}
+                    </p>
+                    {showActual && (
+                      <p className="text-[10px] text-accent">予定{scheduledHours.toFixed(1)}h → 実績</p>
+                    )}
                     <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                      shift.status === "completed" ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
+                      isCompleted ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
                     }`}>
-                      {shift.status === "completed" ? "確定" : "予定"}
+                      {isCompleted ? "確定" : "予定"}
                     </span>
                   </div>
                 </Card>
