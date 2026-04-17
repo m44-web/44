@@ -8325,6 +8325,48 @@ window.importBackupJSON = function(){
   });
 })();
 
+/* ── 64. 矢印キーでカード選択・Enterで開く ── */
+(function(){
+  var focusIdx=-1;
+  function cards(){return document.querySelectorAll('#list .card[data-rid]');}
+  function highlight(){
+    var cs=cards();
+    for(var i=0;i<cs.length;i++){
+      if(i===focusIdx){
+        cs[i].style.outline='2px solid #2383e2';
+        cs[i].style.outlineOffset='-2px';
+        cs[i].scrollIntoView({block:'nearest',behavior:'smooth'});
+      } else {
+        cs[i].style.outline='';
+        cs[i].style.outlineOffset='';
+      }
+    }
+  }
+  document.addEventListener('keydown',function(e){
+    var t=e.target;
+    if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable))return;
+    if(document.getElementById('pnl')&&document.getElementById('pnl').classList.contains('open'))return;
+    var cs=cards();if(cs.length===0)return;
+    if(e.key==='ArrowDown'){
+      e.preventDefault();
+      focusIdx=Math.min(cs.length-1,focusIdx+1);
+      highlight();
+    } else if(e.key==='ArrowUp'){
+      e.preventDefault();
+      focusIdx=Math.max(0,focusIdx-1);
+      highlight();
+    } else if(e.key==='Enter'&&focusIdx>=0&&focusIdx<cs.length){
+      e.preventDefault();
+      var rid=parseInt(cs[focusIdx].getAttribute('data-rid'));
+      if(!isNaN(rid)&&typeof openPanel==='function')openPanel(rid);
+    } else if(e.key==='Home'){focusIdx=0;highlight();}
+    else if(e.key==='End'){focusIdx=cs.length-1;highlight();}
+  });
+  /* render時にフォーカスクリア */
+  var _origR=window.render;
+  window.render=function(){focusIdx=-1;return _origR.apply(this,arguments);};
+})();
+
 })();
 </script>
 </body>
