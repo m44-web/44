@@ -1,0 +1,121 @@
+export const aspectRatioOptions = [
+  {
+    value: "16:9",
+    label: "横長 (16:9)",
+    description: "壁掛け・大型ディスプレイ向け",
+  },
+  {
+    value: "9:16",
+    label: "縦長 (9:16)",
+    description: "柱型・スタンド型サイネージ向け",
+  },
+  {
+    value: "1:1",
+    label: "正方形 (1:1)",
+    description: "キオスク・小型ディスプレイ向け",
+  },
+  {
+    value: "4:3",
+    label: "スタンダード (4:3)",
+    description: "従来型ディスプレイ向け",
+  },
+  {
+    value: "21:9",
+    label: "ウルトラワイド (21:9)",
+    description: "帯状バナーサイネージ向け",
+  },
+] as const;
+
+export const durationOptions = [
+  { value: "5", label: "5秒", description: "ショートクリップ" },
+  { value: "8", label: "8秒", description: "おすすめ" },
+  { value: "10", label: "10秒", description: "標準" },
+  { value: "15", label: "15秒", description: "ロングクリップ" },
+] as const;
+
+export type VideoCategory = "cm" | "recruit";
+
+export type PromptTemplate = {
+  id: string;
+  category: VideoCategory;
+  label: string;
+  prompt: string;
+};
+
+export const promptTemplates: PromptTemplate[] = [
+  {
+    id: "cm-street",
+    category: "cm",
+    label: "街頭サイネージCM",
+    prompt:
+      "夜の札幌駅前通りで輝く巨大LEDビジョン、映画的なドリーショットで近づいていく。サイネージに映し出される鮮やかな広告映像、街の賑わいと光の反射が美しいシネマティックな映像。浅い被写界深度、レンズフレア、ティールとオレンジのカラーグレーディング",
+  },
+  {
+    id: "cm-shop",
+    category: "cm",
+    label: "店舗プロモーション",
+    prompt:
+      "洗練されたカフェの入口に設置されたデジタルサイネージ、温かみのある照明の中でメニューが美しく表示される。カメラはゆっくりとパンし、来店客が笑顔でサイネージを見る様子を捉える。映画的なボケ味、暖色系の色調、シネマスコープ構図",
+  },
+  {
+    id: "cm-product",
+    category: "cm",
+    label: "商品紹介CM",
+    prompt:
+      "モダンなショールームでデジタルサイネージが最新製品を紹介するシーン。カメラはスライダーショットで滑らかに移動、LEDパネルの鮮明な映像と洗練された空間が映画的に切り替わる。プロフェッショナルな照明、クリーンな構図、コマーシャル品質の映像",
+  },
+  {
+    id: "cm-outdoor",
+    category: "cm",
+    label: "屋外広告ビジョン",
+    prompt:
+      "北海道の壮大な風景を背景に、国道沿いに立つ大型LEDビジョン。ドローンショットで空から接近し、ビジョンに表示される鮮やかな映像を映す。黄金時間の光、ダイナミックなカメラワーク、壮大なスケール感のある映画的映像",
+  },
+  {
+    id: "cm-event",
+    category: "cm",
+    label: "イベント告知",
+    prompt:
+      "華やかなイベント会場のエントランスに設置された複数のデジタルサイネージ。来場者が行き交う中、サイネージが次々と切り替わるイベント情報を映す。スローモーション、華やかな照明効果、映画的な群衆シーン、ダイナミックなカット切り替え",
+  },
+  {
+    id: "recruit-office",
+    category: "recruit",
+    label: "オフィス紹介",
+    prompt:
+      "明るく開放的なモダンオフィスの中を、ステディカムで滑らかに移動するワンショット。笑顔で働くスタッフ、クリエイティブな会議風景、窓から差し込む自然光。映画的な長回し、浅い被写界深度、温かみのある自然な色調",
+  },
+  {
+    id: "recruit-team",
+    category: "recruit",
+    label: "チーム紹介",
+    prompt:
+      "多様なメンバーが活き活きと働くIT企業のオフィス。各メンバーの表情をクローズアップで捉え、チームワークの様子を映画的に描く。カット切り替えのリズム感、ポートレートライティング、ドキュメンタリー風の映像美",
+  },
+  {
+    id: "recruit-growth",
+    category: "recruit",
+    label: "成長ストーリー",
+    prompt:
+      "新入社員が先輩に教わりながら成長していく様子を映画的に描く。朝のオフィス、真剣な表情、達成した瞬間の笑顔。タイムラプス的な時間経過の演出、温かいトーン、ドラマティックな照明変化、映画予告編のような構成",
+  },
+  {
+    id: "recruit-culture",
+    category: "recruit",
+    label: "企業カルチャー",
+    prompt:
+      "ランチタイムの和やかな雰囲気、社内イベントの活気、集中して働く姿を映画的に交互に映す。スローモーションとノーマルスピードの切り替え、自然光と人工光のミックス、温かみのあるカラーグレーディング、ドキュメンタリー調",
+  },
+  {
+    id: "recruit-tech",
+    category: "recruit",
+    label: "テクノロジー企業PR",
+    prompt:
+      "最先端のテクノロジーを扱うエンジニアたちの日常。複数のモニターに映るコード、3Dモデリング、ロボティクスの実験。近未来的な照明、ティールとブルーの色調、SFテイストの映画的演出、ダイナミックなカメラアングル",
+  },
+];
+
+export const categoryLabels: Record<VideoCategory, string> = {
+  cm: "CM・広告",
+  recruit: "求人・採用",
+};

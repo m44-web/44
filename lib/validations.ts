@@ -21,3 +21,20 @@ export const inquiryTypes = [
   "既存設備の入れ替え",
   "その他",
 ] as const;
+
+export const videoGenerationSchema = z.object({
+  prompt: z
+    .string()
+    .min(1, "プロンプトを入力してください")
+    .max(500, "500文字以内で入力してください"),
+  aspectRatio: z.enum(["16:9", "9:16", "1:1", "4:3", "21:9"]),
+  duration: z.enum(["5", "8", "10", "15"]),
+  model: z.enum(["seedance-2.0", "seedance-2.0-fast"]),
+  imageUrl: z
+    .string()
+    .url("正しいURLを入力してください")
+    .optional()
+    .or(z.literal("")),
+});
+
+export type VideoGenerationFormData = z.infer<typeof videoGenerationSchema>;

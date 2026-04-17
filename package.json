@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@fal-ai/client": "^1.9.5",
     "@hookform/resolvers": "^5.2.2",
     "framer-motion": "^12.38.0",
     "next": "16.2.0",
