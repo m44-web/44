@@ -178,6 +178,7 @@ function AdminShiftRequestView() {
   const [guards, setGuards] = useState<Guard[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
   const [siteSelections, setSiteSelections] = useState<Record<string, string>>({});
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const { showToast } = useToast();
   const [mounted, setMounted] = useState(false);
 
@@ -215,6 +216,41 @@ function AdminShiftRequestView() {
     showToast("シフト希望を却下しました", "info");
   }
 
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function handleBatchApprove() {
+    let approved = 0;
+    let missingSite = 0;
+    for (const id of selected) {
+      const siteId = siteSelections[id];
+      if (!siteId) {
+        missingSite++;
+        continue;
+      }
+      updateShiftRequest(id, { status: "approved" }, siteId);
+      approved++;
+    }
+    refresh();
+    setSelected(new Set());
+    if (approved > 0) showToast(`${approved}件を一括承認しました`, "success");
+    if (missingSite > 0) showToast(`${missingSite}件は配置現場が未選択のためスキップ`, "warning");
+  }
+
+  function handleBatchReject() {
+    for (const id of selected) updateShiftRequest(id, { status: "rejected" });
+    refresh();
+    const n = selected.size;
+    setSelected(new Set());
+    showToast(`${n}件を一括却下しました`, "info");
+  }
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">シフト希望管理</h1>
@@ -234,6 +270,16 @@ function AdminShiftRequestView() {
 
       <p className="text-xs text-text-secondary">※ 承認時に配置現場を選択 → シフト管理に自動反映されます</p>
 
+      {/* Batch actions */}
+      {selected.size > 0 && (
+        <div className="sticky top-0 z-10 bg-accent/90 backdrop-blur-sm text-white rounded-lg px-3 py-2 flex items-center gap-2 shadow-lg">
+          <span className="text-sm font-medium">{selected.size}件選択中</span>
+          <button onClick={handleBatchApprove} className="ml-auto text-xs px-2.5 py-1 rounded bg-white text-accent font-bold cursor-pointer">一括承認</button>
+          <button onClick={handleBatchReject} className="text-xs px-2.5 py-1 rounded border border-white/40 cursor-pointer">一括却下</button>
+          <button onClick={() => setSelected(new Set())} className="text-xs px-2 cursor-pointer">解除</button>
+        </div>
+      )}
+
       {/* Pending requests */}
       <div>
         <h2 className="text-sm font-semibold text-text-secondary mb-2">未処理の希望</h2>
@@ -248,19 +294,28 @@ function AdminShiftRequestView() {
               return (
                 <Card key={req.id} className="space-y-3">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-text-primary">{guard?.name ?? "—"}</p>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                          isNight ? "bg-purple-500/10 text-purple-400" : "bg-warning/10 text-warning"
-                        }`}>
-                          {isNight ? "夜勤" : "日勤"}
-                        </span>
+                    <div className="flex items-start gap-2 min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(req.id)}
+                        onChange={() => toggleSelect(req.id)}
+                        className="mt-0.5 w-4 h-4 accent-accent cursor-pointer shrink-0"
+                        aria-label="選択"
+                      />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-text-primary">{guard?.name ?? "—"}</p>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                            isNight ? "bg-purple-500/10 text-purple-400" : "bg-warning/10 text-warning"
+                          }`}>
+                            {isNight ? "夜勤" : "日勤"}
+                          </span>
+                        </div>
+                        <p className="text-xs text-text-secondary">
+                          {req.date}（{DAY_LABELS[d.getDay()]}）{req.startTime}〜{req.endTime}
+                          {req.notes && ` / ${req.notes}`}
+                        </p>
                       </div>
-                      <p className="text-xs text-text-secondary">
-                        {req.date}（{DAY_LABELS[d.getDay()]}）{req.startTime}〜{req.endTime}
-                        {req.notes && ` / ${req.notes}`}
-                      </p>
                     </div>
                   </div>
 
