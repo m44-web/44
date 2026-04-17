@@ -8237,6 +8237,68 @@ window.importBackupJSON = function(){
   },2800);
 })();
 
+/* ── 62. 統合設定パネル + キーボードショートカット更新 ── */
+(function(){
+  window.openSettingsPanel=function(){
+    var old=document.getElementById('ux-settings');if(old){old.remove();return;}
+    var ov=document.createElement('div');ov.id='ux-settings';
+    ov.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:170;display:flex;align-items:center;justify-content:center;padding:16px';
+    var panel=document.createElement('div');
+    panel.style.cssText='background:#fff;border-radius:12px;padding:18px;max-width:340px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.25)';
+    panel.innerHTML='<div style="font-size:14px;font-weight:800;color:#37352f;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">⚙ 設定<span style="cursor:pointer;color:#9b9a97;font-size:18px" id="ux-set-close">✕</span></div>';
+
+    function getLS(k,def){try{var v=localStorage.getItem(k);return v===null?def:v;}catch(e){return def;}}
+    var opts=[
+      {k:'crm-dark',lbl:'ダークモード',on:'1',fn:'toggleDark'},
+      {k:'crm-compact',lbl:'コンパクト表示',on:'1',fn:'toggleCompact'},
+      {k:'crm-haptic',lbl:'振動フィードバック',on:'1',fn:'toggleHaptic',default:'1'},
+      {k:'crm-kanban',lbl:'Kanban表示',on:'1',fn:'toggleKanban'}
+    ];
+    opts.forEach(function(o){
+      var cur=getLS(o.k,o.default||'0');
+      var row=document.createElement('div');
+      row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0ee';
+      var lb=document.createElement('div');lb.textContent=o.lbl;lb.style.cssText='font-size:13px;color:#37352f';
+      var sw=document.createElement('div');
+      sw.style.cssText='width:40px;height:22px;border-radius:11px;background:'+(cur===o.on?'#2383e2':'#cbd5e0')+';position:relative;cursor:pointer;transition:background 0.2s';
+      sw.innerHTML='<div style="position:absolute;top:2px;left:'+(cur===o.on?'20':'2')+'px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2)"></div>';
+      sw.addEventListener('click',function(){
+        if(typeof window[o.fn]==='function')window[o.fn]();
+        setTimeout(function(){ov.remove();window.openSettingsPanel();},100);
+      });
+      row.appendChild(lb);row.appendChild(sw);panel.appendChild(row);
+    });
+
+    var hints=document.createElement('div');
+    hints.style.cssText='margin-top:16px;padding:12px;background:#f7f6f3;border-radius:8px;font-size:11px;color:#718096;line-height:1.7';
+    hints.innerHTML='<b style="color:#37352f">⌨ ショートカット</b><br>'+
+      '1-5: フェーズタブ切替<br>'+
+      'Ctrl+K: コマンドパレット<br>'+
+      '/: 検索にフォーカス<br>'+
+      'ESC: パネル閉じる<br><br>'+
+      '<b style="color:#37352f">🔍 高度検索</b><br>'+
+      'name:田中 area:札幌<br>'+
+      'phone:090 est:100<br>'+
+      'work:外壁 status:contracted';
+    panel.appendChild(hints);
+
+    ov.appendChild(panel);
+    ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+    document.body.appendChild(ov);
+    document.getElementById('ux-set-close').addEventListener('click',function(){ov.remove();});
+  };
+
+  setTimeout(function(){
+    var menu=document.getElementById('menu');if(!menu)return;
+    if(document.getElementById('ux-settings-btn'))return;
+    var lb=menu.querySelector('.danger');
+    var b=document.createElement('button');b.className='menu-item';b.id='ux-settings-btn';
+    b.innerHTML='<span class="menu-icon">⚙</span>設定';
+    b.onclick=function(){window.openSettingsPanel();menu.style.display='none';};
+    if(lb)menu.insertBefore(b,lb);else menu.appendChild(b);
+  },2900);
+})();
+
 })();
 </script>
 </body>
