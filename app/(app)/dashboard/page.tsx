@@ -639,6 +639,9 @@ function GuardDashboard({ guardId }: { guardId: string }) {
         );
       })()}
 
+      {/* My week calendar */}
+      <GuardWeekCalendar myShifts={myShifts} />
+
       {/* Upcoming shifts */}
       {myUpcoming.length > 0 && (
         <div>
@@ -1038,6 +1041,50 @@ function SurplusGuards({ activeGuards, shifts }: { activeGuards: Guard[]; shifts
             </div>
           </Card>
         )}
+      </div>
+    </div>
+  );
+}
+
+function GuardWeekCalendar({ myShifts }: { myShifts: Shift[] }) {
+  const weekDates = useMemo(() => {
+    const dates: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      dates.push(d.toISOString().split("T")[0]);
+    }
+    return dates;
+  }, []);
+  const today = weekDates[0];
+  const hasShifts = weekDates.some((d) => myShifts.some((s) => s.date === d && s.status !== "cancelled"));
+  if (!hasShifts) return null;
+
+  return (
+    <div>
+      <h2 className="text-sm font-semibold text-text-secondary mb-2">今週の予定</h2>
+      <div className="bg-card-bg border border-border rounded-xl p-3">
+        <div className="grid grid-cols-7 gap-1">
+          {weekDates.map((date) => {
+            const d = new Date(date + "T00:00:00");
+            const dayIdx = d.getDay();
+            const dayShifts = myShifts.filter((s) => s.date === date && s.status !== "cancelled");
+            const isToday = date === today;
+            const hasShift = dayShifts.length > 0;
+            const isNight = dayShifts.some((s) => s.shiftType === "night");
+            return (
+              <div key={date} className={`text-center py-1.5 rounded-lg ${isToday ? "bg-accent/10 ring-1 ring-accent" : ""}`}>
+                <p className={`text-[10px] ${dayIdx === 0 ? "text-danger" : dayIdx === 6 ? "text-accent" : "text-text-secondary"}`}>
+                  {DAY_LABELS[dayIdx]}
+                </p>
+                <p className={`text-sm font-bold ${isToday ? "text-accent" : "text-text-primary"}`}>{d.getDate()}</p>
+                {hasShift && (
+                  <div className={`w-1.5 h-1.5 rounded-full mx-auto mt-0.5 ${isNight ? "bg-purple-500" : "bg-warning"}`} />
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
