@@ -8693,6 +8693,74 @@ window.importBackupJSON = function(){
   },3000);
 })();
 
+/* ── 70. エリア別ヒートマップ (ダッシュボード) ── */
+(function(){
+  var _origDash=window.openDashboard;
+  if(typeof _origDash!=='function')return;
+  window.openDashboard=function(){
+    _origDash.apply(this,arguments);
+    setTimeout(function(){
+      var modal=document.querySelector('#ux-dash')||document.querySelector('[style*="z-index: 120"]')||document.querySelector('[style*="z-index:120"]');
+      if(!modal)return;
+      var body=modal.querySelector('[style*="overflow-y"]')||modal;
+      if(document.getElementById('ux-heatmap'))return;
+
+      var d=window.D||[],del=window.deletedIds||{};
+      var byArea={};
+      d.forEach(function(r){
+        if(del[r[0]])return;
+        var a=(r[3]||'未設定').trim()||'未設定';
+        if(!byArea[a])byArea[a]={total:0,won:0,rev:0};
+        byArea[a].total++;
+        var st=(typeof gst==='function')?gst(r):(r[5]||'');
+        var s=(window.ST||{})[st]||{};
+        if(s.ph==='won'||s.ph==='completed'){byArea[a].won++;}
+        if(r[14]&&r[18])byArea[a].rev+=parseInt(String(r[14]).replace(/[^\d]/g,''))||0;
+      });
+      var areas=Object.keys(byArea).sort(function(a,b){return byArea[b].total-byArea[a].total;}).slice(0,12);
+      if(areas.length===0)return;
+
+      var maxTotal=1,maxWon=1;
+      areas.forEach(function(a){
+        if(byArea[a].total>maxTotal)maxTotal=byArea[a].total;
+        if(byArea[a].won>maxWon)maxWon=byArea[a].won;
+      });
+
+      var sec=document.createElement('div');sec.id='ux-heatmap';
+      sec.style.cssText='margin-top:16px;padding:14px;background:#fff;border-radius:10px;border:1.5px solid #e9e9e7';
+      var ti=document.createElement('div');
+      ti.textContent='🗺 エリア別ヒートマップ';
+      ti.style.cssText='font-size:13px;font-weight:800;color:#37352f;margin-bottom:10px';
+      sec.appendChild(ti);
+
+      var grid=document.createElement('div');
+      grid.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:6px';
+      areas.forEach(function(a){
+        var v=byArea[a];
+        var intensity=v.total/maxTotal;
+        var cell=document.createElement('div');
+        var bg='hsl(210,'+Math.round(60*intensity+20)+'%,'+Math.round(90-40*intensity)+'%)';
+        var fg=intensity>0.5?'#fff':'#37352f';
+        cell.style.cssText='padding:8px 6px;background:'+bg+';color:'+fg+';border-radius:6px;font-size:10px;text-align:center;cursor:pointer;transition:transform 0.1s';
+        cell.innerHTML='<div style="font-weight:700;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+String(a).replace(/</g,'&lt;')+'</div><div style="font-size:14px;font-weight:800;margin-top:2px">'+v.total+'</div><div style="opacity:0.85;margin-top:1px">成約 '+v.won+'</div>';
+        cell.addEventListener('click',function(){
+          window.curPerson='';
+          if(typeof showToast==='function')showToast('📍 '+a+': '+v.total+'件');
+          /* エリアでフィルタしたいが簡易的に検索にセット */
+          var srch=document.getElementById('srch');
+          if(srch){srch.value=a;window.srch=a;if(typeof render==='function')render();}
+          modal.remove();
+        });
+        cell.addEventListener('mouseenter',function(){cell.style.transform='scale(1.04)';});
+        cell.addEventListener('mouseleave',function(){cell.style.transform='';});
+        grid.appendChild(cell);
+      });
+      sec.appendChild(grid);
+      body.appendChild(sec);
+    },350);
+  };
+})();
+
 })();
 </script>
 </body>
