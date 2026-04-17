@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createEmployeeSchema, CreateEmployeeInput } from "@/lib/validations";
@@ -19,12 +19,25 @@ interface Employee {
   deactivatedAt: number | null;
 }
 
+interface ImportResult {
+  row: number;
+  name: string;
+  email: string;
+  status: "created" | "skipped";
+  reason?: string;
+}
+
 export function EmployeeManagement() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [serverError, setServerError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [showDeactivated, setShowDeactivated] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showImport, setShowImport] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResults, setImportResults] = useState<ImportResult[] | null>(null);
+  const [importCsvText, setImportCsvText] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
@@ -89,6 +102,58 @@ export function EmployeeManagement() {
       if (res.ok) fetchEmployees();
     } catch {
       // ignore
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setImportCsvText(ev.target?.result as string);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleImport = async () => {
+    setImporting(true);
+    setImportResults(null);
+    try {
+      const lines = importCsvText
+        .trim()
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean);
+
+      if (lines.length === 0) return;
+
+      let startIdx = 0;
+      const first = lines[0].toLowerCase();
+      if (first.includes("name") || first.includes("名前") || first.includes("email")) {
+        startIdx = 1;
+      }
+
+      const emps = lines.slice(startIdx).map((line) => {
+        const parts = line.split(",").map((s) => s.trim().replace(/^"|"$/g, ""));
+        return { name: parts[0] || "", email: parts[1] || "", password: parts[2] || "" };
+      });
+
+      const res = await fetch("/api/employees/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employees: emps }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setServerError(data.error || "インポートに失敗しました");
+        return;
+      }
+      setImportResults(data.results);
+      if (data.created > 0) fetchEmployees();
+    } catch {
+      setServerError("インポートに失敗しました");
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -182,6 +247,74 @@ export function EmployeeManagement() {
               登録
             </Button>
           </form>
+        </Card>
+
+        {/* Bulk Import */}
+        <Card>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-semibold">一括インポート</h2>
+            <button
+              onClick={() => setShowImport((v) => !v)}
+              className="text-xs text-primary hover:underline"
+            >
+              {showImport ? "閉じる" : "CSVでインポート"}
+            </button>
+          </div>
+          {showImport && (
+            <div className="space-y-3">
+              <p className="text-xs text-text-muted">
+                CSV形式: 名前,メール,パスワード（1行1名、ヘッダー行あり可）
+              </p>
+              <div className="flex gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv,.txt"
+                  onChange={handleFileUpload}
+                  className="text-xs file:mr-2 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-primary/20 file:text-primary file:text-xs file:cursor-pointer"
+                />
+              </div>
+              <textarea
+                value={importCsvText}
+                onChange={(e) => setImportCsvText(e.target.value)}
+                rows={4}
+                placeholder={"名前,メール,パスワード\n山田太郎,yamada@example.com,password123\n鈴木花子,suzuki@example.com,password456"}
+                className="w-full px-3 py-2 bg-surface-light border border-white/10 rounded-lg text-sm text-text font-mono focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={handleImport}
+                  loading={importing}
+                  disabled={!importCsvText.trim()}
+                >
+                  インポート実行
+                </Button>
+              </div>
+              {importResults && (
+                <div className="space-y-1 text-xs">
+                  <p className="font-medium">
+                    結果: {importResults.filter((r) => r.status === "created").length}件作成,{" "}
+                    {importResults.filter((r) => r.status === "skipped").length}件スキップ
+                  </p>
+                  <div className="max-h-32 overflow-y-auto space-y-0.5">
+                    {importResults.map((r) => (
+                      <div
+                        key={r.row}
+                        className={`px-2 py-1 rounded ${
+                          r.status === "created"
+                            ? "bg-success/10 text-success"
+                            : "bg-warning/10 text-warning"
+                        }`}
+                      >
+                        {r.row}行目: {r.name} ({r.email}) -{" "}
+                        {r.status === "created" ? "作成" : `スキップ: ${r.reason}`}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </Card>
 
         {/* Employee List */}
