@@ -3,6 +3,7 @@ import { MediaHero } from "@/components/sections/media/MediaHero";
 import { SignageInfo } from "@/components/sections/media/SignageInfo";
 import { ReachSection } from "@/components/sections/media/ReachSection";
 import { PricingSection } from "@/components/sections/media/PricingSection";
+import { ROICalculator } from "@/components/sections/media/ROICalculator";
 import { PDFDownloadCTA } from "@/components/sections/media/PDFDownloadCTA";
 
 export const metadata: Metadata = {
@@ -18,6 +19,7 @@ export default function MediaPage() {
       <SignageInfo />
       <ReachSection />
       <PricingSection />
+      <ROICalculator />
       <PDFDownloadCTA />
     </>
   );
