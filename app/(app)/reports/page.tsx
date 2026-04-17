@@ -204,10 +204,38 @@ function ReportFormModal({
 }) {
   const today = new Date().toISOString().split("T")[0];
   const todayShifts = shifts.filter((s) => s.date === today);
+  const draftKey = `lsecurity_report_draft_${guardId}`;
   const [shiftId, setShiftId] = useState(todayShifts[0]?.id ?? "");
   const [content, setContent] = useState("");
   const [attachments, setAttachments] = useState<{ name: string; dataUrl: string }[]>([]);
+  const [draftRestored, setDraftRestored] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Restore draft on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (raw) {
+        const draft = JSON.parse(raw);
+        if (draft.date === today && draft.content) {
+          setContent(draft.content);
+          if (draft.shiftId) setShiftId(draft.shiftId);
+          setDraftRestored(true);
+        } else {
+          localStorage.removeItem(draftKey);
+        }
+      }
+    } catch {}
+  }, [draftKey, today]);
+
+  // Auto-save draft while typing
+  useEffect(() => {
+    if (!content) return;
+    const t = setTimeout(() => {
+      localStorage.setItem(draftKey, JSON.stringify({ date: today, content, shiftId }));
+    }, 500);
+    return () => clearTimeout(t);
+  }, [content, shiftId, today, draftKey]);
 
   const selectedShift = shifts.find((s) => s.id === shiftId);
   const siteId = selectedShift?.siteId ?? "";
@@ -233,6 +261,7 @@ function ReportFormModal({
       content: content.trim(), attachments,
       submittedAt: new Date().toISOString(),
     });
+    localStorage.removeItem(draftKey);
     onDone();
   }
 
@@ -256,7 +285,10 @@ function ReportFormModal({
         </div>
 
         <div>
-          <label className="block text-base font-medium text-text-primary mb-2">報告内容 <span className="text-danger">*</span></label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-base font-medium text-text-primary">報告内容 <span className="text-danger">*</span></label>
+            {draftRestored && <span className="text-[10px] text-accent">下書きを復元しました</span>}
+          </div>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
