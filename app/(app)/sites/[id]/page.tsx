@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { getSite, updateSite } from "@/lib/store";
 import { SiteForm, type SiteFormValues } from "@/components/app/SiteForm";
+import { BackButton } from "@/components/ui/BackButton";
 import type { Site } from "@/lib/types";
 
 export default function SiteDetailPage() {
@@ -36,6 +37,7 @@ export default function SiteDetailPage() {
 
   return (
     <div className="space-y-4 max-w-2xl">
+      <BackButton fallbackHref="/sites" label="現場一覧へ" />
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">現場を編集</h1>
         <button

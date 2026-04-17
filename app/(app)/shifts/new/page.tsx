@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getGuards, getSites, addShift, getShifts } from "@/lib/store";
+import { BackButton } from "@/components/ui/BackButton";
 import type { Guard, Site, Shift, ShiftType } from "@/lib/types";
 import { SHIFT_PREFERENCE_LABELS } from "@/lib/types";
 
@@ -98,6 +99,7 @@ function NewShiftForm() {
 
   return (
     <div className="space-y-4 max-w-2xl">
+      <BackButton fallbackHref="/shifts" label="シフト一覧へ" />
       <h1 className="text-2xl font-bold">シフトを作成</h1>
 
       <form onSubmit={handleSubmit} className="bg-card-bg border border-border rounded-xl p-5 sm:p-6 space-y-4">
