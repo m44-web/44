@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { shifts, users, gpsLogs, audioRecordings } from "@/lib/db/schema";
+import { shifts, users, gpsLogs, audioRecordings, shiftActivities } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 import { audit } from "@/lib/audit";
@@ -52,6 +52,13 @@ export async function GET(
     .orderBy(asc(audioRecordings.recordedAt))
     .all();
 
+  const activities = db
+    .select()
+    .from(shiftActivities)
+    .where(eq(shiftActivities.shiftId, id))
+    .orderBy(asc(shiftActivities.createdAt))
+    .all();
+
   return NextResponse.json({
     shift: {
       ...shift,
@@ -68,6 +75,12 @@ export async function GET(
       id: r.id,
       durationSec: r.durationSec,
       recordedAt: r.recordedAt.getTime(),
+    })),
+    activities: activities.map((a) => ({
+      id: a.id,
+      activity: a.activity,
+      note: a.note,
+      createdAt: a.createdAt.getTime(),
     })),
   });
 }

@@ -77,6 +77,21 @@ export const auditLogs = sqliteTable("audit_logs", {
   index("audit_logs_action_idx").on(t.action),
 ]);
 
+export const shiftActivities = sqliteTable("shift_activities", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  shiftId: text("shift_id")
+    .notNull()
+    .references(() => shifts.id),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
+  activity: text("activity").notNull(),
+  note: text("note"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+}, (t) => [
+  index("shift_activities_shift_id_idx").on(t.shiftId),
+]);
+
 export const audioRecordings = sqliteTable("audio_recordings", {
   id: text("id").primaryKey(),
   shiftId: text("shift_id")

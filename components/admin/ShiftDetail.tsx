@@ -20,6 +20,7 @@ interface ShiftData {
   };
   gps: Array<{ lat: number; lng: number; accuracy: number | null; at: number }>;
   recordings: Array<{ id: string; durationSec: number | null; recordedAt: number }>;
+  activities: Array<{ id: number; activity: string; note: string | null; createdAt: number }>;
 }
 
 const MapContainer = dynamic(
@@ -170,7 +171,7 @@ export function ShiftDetail({ shiftId }: { shiftId: string }) {
     );
   }
 
-  const { shift, gps, recordings } = data;
+  const { shift, gps, recordings, activities } = data;
   const durationMs = (shift.endedAt ?? Date.now()) - shift.startedAt;
   const center: [number, number] =
     gps.length > 0 ? [gps[0].lat, gps[0].lng] : [35.6812, 139.7671];
@@ -376,6 +377,29 @@ export function ShiftDetail({ shiftId }: { shiftId: string }) {
             </div>
           )}
         </Card>
+
+        {/* Activities */}
+        {activities.length > 0 && (
+          <Card>
+            <h3 className="font-semibold mb-4">アクティビティ記録 ({activities.length}件)</h3>
+            <div className="space-y-2">
+              {activities.map((a) => (
+                <div key={a.id} className="flex items-center gap-3 text-sm">
+                  <span className="text-xs text-text-muted whitespace-nowrap">
+                    {new Date(a.createdAt).toLocaleTimeString("ja-JP", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                  <span className="px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs">
+                    {a.activity}
+                  </span>
+                  {a.note && <span className="text-text-muted text-xs">{a.note}</span>}
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
       </Container>
     </div>
   );

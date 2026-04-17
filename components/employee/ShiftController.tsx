@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ShiftTimer } from "./ShiftTimer";
 import { StatusIndicator } from "./StatusIndicator";
+import { MyTrailMap } from "./MyTrailMap";
 
 function getGpsIntervalMs(): number {
   if (typeof window === "undefined") return 30_000;
@@ -485,6 +486,10 @@ export function ShiftController({ userName }: { userName: string }) {
           </div>
         )}
 
+        {shift && <MyTrailMap />}
+
+        {shift && <ActivityLog />}
+
         {/* My Stats */}
         {myStats && (
           <Card className="w-full max-w-sm">
@@ -527,4 +532,78 @@ function formatMs(ms: number) {
   const m = totalMin % 60;
   if (h === 0) return `${m}分`;
   return `${h}時間${m}分`;
+}
+
+const QUICK_ACTIVITIES = ["訪問", "移動中", "会議", "休憩", "事務作業", "電話"];
+
+function ActivityLog() {
+  const [activities, setActivities] = useState<
+    Array<{ id: number; activity: string; note: string | null; createdAt: number }>
+  >([]);
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/my/activities")
+      .then((r) => r.json())
+      .then((data) => setActivities(data.activities))
+      .catch(() => {});
+  }, []);
+
+  const logActivity = async (activity: string) => {
+    setSending(true);
+    try {
+      const res = await fetch("/api/my/activities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activity }),
+      });
+      if (res.ok) {
+        setActivities((prev) => [
+          { id: Date.now(), activity, note: null, createdAt: Date.now() },
+          ...prev,
+        ]);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <Card className="w-full max-w-sm">
+      <h3 className="text-sm font-medium text-text-muted mb-3">
+        アクティビティ記録
+      </h3>
+      <div className="flex flex-wrap gap-2 mb-3">
+        {QUICK_ACTIVITIES.map((a) => (
+          <button
+            key={a}
+            onClick={() => logActivity(a)}
+            disabled={sending}
+            className="px-3 py-1.5 text-xs bg-white/5 hover:bg-primary/20 hover:text-primary rounded-full border border-white/10 transition-colors disabled:opacity-50"
+          >
+            {a}
+          </button>
+        ))}
+      </div>
+      {activities.length > 0 && (
+        <div className="space-y-1 max-h-[150px] overflow-y-auto">
+          {activities.slice(0, 10).map((a) => (
+            <div key={a.id} className="flex items-center gap-2 text-xs">
+              <span className="text-text-muted">
+                {new Date(a.createdAt).toLocaleTimeString("ja-JP", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+              <span className="px-2 py-0.5 bg-primary/10 text-primary rounded-full">
+                {a.activity}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
 }
