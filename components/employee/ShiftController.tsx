@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ShiftTimer } from "./ShiftTimer";
 import { StatusIndicator } from "./StatusIndicator";
 import { MyTrailMap } from "./MyTrailMap";
+import { InstallPrompt } from "@/components/ui/InstallPrompt";
 
 function getGpsIntervalMs(): number {
   if (typeof window === "undefined") return 30_000;
@@ -368,6 +369,8 @@ export function ShiftController({ userName }: { userName: string }) {
       </header>
 
       <div className="flex-1 flex flex-col items-center justify-center p-4 gap-6">
+        <InstallPrompt />
+
         {error && (
           <div role="alert" className="w-full max-w-sm p-3 bg-danger/10 border border-danger/30 rounded-lg text-danger text-sm text-center">
             {error}
