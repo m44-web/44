@@ -17,6 +17,7 @@ export default function GuardsPage() {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
+  const [sortBy, setSortBy] = useState<"name" | "experience" | "hours" | "created">("name");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -31,6 +32,7 @@ export default function GuardsPage() {
 
   const today = new Date().toISOString().split("T")[0];
 
+  const thisMonth = new Date().toISOString().slice(0, 7);
   const filtered = guards.filter((g) => {
     const matchSearch =
       g.name.includes(search) ||
@@ -41,6 +43,19 @@ export default function GuardsPage() {
       g.licenses.some((l) => l.includes(search));
     const matchStatus = filterStatus === "all" || g.status === filterStatus;
     return matchSearch && matchStatus;
+  }).sort((a, b) => {
+    if (sortBy === "name") return a.nameKana.localeCompare(b.nameKana, "ja");
+    if (sortBy === "experience") return b.experienceYears - a.experienceYears;
+    if (sortBy === "created") return b.createdAt.localeCompare(a.createdAt);
+    // hours
+    function calcH(s: Shift) {
+      const [sh, sm] = s.startTime.split(":").map(Number);
+      const [eh, em] = s.endTime.split(":").map(Number);
+      let h = eh - sh + (em - sm) / 60; if (h < 0) h += 24; return h;
+    }
+    const ah = shifts.filter((s) => s.guardId === a.id && s.date.startsWith(thisMonth) && s.status !== "cancelled").reduce((sum, s) => sum + calcH(s), 0);
+    const bh = shifts.filter((s) => s.guardId === b.id && s.date.startsWith(thisMonth) && s.status !== "cancelled").reduce((sum, s) => sum + calcH(s), 0);
+    return bh - ah;
   });
 
   const activeCount = guards.filter((g) => g.status === "active").length;
@@ -93,7 +108,7 @@ export default function GuardsPage() {
         className="w-full rounded-lg border border-border bg-sub-bg px-4 py-3 text-text-primary placeholder:text-text-secondary/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors"
       />
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         {(["all", "active", "inactive"] as const).map((s) => (
           <button
             key={s}
@@ -107,6 +122,17 @@ export default function GuardsPage() {
             {s === "all" ? "全員" : s === "active" ? "稼働中" : "休止中"}
           </button>
         ))}
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+          className="text-xs px-2 py-1.5 rounded-full border border-border bg-sub-bg text-text-secondary cursor-pointer appearance-none"
+          aria-label="並び順"
+        >
+          <option value="name">氏名順</option>
+          <option value="experience">経験年数順</option>
+          <option value="hours">今月稼働順</option>
+          <option value="created">登録日順</option>
+        </select>
         <span className="text-sm text-text-secondary ml-auto">{filtered.length}名</span>
       </div>
 
