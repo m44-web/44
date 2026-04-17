@@ -368,6 +368,7 @@ function GuardAttendance({ guardId }: { guardId?: string }) {
                   <div className="space-y-3">
                     <div className="text-center py-3 rounded-xl bg-success/10">
                       <p className="text-success font-medium text-base">出勤済み：{att.clockIn}</p>
+                      <LiveDuration clockInTime={att.clockIn!} />
                     </div>
                     <button
                       onClick={() => handleClockOut(shift.id)}
@@ -422,4 +423,26 @@ function GuardAttendance({ guardId }: { guardId?: string }) {
       <p className="text-xs text-text-secondary text-center">出退勤時にGPS位置情報が自動送信されます</p>
     </div>
   );
+}
+
+function LiveDuration({ clockInTime }: { clockInTime: string }) {
+  const [elapsed, setElapsed] = useState("");
+  useEffect(() => {
+    function update() {
+      const [ih, im] = clockInTime.split(":").map(Number);
+      const now = new Date();
+      const nh = now.getHours();
+      const nm = now.getMinutes();
+      let totalMin = (nh * 60 + nm) - (ih * 60 + im);
+      if (totalMin < 0) totalMin += 24 * 60;
+      const h = Math.floor(totalMin / 60);
+      const m = totalMin % 60;
+      setElapsed(`${h}時間${String(m).padStart(2, "0")}分`);
+    }
+    update();
+    const interval = setInterval(update, 30000);
+    return () => clearInterval(interval);
+  }, [clockInTime]);
+  if (!elapsed) return null;
+  return <p className="text-xs text-success/80 mt-1">経過 {elapsed}</p>;
 }
