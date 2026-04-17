@@ -150,6 +150,7 @@ function AdminHandoverView() {
   const [sites, setSites] = useState<Site[]>([]);
   const [selectedSiteId, setSelectedSiteId] = useState("");
   const [notes, setNotes] = useState<HandoverNote[]>([]);
+  const [search, setSearch] = useState("");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -165,6 +166,10 @@ function AdminHandoverView() {
 
   if (!mounted) return null;
 
+  const filteredNotes = search.trim()
+    ? notes.filter((n) => n.content.includes(search.trim()) || n.guardName.includes(search.trim()))
+    : notes;
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">引継ぎノート</h1>
@@ -179,13 +184,21 @@ function AdminHandoverView() {
         ))}
       </select>
 
-      <p className="text-sm text-text-secondary">{notes.length}件の引継ぎ</p>
+      <input
+        type="text"
+        placeholder="内容・警備員名で検索..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className={inputClasses}
+      />
 
-      {notes.length === 0 ? (
-        <Card><p className="text-text-secondary text-center py-6 text-sm">この現場の引継ぎはありません</p></Card>
+      <p className="text-sm text-text-secondary">{filteredNotes.length}件の引継ぎ</p>
+
+      {filteredNotes.length === 0 ? (
+        <Card><p className="text-text-secondary text-center py-6 text-sm">{search.trim() ? "該当する引継ぎがありません" : "この現場の引継ぎはありません"}</p></Card>
       ) : (
         <div className="space-y-2">
-          {notes.slice(0, 30).map((note) => (
+          {filteredNotes.slice(0, 30).map((note) => (
             <Card key={note.id}>
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">

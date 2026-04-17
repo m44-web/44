@@ -16,6 +16,7 @@ export default function EquipmentPage() {
   const [showAddItem, setShowAddItem] = useState(false);
   const [showLend, setShowLend] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [search, setSearch] = useState("");
   const [mounted, setMounted] = useState(false);
 
   function refresh() {
@@ -51,9 +52,11 @@ export default function EquipmentPage() {
     return available <= 2;
   });
 
-  const filteredEquipment = filterCategory === "all"
-    ? equipment
-    : equipment.filter((eq) => eq.category === filterCategory);
+  const filteredEquipment = equipment.filter((eq) => {
+    if (filterCategory !== "all" && eq.category !== filterCategory) return false;
+    if (search.trim() && !eq.name.includes(search.trim()) && !(eq.notes ?? "").includes(search.trim())) return false;
+    return true;
+  });
 
   const categories = Object.entries(EQUIPMENT_CATEGORY_LABELS);
 
@@ -103,6 +106,15 @@ export default function EquipmentPage() {
           </div>
         </Card>
       )}
+
+      {/* Search */}
+      <input
+        type="text"
+        placeholder="装備名・備考で検索..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className={inputClasses}
+      />
 
       {/* Category filter */}
       <div className="flex flex-wrap gap-1.5">

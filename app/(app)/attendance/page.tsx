@@ -33,6 +33,7 @@ function AdminAttendance() {
   const [sites, setSites] = useState<Site[]>([]);
   const [locations, setLocations] = useState<LocationLog[]>([]);
   const [selectedDate, setSelectedDate] = useState(todayStr());
+  const [guardSearch, setGuardSearch] = useState("");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -45,10 +46,10 @@ function AdminAttendance() {
   }, []);
 
   const { attendance, dateShifts, onDuty, completed, absent, notYetClocked, locationsByGuard } = useMemo(() => {
-    const att = allAttendance.filter((a) => a.date === selectedDate);
+    const allAtt = allAttendance.filter((a) => a.date === selectedDate);
     const ds = shifts.filter((s) => s.date === selectedDate && s.status !== "cancelled");
     const scheduledGuardIds = new Set(ds.map((s) => s.guardId));
-    const attendedGuardIds = new Set(att.map((a) => a.guardId));
+    const attendedGuardIds = new Set(allAtt.map((a) => a.guardId));
     const locMap = new Map<string, LocationLog[]>();
     for (const l of locations) {
       if (!l.timestamp.startsWith(selectedDate)) continue;
@@ -56,16 +57,24 @@ function AdminAttendance() {
       locMap.get(l.guardId)!.push(l);
     }
     for (const arr of locMap.values()) arr.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    // Apply guard search filter to visible rows (but not to status counters — those should reflect reality)
+    const term = guardSearch.trim();
+    const filteredAtt = term
+      ? allAtt.filter((a) => {
+          const g = guards.find((gg) => gg.id === a.guardId);
+          return g && (g.name.includes(term) || g.nameKana.includes(term));
+        })
+      : allAtt;
     return {
-      attendance: att,
+      attendance: filteredAtt,
       dateShifts: ds,
-      onDuty: att.filter((a) => a.status === "on_duty").length,
-      completed: att.filter((a) => a.status === "completed").length,
-      absent: att.filter((a) => a.status === "absent").length,
+      onDuty: allAtt.filter((a) => a.status === "on_duty").length,
+      completed: allAtt.filter((a) => a.status === "completed").length,
+      absent: allAtt.filter((a) => a.status === "absent").length,
       notYetClocked: [...scheduledGuardIds].filter((id) => !attendedGuardIds.has(id)),
       locationsByGuard: locMap,
     };
-  }, [allAttendance, shifts, locations, selectedDate]);
+  }, [allAttendance, shifts, locations, selectedDate, guardSearch, guards]);
 
   if (!mounted) return null;
 
@@ -98,12 +107,21 @@ function AdminAttendance() {
         </button>
       </div>
 
-      <input
-        type="date"
-        value={selectedDate}
-        onChange={(e) => setSelectedDate(e.target.value)}
-        className="w-full rounded-lg border border-border bg-sub-bg px-4 py-3 text-text-primary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors"
-      />
+      <div className="grid gap-2 sm:grid-cols-2">
+        <input
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          className="w-full rounded-lg border border-border bg-sub-bg px-4 py-3 text-text-primary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors"
+        />
+        <input
+          type="text"
+          placeholder="警備員名で検索..."
+          value={guardSearch}
+          onChange={(e) => setGuardSearch(e.target.value)}
+          className="w-full rounded-lg border border-border bg-sub-bg px-4 py-3 text-text-primary placeholder:text-text-secondary/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors"
+        />
+      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-2">
