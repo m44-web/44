@@ -6195,6 +6195,268 @@ window.importBackupJSON = function(){
   document.head.appendChild(sty);
 })();
 
+/* ── 29. フィルタプリセット保存 ── */
+(function(){
+  var PK='crm-presets';
+  function getPresets(){try{return JSON.parse(localStorage.getItem(PK)||'[]');}catch(e){return [];}}
+  function savePresets(p){try{localStorage.setItem(PK,JSON.stringify(p));}catch(e){}}
+
+  function captureState(){
+    return {
+      phase:window.curPhase||'all',
+      st:window.curSt||'',
+      person:window.curPerson||'',
+      srch:window.srch||'',
+      sort:window.curSort||'',
+      wantContract:!!window.wantContract,
+      dfrom:((document.getElementById('dfrom')||{}).value)||'',
+      dto:((document.getElementById('dto')||{}).value)||''
+    };
+  }
+  function applyState(s){
+    window.curPhase=s.phase||'all';
+    window.curSt=s.st||'';
+    window.curPerson=s.person||'';
+    window.srch=s.srch||'';
+    window.curSort=s.sort||'';
+    window.wantContract=!!s.wantContract;
+    var df=document.getElementById('dfrom'),dt=document.getElementById('dto');
+    if(df)df.value=s.dfrom||'';
+    if(dt)dt.value=s.dto||'';
+    var sr=document.getElementById('srch');if(sr)sr.value=s.srch||'';
+    if(typeof render==='function')render();
+    if(typeof renderChips==='function')renderChips();
+    if(typeof renderPersonChips==='function')renderPersonChips();
+    if(typeof renderSortBar==='function')renderSortBar();
+  }
+
+  window.openPresetsModal=function(){
+    var old=document.getElementById('ux-presets');if(old)old.remove();
+    var ov=document.createElement('div');ov.id='ux-presets';
+    ov.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:160;display:flex;align-items:center;justify-content:center;padding:16px';
+    var box=document.createElement('div');
+    box.style.cssText='background:#fff;border-radius:12px;padding:16px;width:100%;max-width:420px;max-height:80vh;overflow-y:auto;font-family:inherit';
+
+    var hd=document.createElement('div');
+    hd.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px';
+    hd.innerHTML='<div style="font-size:14px;font-weight:800;color:#37352f">\uD83D\uDCCC \u30D5\u30A3\u30EB\u30BF\u30D7\u30EA\u30BB\u30C3\u30C8</div>';
+    var x=document.createElement('button');x.type='button';x.textContent='\u2715';
+    x.style.cssText='background:none;border:none;font-size:18px;color:#9b9a97;cursor:pointer';
+    x.onclick=function(){ov.remove();};
+    hd.appendChild(x);box.appendChild(hd);
+
+    /* 現在状態を保存 */
+    var saveBar=document.createElement('div');
+    saveBar.style.cssText='display:flex;gap:6px;margin-bottom:14px';
+    var nm=document.createElement('input');nm.type='text';nm.placeholder='\u30D7\u30EA\u30BB\u30C3\u30C8\u540D';
+    nm.style.cssText='flex:1;padding:7px 10px;border:1.5px solid #e9e9e7;border-radius:6px;font-size:12px;font-family:inherit';
+    var add=document.createElement('button');add.type='button';add.textContent='\uFF0B \u73FE\u5728\u306E\u6761\u4EF6\u3092\u4FDD\u5B58';
+    add.style.cssText='padding:7px 12px;background:#1a56db;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit';
+    add.onclick=function(){
+      var n=(nm.value||'').trim();if(!n){nm.focus();return;}
+      var ps=getPresets();
+      ps.push({name:n,state:captureState(),ts:Date.now()});
+      savePresets(ps);nm.value='';listBuild();
+      if(typeof showToast==='function')showToast('\u2705 \u4FDD\u5B58\u3057\u307E\u3057\u305F');
+    };
+    saveBar.appendChild(nm);saveBar.appendChild(add);box.appendChild(saveBar);
+
+    var list=document.createElement('div');box.appendChild(list);
+    function listBuild(){
+      list.innerHTML='';
+      var ps=getPresets();
+      if(ps.length===0){list.innerHTML='<div style="padding:20px;text-align:center;color:#9b9a97;font-size:12px">\u307E\u3060\u4FDD\u5B58\u3055\u308C\u305F\u30D7\u30EA\u30BB\u30C3\u30C8\u306F\u3042\u308A\u307E\u305B\u3093</div>';return;}
+      ps.forEach(function(p,idx){
+        var it=document.createElement('div');
+        it.style.cssText='display:flex;align-items:center;gap:8px;padding:10px;border:1.5px solid #e9e9e7;border-radius:8px;margin-bottom:6px';
+        var info=document.createElement('div');info.style.cssText='flex:1;min-width:0;cursor:pointer';
+        var ti=document.createElement('div');ti.textContent=p.name;ti.style.cssText='font-size:13px;font-weight:600;color:#37352f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+        var sub=document.createElement('div');
+        var parts=[];var s=p.state||{};
+        if(s.phase&&s.phase!=='all')parts.push(s.phase);
+        if(s.st)parts.push(s.st);
+        if(s.person)parts.push(s.person);
+        if(s.srch)parts.push('\u300C'+s.srch+'\u300D');
+        if(s.dfrom||s.dto)parts.push((s.dfrom||'')+'\u301C'+(s.dto||''));
+        sub.textContent=parts.join(' / ')||'\u3059\u3079\u3066';
+        sub.style.cssText='font-size:10px;color:#9b9a97;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+        info.appendChild(ti);info.appendChild(sub);
+        info.addEventListener('click',function(){applyState(p.state);ov.remove();});
+        var del=document.createElement('button');del.type='button';del.textContent='\uD83D\uDDD1';
+        del.style.cssText='background:none;border:none;color:#9b9a97;cursor:pointer;font-size:14px;padding:4px 6px';
+        del.onclick=function(){
+          var ps2=getPresets();ps2.splice(idx,1);savePresets(ps2);listBuild();
+        };
+        it.appendChild(info);it.appendChild(del);
+        list.appendChild(it);
+      });
+    }
+    listBuild();
+
+    ov.appendChild(box);
+    ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+    document.body.appendChild(ov);
+    nm.focus();
+  };
+
+  /* メニューに追加 */
+  setTimeout(function(){
+    var menu=document.getElementById('menu');if(!menu)return;
+    if(document.getElementById('ux-presets-btn'))return;
+    var logoutBtn=menu.querySelector('.danger');
+    var b=document.createElement('button');b.className='menu-item';b.id='ux-presets-btn';
+    b.innerHTML='<span class="menu-icon">\uD83D\uDCCC</span>\u30D5\u30A3\u30EB\u30BF\u30D7\u30EA\u30BB\u30C3\u30C8';
+    b.onclick=function(){openPresetsModal();menu.style.display='none';};
+    if(logoutBtn)menu.insertBefore(b,logoutBtn);
+    else menu.appendChild(b);
+  },2000);
+})();
+
+/* ── 30. アクティビティフィード ── */
+(function(){
+  window.openActivityFeed=function(){
+    var old=document.getElementById('ux-activity');if(old)old.remove();
+    var log=window.editLog||{};
+    var items=[];
+    Object.keys(log).forEach(function(k){
+      (log[k]||[]).forEach(function(entry){
+        items.push({rid:k,ts:entry.ts,action:entry.action,user:entry.user,name:entry.name});
+      });
+    });
+    items.sort(function(a,b){return (b.ts||'').localeCompare(a.ts||'');});
+    items=items.slice(0,50);
+
+    var ov=document.createElement('div');ov.id='ux-activity';
+    ov.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:160;display:flex;align-items:center;justify-content:center;padding:16px';
+    var box=document.createElement('div');
+    box.style.cssText='background:#fff;border-radius:12px;padding:16px;width:100%;max-width:440px;max-height:80vh;overflow-y:auto;font-family:inherit';
+
+    var hd=document.createElement('div');
+    hd.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px';
+    hd.innerHTML='<div style="font-size:14px;font-weight:800;color:#37352f">\uD83D\uDCDC \u6D3B\u52D5\u30D5\u30A3\u30FC\u30C9 (\u6700\u65B050\u4EF6)</div>';
+    var x=document.createElement('button');x.type='button';x.textContent='\u2715';
+    x.style.cssText='background:none;border:none;font-size:18px;color:#9b9a97;cursor:pointer';
+    x.onclick=function(){ov.remove();};
+    hd.appendChild(x);box.appendChild(hd);
+
+    if(items.length===0){
+      box.innerHTML+='<div style="padding:30px;text-align:center;color:#9b9a97;font-size:12px">\u307E\u3060\u6D3B\u52D5\u304C\u3042\u308A\u307E\u305B\u3093</div>';
+    } else {
+      items.forEach(function(it){
+        var row=document.createElement('div');
+        row.style.cssText='padding:10px 0;border-bottom:1px solid #f0f0ee;display:flex;align-items:flex-start;gap:10px;cursor:pointer';
+        var ic='\u270F\uFE0F';
+        if(it.action&&it.action.indexOf('\u65B0\u898F')>=0)ic='\u2728';
+        else if(it.action&&it.action.indexOf('\u524A\u9664')>=0)ic='\uD83D\uDDD1';
+        var d=new Date(it.ts||0),ago='';
+        var diff=(Date.now()-d.getTime())/60000;
+        if(diff<1)ago='\u3055\u3063\u304D';
+        else if(diff<60)ago=Math.floor(diff)+'\u5206\u524D';
+        else if(diff<1440)ago=Math.floor(diff/60)+'\u6642\u9593\u524D';
+        else ago=Math.floor(diff/1440)+'\u65E5\u524D';
+        row.innerHTML='<span style="font-size:16px;flex-shrink:0">'+ic+'</span>'+
+          '<div style="flex:1;min-width:0">'+
+          '<div style="font-size:12px;color:#37352f;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+
+          (it.name||'(\u540D\u7121\u3057)').replace(/</g,'&lt;')+
+          '</div>'+
+          '<div style="font-size:10px;color:#9b9a97;margin-top:2px">'+
+          (it.action||'')+' \u00B7 '+(it.user||'\u4E0D\u660E')+' \u00B7 '+ago+
+          '</div></div>';
+        row.addEventListener('click',function(){
+          var rid=it.rid;
+          /* _new_ プレフィックスは新規追加のログ、実IDは詳細パネル */
+          if(typeof rid==='string'&&rid.indexOf('_new_')===0){ov.remove();return;}
+          if(typeof openPanel==='function'){ov.remove();openPanel(rid);}
+        });
+        box.appendChild(row);
+      });
+    }
+
+    ov.appendChild(box);
+    ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+    document.body.appendChild(ov);
+  };
+
+  setTimeout(function(){
+    var menu=document.getElementById('menu');if(!menu)return;
+    if(document.getElementById('ux-activity-btn'))return;
+    var logoutBtn=menu.querySelector('.danger');
+    var b=document.createElement('button');b.className='menu-item';b.id='ux-activity-btn';
+    b.innerHTML='<span class="menu-icon">\uD83D\uDCDC</span>\u6D3B\u52D5\u30D5\u30A3\u30FC\u30C9';
+    b.onclick=function(){openActivityFeed();menu.style.display='none';};
+    if(logoutBtn)menu.insertBefore(b,logoutBtn);
+    else menu.appendChild(b);
+  },2100);
+})();
+
+/* ── 31. キーボードショートカットヘルプ ── */
+(function(){
+  window.openShortcutsHelp=function(){
+    var old=document.getElementById('ux-shortcuts');if(old)old.remove();
+    var ov=document.createElement('div');ov.id='ux-shortcuts';
+    ov.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:160;display:flex;align-items:center;justify-content:center;padding:16px';
+    var box=document.createElement('div');
+    box.style.cssText='background:#fff;border-radius:12px;padding:20px;width:100%;max-width:420px;font-family:inherit';
+
+    var shortcuts=[
+      {k:'/',d:'\u691C\u7D22\u306B\u30D5\u30A9\u30FC\u30AB\u30B9'},
+      {k:'Esc',d:'\u30D1\u30CD\u30EB/\u30E1\u30CB\u30E5\u30FC\u3092\u9589\u3058\u308B'},
+      {k:'D',d:'\u30C0\u30C3\u30B7\u30E5\u30DC\u30FC\u30C9\u3092\u958B\u304F'},
+      {k:'N',d:'\u65B0\u898F\u6848\u4EF6\u3092\u8FFD\u52A0'},
+      {k:'?',d:'\u3053\u306E\u30D8\u30EB\u30D7\u3092\u8868\u793A'}
+    ];
+    var gestures=[
+      {k:'\u9577\u62BC\u3057',d:'\u30AF\u30A4\u30C3\u30AF\u30A2\u30AF\u30B7\u30E7\u30F3\u30E1\u30CB\u30E5\u30FC'},
+      {k:'\u5DE6\u30B9\u30EF\u30A4\u30D7',d:'\u30B9\u30C6\u30FC\u30BF\u30B9\u5909\u66F4'},
+      {k:'\u53F3\u30B9\u30EF\u30A4\u30D7',d:'\u96FB\u8A71\u767A\u4FE1'},
+      {k:'\u4E0B\u306B\u5F15\u304F',d:'\u30C7\u30FC\u30BF\u518D\u8AAD\u8FBC (PTR)'}
+    ];
+
+    var html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+      '<div style="font-size:14px;font-weight:800;color:#37352f">\u2328\uFE0F \u30B7\u30E7\u30FC\u30C8\u30AB\u30C3\u30C8\u4E00\u89A7</div>'+
+      '<button id="ux-sc-close" type="button" style="background:none;border:none;font-size:18px;color:#9b9a97;cursor:pointer">\u2715</button>'+
+      '</div>';
+    html+='<div style="font-size:11px;font-weight:700;color:#9b9a97;margin-bottom:6px">\u30AD\u30FC\u30DC\u30FC\u30C9</div>';
+    shortcuts.forEach(function(s){
+      html+='<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0ee;font-size:12px">'+
+        '<span style="color:#4a5568">'+s.d+'</span>'+
+        '<kbd style="background:#f7f6f3;border:1px solid #e2e8f0;border-radius:4px;padding:2px 8px;font-family:monospace;font-size:11px;color:#37352f">'+s.k+'</kbd>'+
+        '</div>';
+    });
+    html+='<div style="font-size:11px;font-weight:700;color:#9b9a97;margin:14px 0 6px">\u30B8\u30A7\u30B9\u30C1\u30E3\u30FC</div>';
+    gestures.forEach(function(s){
+      html+='<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0ee;font-size:12px">'+
+        '<span style="color:#4a5568">'+s.d+'</span>'+
+        '<span style="background:#f7f6f3;border:1px solid #e2e8f0;border-radius:4px;padding:2px 8px;font-size:11px;color:#37352f">'+s.k+'</span>'+
+        '</div>';
+    });
+    box.innerHTML=html;
+    ov.appendChild(box);
+    document.getElementById;
+    box.querySelector('#ux-sc-close').onclick=function(){ov.remove();};
+    ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+    document.body.appendChild(ov);
+  };
+
+  /* ? キーで表示 */
+  document.addEventListener('keydown',function(e){
+    if(e.key==='?'&&!/^(input|textarea|select)$/i.test((e.target.tagName||''))){
+      e.preventDefault();openShortcutsHelp();
+    }
+  });
+
+  setTimeout(function(){
+    var menu=document.getElementById('menu');if(!menu)return;
+    if(document.getElementById('ux-help-btn'))return;
+    var logoutBtn=menu.querySelector('.danger');
+    var b=document.createElement('button');b.className='menu-item';b.id='ux-help-btn';
+    b.innerHTML='<span class="menu-icon">\u2753</span>\u30B7\u30E7\u30FC\u30C8\u30AB\u30C3\u30C8';
+    b.onclick=function(){openShortcutsHelp();menu.style.display='none';};
+    if(logoutBtn)menu.insertBefore(b,logoutBtn);
+    else menu.appendChild(b);
+  },2200);
+})();
+
 })();
 </script>
 </body>
