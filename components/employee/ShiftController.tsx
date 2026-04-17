@@ -8,6 +8,7 @@ import { ShiftTimer } from "./ShiftTimer";
 import { StatusIndicator } from "./StatusIndicator";
 import { MyTrailMap } from "./MyTrailMap";
 import { InstallPrompt } from "@/components/ui/InstallPrompt";
+import { SessionGuard } from "@/components/ui/SessionGuard";
 
 function getGpsIntervalMs(): number {
   if (typeof window === "undefined") return 30_000;
@@ -549,6 +550,7 @@ export function ShiftController({ userName }: { userName: string }) {
           </Card>
         )}
       </div>
+      <SessionGuard />
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { CommandPalette } from "./CommandPalette";
 import { ActivityFeed } from "./ActivityFeed";
 import { KeyboardHelp } from "./KeyboardHelp";
 import { AdminNav } from "./AdminNav";
+import { SessionGuard } from "@/components/ui/SessionGuard";
 
 function ConnectionBadge() {
   const { connected, reconnectCount } = useRealtime();
@@ -61,6 +62,7 @@ function DashboardContent({ userName }: { userName: string }) {
       <Toasts />
       <CommandPalette />
       <KeyboardHelp />
+      <SessionGuard />
     </div>
   );
 }
