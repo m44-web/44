@@ -7,6 +7,7 @@ import { AppSidebar } from "@/components/app/AppSidebar";
 import { AppBottomNav } from "@/components/app/AppBottomNav";
 import { AppHeader } from "@/components/app/AppHeader";
 import { OfflineIndicator } from "@/components/app/OfflineIndicator";
+import { CommandPalette } from "@/components/app/CommandPalette";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -34,6 +35,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex bg-primary">
       <OfflineIndicator />
+      <CommandPalette />
       <AppSidebar />
       <div className="flex-1 flex flex-col min-h-screen md:ml-60">
         <AppHeader />

@@ -18,6 +18,7 @@ const STORAGE_KEYS = {
   locations: "lsecurity_locations",
   shiftRequests: "lsecurity_shift_requests",
   chat: "lsecurity_chat",
+  chatReads: "lsecurity_chat_reads",
   handover: "lsecurity_handover",
   interviews: "lsecurity_interviews",
 } as const;
@@ -525,6 +526,35 @@ export function addChatMessage(msg: Omit<ChatMessage, "id" | "timestamp">): Chat
   const trimmed = messages.slice(-500);
   setItem(STORAGE_KEYS.chat, trimmed);
   return newMsg;
+}
+
+// --- Chat unread tracking (per user, per channel) ---
+type ChatReads = Record<string, Record<string, string>>; // userId -> channelKey -> ISO timestamp
+
+function getChatReads(): ChatReads {
+  return getItem<ChatReads>(STORAGE_KEYS.chatReads, {});
+}
+export function markChatRead(userId: string, channelKey: string): void {
+  if (!userId) return;
+  const all = getChatReads();
+  const user = all[userId] ?? {};
+  user[channelKey] = new Date().toISOString();
+  all[userId] = user;
+  setItem(STORAGE_KEYS.chatReads, all);
+}
+export function getChatUnreadCounts(userId: string): Record<string, number> {
+  if (!userId) return {};
+  const reads = getChatReads()[userId] ?? {};
+  const messages = getChatMessages();
+  const counts: Record<string, number> = {};
+  for (const m of messages) {
+    if (m.senderId === userId) continue;
+    const key = m.channel === "general" ? "general" : m.channel === "site" ? `site:${m.siteId}` : `direct:${m.senderId}`;
+    const lastRead = reads[key];
+    if (lastRead && m.timestamp <= lastRead) continue;
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  return counts;
 }
 
 // --- Handover Notes ---

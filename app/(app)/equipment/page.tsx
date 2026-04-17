@@ -52,6 +52,12 @@ export default function EquipmentPage() {
     return available <= 2;
   });
 
+  const LONG_TERM_THRESHOLD_DAYS = 60;
+  const longTermLendings = activeLending.map((l) => {
+    const days = Math.floor((Date.now() - new Date(l.lentDate).getTime()) / (1000 * 60 * 60 * 24));
+    return { lending: l, days };
+  }).filter((x) => x.days >= LONG_TERM_THRESHOLD_DAYS);
+
   const filteredEquipment = equipment.filter((eq) => {
     if (filterCategory !== "all" && eq.category !== filterCategory) return false;
     if (search.trim() && !eq.name.includes(search.trim()) && !(eq.notes ?? "").includes(search.trim())) return false;
@@ -100,6 +106,24 @@ export default function EquipmentPage() {
               return (
                 <span key={eq.id} className="text-xs px-2 py-0.5 rounded bg-danger/10 text-danger">
                   {eq.name}（残{available}）
+                </span>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+      {/* Long term lending alert */}
+      {longTermLendings.length > 0 && (
+        <Card className="!border-warning/30 !bg-warning/5 !py-3">
+          <p className="text-sm font-medium text-warning mb-1">長期貸出の装備（{LONG_TERM_THRESHOLD_DAYS}日以上）</p>
+          <div className="flex flex-wrap gap-1.5">
+            {longTermLendings.map(({ lending: l, days }) => {
+              const eq = equipment.find((e) => e.id === l.equipmentId);
+              const guard = guards.find((g) => g.id === l.guardId);
+              return (
+                <span key={l.id} className="text-xs px-2 py-0.5 rounded bg-warning/10 text-warning">
+                  {eq?.name ?? "—"} / {guard?.name ?? "—"}（{days}日）
                 </span>
               );
             })}
@@ -203,12 +227,16 @@ export default function EquipmentPage() {
               const eq = equipment.find((e) => e.id === item.equipmentId);
               const guard = guards.find((g) => g.id === item.guardId);
               const daysSinceLent = Math.floor((Date.now() - new Date(item.lentDate).getTime()) / (1000 * 60 * 60 * 24));
+              const isLongTerm = daysSinceLent >= LONG_TERM_THRESHOLD_DAYS;
               return (
-                <Card key={item.id} className="flex items-center justify-between gap-3 !py-3">
+                <Card key={item.id} className={`flex items-center justify-between gap-3 !py-3 ${isLongTerm ? "!border-warning/30 !bg-warning/5" : ""}`}>
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-medium text-text-primary">{eq?.name ?? "—"}</p>
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent">{eq ? EQUIPMENT_CATEGORY_LABELS[eq.category] : ""}</span>
+                      {isLongTerm && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-warning/10 text-warning font-medium">長期貸出</span>
+                      )}
                     </div>
                     <p className="text-xs text-text-secondary">
                       {guard?.name ?? "—"} / {item.quantity}点 / {item.lentDate}〜（{daysSinceLent}日間）

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { getChatGeneral, getChatBySite, addChatMessage, getSites, getHandoverBySite, addHandoverNote, getShiftsByGuard } from "@/lib/store";
+import { getChatGeneral, getChatBySite, addChatMessage, getSites, getHandoverBySite, addHandoverNote, getShiftsByGuard, markChatRead, getChatUnreadCounts } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import type { ChatMessage, Site, HandoverNote } from "@/lib/types";
@@ -15,6 +15,7 @@ export default function ChatPage() {
   const [handoverNotes, setHandoverNotes] = useState<HandoverNote[]>([]);
   const [input, setInput] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const refresh = useCallback(() => {
@@ -28,7 +29,12 @@ export default function ChatPage() {
       setMessages((prev) => (prev.length === nextMsgs.length && prev[prev.length - 1]?.id === nextMsgs[nextMsgs.length - 1]?.id ? prev : nextMsgs));
       setHandoverNotes((prev) => (prev.length === nextNotes.length && prev[0]?.id === nextNotes[0]?.id ? prev : nextNotes));
     }
-  }, [selectedChannel]);
+    if (user?.id) {
+      const channelKey = selectedChannel === "general" ? "general" : `site:${selectedChannel}`;
+      markChatRead(user.id, channelKey);
+      setUnreadCounts(getChatUnreadCounts(user.id));
+    }
+  }, [selectedChannel, user?.id]);
 
   useEffect(() => {
     setMounted(true);
@@ -106,23 +112,38 @@ export default function ChatPage() {
       <div className="flex gap-1.5 overflow-x-auto pb-2 mb-2 -mx-1 px-1">
         <button
           onClick={() => setSelectedChannel("general")}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+          className={`relative px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
             selectedChannel === "general" ? "bg-accent text-white" : "bg-sub-bg text-text-secondary hover:text-text-primary"
           }`}
         >
           全体連絡
+          {selectedChannel !== "general" && (unreadCounts["general"] ?? 0) > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-danger text-white text-[10px] font-bold flex items-center justify-center">
+              {unreadCounts["general"]! > 9 ? "9+" : unreadCounts["general"]}
+            </span>
+          )}
         </button>
-        {sites.map((site) => (
-          <button
-            key={site.id}
-            onClick={() => setSelectedChannel(site.id)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
-              selectedChannel === site.id ? "bg-accent text-white" : "bg-sub-bg text-text-secondary hover:text-text-primary"
-            }`}
-          >
-            {site.name.length > 8 ? site.name.slice(0, 8) + "…" : site.name}
-          </button>
-        ))}
+        {sites.map((site) => {
+          const key = `site:${site.id}`;
+          const unread = unreadCounts[key] ?? 0;
+          const isActive = selectedChannel === site.id;
+          return (
+            <button
+              key={site.id}
+              onClick={() => setSelectedChannel(site.id)}
+              className={`relative px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+                isActive ? "bg-accent text-white" : "bg-sub-bg text-text-secondary hover:text-text-primary"
+              }`}
+            >
+              {site.name.length > 8 ? site.name.slice(0, 8) + "…" : site.name}
+              {!isActive && unread > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-danger text-white text-[10px] font-bold flex items-center justify-center">
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Handover notes - always visible for site channels */}

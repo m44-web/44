@@ -199,10 +199,28 @@ export default function CsvPage() {
     downloadCSV(`reports_${selectedMonth}.csv`, headers, rows);
   }
 
+  function exportShiftRequests() {
+    const reqs = getShiftRequests().filter((r) => r.date.startsWith(selectedMonth));
+    const guards = getGuards();
+    const STATUS_LABEL: Record<string, string> = { pending: "申請中", approved: "承認", rejected: "却下" };
+    const headers = ["申請日", "希望日", "警備員", "開始時刻", "終了時刻", "メモ", "ステータス"];
+    const rows = reqs.map((r) => [
+      (r.createdAt ?? "").split("T")[0],
+      r.date,
+      guards.find((g) => g.id === r.guardId)?.name ?? "",
+      r.startTime,
+      r.endTime,
+      r.notes,
+      STATUS_LABEL[r.status] ?? r.status,
+    ]);
+    downloadCSV(`shift_requests_${selectedMonth}.csv`, headers, rows);
+  }
+
   const exports = [
     { label: "警備員一覧", desc: "全警備員の基本情報・資格・時給", fn: exportGuards, icon: "users", monthly: false },
     { label: "現場一覧", desc: "全現場の情報・工期・必要資格", fn: exportSites, icon: "building", monthly: false },
     { label: "シフト一覧", desc: "月別シフトの詳細データ", fn: exportShifts, icon: "calendar", monthly: true },
+    { label: "シフト希望", desc: "月別のシフト希望申請・承認状況", fn: exportShiftRequests, icon: "check", monthly: true },
     { label: "勤怠記録", desc: "月別の出退勤記録・勤務時間", fn: exportAttendance, icon: "clock", monthly: true },
     { label: "給与計算", desc: "実績時間ベースの月別給与計算", fn: exportSalary, icon: "yen", monthly: true },
     { label: "日報一覧", desc: "月別の日報提出内容", fn: exportReports, icon: "file", monthly: true },

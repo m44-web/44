@@ -4,7 +4,7 @@ import { memo, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { getAdminNotificationCounts, getGuardNotificationCounts } from "@/lib/store";
+import { getAdminNotificationCounts, getGuardNotificationCounts, getChatUnreadCounts } from "@/lib/store";
 
 const adminNav = [
   { href: "/dashboard", label: "ホーム", icon: "home" },
@@ -118,14 +118,24 @@ export const AppBottomNav = memo(function AppBottomNav() {
   useEffect(() => {
     if (!user) return;
     const compute = () => {
+      const next: Record<string, number> = {};
       if (user.role === "admin") {
         const n = getAdminNotificationCounts();
-        setBadges({ "/locations": n.missingLocation });
+        next["/locations"] = n.missingLocation;
       }
+      const unread = getChatUnreadCounts(user.id);
+      const chatTotal = Object.values(unread).reduce((sum, v) => sum + v, 0);
+      if (chatTotal > 0) next["/chat"] = chatTotal;
+      setBadges(next);
     };
     compute();
-    const interval = setInterval(compute, 30000);
-    return () => clearInterval(interval);
+    const interval = setInterval(compute, 15000);
+    const onVis = () => { if (!document.hidden) compute(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, [user, pathname]);
 
   return (

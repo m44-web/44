@@ -121,6 +121,7 @@ function AdminReportsView() {
   const [sites, setSites] = useState<Site[]>([]);
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [search, setSearch] = useState("");
+  const [siteFilter, setSiteFilter] = useState<string>("all");
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -135,15 +136,17 @@ function AdminReportsView() {
 
   const filtered = reports.filter((r) => {
     const dateMatch = !selectedDate || r.date === selectedDate;
-    if (!search.trim()) return dateMatch;
+    const siteMatch = siteFilter === "all" || r.siteId === siteFilter;
+    if (!dateMatch || !siteMatch) return false;
+    if (!search.trim()) return true;
     const guard = guards.find((g) => g.id === r.guardId);
     const site = sites.find((s) => s.id === r.siteId);
     const term = search.trim();
-    const matchesSearch =
+    return (
       r.content.includes(term) ||
       (guard?.name.includes(term) ?? false) ||
-      (site?.name.includes(term) ?? false);
-    return dateMatch && matchesSearch;
+      (site?.name.includes(term) ?? false)
+    );
   });
 
   // Monthly summary
@@ -187,11 +190,29 @@ function AdminReportsView() {
         />
       </div>
 
-      {selectedDate && (
-        <button onClick={() => setSelectedDate("")} className="text-xs text-accent hover:underline cursor-pointer">
-          日付指定を解除（すべて表示）
-        </button>
-      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          value={siteFilter}
+          onChange={(e) => setSiteFilter(e.target.value)}
+          className="text-xs px-2.5 py-1.5 rounded-lg border border-border bg-sub-bg text-text-primary cursor-pointer"
+          aria-label="現場フィルタ"
+        >
+          <option value="all">全現場</option>
+          {sites.filter((s) => s.status === "active").map((s) => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
+        {selectedDate && (
+          <button onClick={() => setSelectedDate("")} className="text-xs text-accent hover:underline cursor-pointer">
+            日付指定を解除
+          </button>
+        )}
+        {siteFilter !== "all" && (
+          <button onClick={() => setSiteFilter("all")} className="text-xs text-accent hover:underline cursor-pointer">
+            現場絞り込みを解除
+          </button>
+        )}
+      </div>
 
       <p className="text-sm text-text-secondary">{filtered.length}件</p>
 

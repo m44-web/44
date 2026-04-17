@@ -3,6 +3,10 @@
 import { memo } from "react";
 import { useAuth } from "@/lib/auth-context";
 
+function triggerCommandPalette() {
+  window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, metaKey: true }));
+}
+
 export const AppHeader = memo(function AppHeader() {
   const { user, logout } = useAuth();
 
@@ -12,7 +16,17 @@ export const AppHeader = memo(function AppHeader() {
         <span className="text-lg font-bold">
           <span className="text-accent">L</span>security
         </span>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={triggerCommandPalette}
+            className="p-2 text-text-secondary hover:text-accent transition-colors cursor-pointer"
+            aria-label="クイック検索"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </button>
           <span className="text-xs text-text-secondary">{user?.name}</span>
           <button
             onClick={logout}

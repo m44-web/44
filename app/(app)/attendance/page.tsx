@@ -123,12 +123,44 @@ function AdminAttendance() {
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2">
-        <input
-          type="date"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          className="w-full rounded-lg border border-border bg-sub-bg px-4 py-3 text-text-primary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors"
-        />
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => {
+              const d = new Date(selectedDate + "T00:00:00");
+              d.setDate(d.getDate() - 1);
+              setSelectedDate(d.toISOString().split("T")[0]);
+            }}
+            className="px-3 py-3 rounded-lg border border-border text-text-secondary hover:text-accent hover:border-accent/30 cursor-pointer transition-colors no-print"
+            aria-label="前日"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
+          </button>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="flex-1 rounded-lg border border-border bg-sub-bg px-4 py-3 text-text-primary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors min-w-0"
+          />
+          <button
+            onClick={() => {
+              const d = new Date(selectedDate + "T00:00:00");
+              d.setDate(d.getDate() + 1);
+              setSelectedDate(d.toISOString().split("T")[0]);
+            }}
+            className="px-3 py-3 rounded-lg border border-border text-text-secondary hover:text-accent hover:border-accent/30 cursor-pointer transition-colors no-print"
+            aria-label="翌日"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
+          </button>
+          {selectedDate !== todayStr() && (
+            <button
+              onClick={() => setSelectedDate(todayStr())}
+              className="px-3 py-3 rounded-lg bg-accent/10 text-accent text-sm font-medium hover:bg-accent/20 cursor-pointer transition-colors no-print shrink-0"
+            >
+              今日
+            </button>
+          )}
+        </div>
         <input
           type="text"
           placeholder="警備員名で検索..."

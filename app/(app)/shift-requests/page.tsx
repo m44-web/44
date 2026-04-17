@@ -190,6 +190,8 @@ function AdminShiftRequestView() {
   const [sites, setSites] = useState<Site[]>([]);
   const [siteSelections, setSiteSelections] = useState<Record<string, string>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [sortBy, setSortBy] = useState<"date" | "guard" | "shiftType">("date");
+  const [guardFilter, setGuardFilter] = useState<string>("all");
   const { showToast } = useToast();
   const [mounted, setMounted] = useState(false);
 
@@ -207,8 +209,24 @@ function AdminShiftRequestView() {
   if (!mounted) return null;
 
   const activeSites = sites.filter((s) => s.status === "active");
-  const pendingRequests = requests.filter((r) => r.status === "pending").sort((a, b) => a.date.localeCompare(b.date));
-  const processedRequests = requests.filter((r) => r.status !== "pending").sort((a, b) => b.date.localeCompare(a.date));
+  const guardNameById = new Map(guards.map((g) => [g.id, g.name] as const));
+
+  function sortRequests(list: ShiftRequest[]): ShiftRequest[] {
+    const copy = [...list];
+    if (sortBy === "date") return copy.sort((a, b) => a.date.localeCompare(b.date));
+    if (sortBy === "guard") return copy.sort((a, b) => (guardNameById.get(a.guardId) ?? "").localeCompare(guardNameById.get(b.guardId) ?? ""));
+    // shiftType: night first, then day
+    return copy.sort((a, b) => {
+      const aNight = a.startTime >= "17:00" || a.endTime <= "08:00";
+      const bNight = b.startTime >= "17:00" || b.endTime <= "08:00";
+      if (aNight !== bNight) return aNight ? -1 : 1;
+      return a.date.localeCompare(b.date);
+    });
+  }
+
+  const filteredByGuard = guardFilter === "all" ? requests : requests.filter((r) => r.guardId === guardFilter);
+  const pendingRequests = sortRequests(filteredByGuard.filter((r) => r.status === "pending"));
+  const processedRequests = filteredByGuard.filter((r) => r.status !== "pending").sort((a, b) => b.date.localeCompare(a.date));
 
   function handleApprove(id: string) {
     const selectedSiteId = siteSelections[id] || "";
@@ -280,6 +298,38 @@ function AdminShiftRequestView() {
       )}
 
       <p className="text-xs text-text-secondary">※ 承認時に配置現場を選択 → シフト管理に自動反映されます</p>
+
+      {/* Filter / sort */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <select
+          value={guardFilter}
+          onChange={(e) => setGuardFilter(e.target.value)}
+          className="text-xs px-2.5 py-1.5 rounded-lg border border-border bg-sub-bg text-text-primary cursor-pointer"
+          aria-label="警備員フィルタ"
+        >
+          <option value="all">全警備員</option>
+          {guards.filter((g) => g.status === "active").map((g) => (
+            <option key={g.id} value={g.id}>{g.name}</option>
+          ))}
+        </select>
+        <div className="flex rounded-lg border border-border overflow-hidden">
+          {([
+            { key: "date", label: "日付順" },
+            { key: "guard", label: "名前順" },
+            { key: "shiftType", label: "夜勤優先" },
+          ] as const).map((s) => (
+            <button
+              key={s.key}
+              onClick={() => setSortBy(s.key)}
+              className={`text-xs px-2.5 py-1.5 cursor-pointer transition-colors ${
+                sortBy === s.key ? "bg-accent text-white" : "text-text-secondary hover:bg-sub-bg"
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Batch actions */}
       {selected.size > 0 && (

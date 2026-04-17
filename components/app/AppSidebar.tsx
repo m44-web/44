@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { getAdminNotificationCounts, getGuardNotificationCounts } from "@/lib/store";
+import { getAdminNotificationCounts, getGuardNotificationCounts, getChatUnreadCounts } from "@/lib/store";
 
 const adminNav = [
   { href: "/dashboard", label: "ダッシュボード", icon: "home" },
@@ -136,17 +136,28 @@ export function AppSidebar() {
   useEffect(() => {
     if (!user) return;
     const compute = () => {
+      const next: Record<string, number> = {};
       if (user.role === "admin") {
         const n = getAdminNotificationCounts();
-        setBadges({ "/shift-requests": n.shiftRequests, "/locations": n.missingLocation });
+        next["/shift-requests"] = n.shiftRequests;
+        next["/locations"] = n.missingLocation;
       } else if (user.guardId) {
         const n = getGuardNotificationCounts(user.guardId);
-        setBadges({ "/shift-requests": n.nextWeekRequest ? 1 : 0 });
+        next["/shift-requests"] = n.nextWeekRequest ? 1 : 0;
       }
+      const unread = getChatUnreadCounts(user.id);
+      const chatTotal = Object.values(unread).reduce((sum, v) => sum + v, 0);
+      if (chatTotal > 0) next["/chat"] = chatTotal;
+      setBadges(next);
     };
     compute();
-    const interval = setInterval(compute, 30000);
-    return () => clearInterval(interval);
+    const interval = setInterval(compute, 15000);
+    const onVis = () => { if (!document.hidden) compute(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, [user, pathname]);
 
   return (
@@ -155,6 +166,16 @@ export function AppSidebar() {
         <Link href="/dashboard" className="text-xl font-bold">
           <span className="text-accent">L</span>security
         </Link>
+      </div>
+      <div className="px-3 pt-3">
+        <button
+          onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, metaKey: true }))}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs bg-sub-bg text-text-secondary hover:text-text-primary border border-border cursor-pointer transition-colors"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+          <span className="flex-1 text-left">検索...</span>
+          <kbd className="text-[9px] bg-card-bg rounded px-1 py-0.5 border border-border">⌘K</kbd>
+        </button>
       </div>
 
       <nav className="flex-1 p-3 space-y-1">

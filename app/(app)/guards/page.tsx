@@ -7,8 +7,8 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
 import { EmptyState } from "@/components/ui/EmptyState";
-import type { Guard, Shift, EquipmentLending, AttendanceRecord } from "@/lib/types";
-import { SKILL_LEVEL_LABELS, SKILL_LEVEL_COLORS } from "@/lib/types";
+import type { Guard, Shift, EquipmentLending, AttendanceRecord, TrainingStatus } from "@/lib/types";
+import { SKILL_LEVEL_LABELS, SKILL_LEVEL_COLORS, TRAINING_STATUS_LABELS, TRAINING_STATUS_COLORS } from "@/lib/types";
 
 export default function GuardsPage() {
   const [guards, setGuards] = useState<Guard[]>([]);
@@ -17,6 +17,7 @@ export default function GuardsPage() {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
+  const [trainingFilter, setTrainingFilter] = useState<"all" | TrainingStatus>("all");
   const [sortBy, setSortBy] = useState<"name" | "experience" | "hours" | "created">("name");
   const [mounted, setMounted] = useState(false);
 
@@ -42,7 +43,8 @@ export default function GuardsPage() {
       g.certifications.some((c) => c.includes(search)) ||
       g.licenses.some((l) => l.includes(search));
     const matchStatus = filterStatus === "all" || g.status === filterStatus;
-    return matchSearch && matchStatus;
+    const matchTraining = trainingFilter === "all" || g.trainingStatus === trainingFilter;
+    return matchSearch && matchStatus && matchTraining;
   }).sort((a, b) => {
     if (sortBy === "name") return a.nameKana.localeCompare(b.nameKana, "ja");
     if (sortBy === "experience") return b.experienceYears - a.experienceYears;
@@ -123,6 +125,18 @@ export default function GuardsPage() {
           </button>
         ))}
         <select
+          value={trainingFilter}
+          onChange={(e) => setTrainingFilter(e.target.value as typeof trainingFilter)}
+          className="text-xs px-2 py-1.5 rounded-full border border-border bg-sub-bg text-text-secondary cursor-pointer appearance-none"
+          aria-label="研修状況フィルタ"
+        >
+          <option value="all">研修状況(全て)</option>
+          <option value="none">研修なし</option>
+          <option value="new_hire">新任教育中</option>
+          <option value="ongoing">現任教育中</option>
+          <option value="probation">研修中</option>
+        </select>
+        <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
           className="text-xs px-2 py-1.5 rounded-full border border-border bg-sub-bg text-text-secondary cursor-pointer appearance-none"
@@ -178,6 +192,11 @@ export default function GuardsPage() {
                   <span className={`px-2 py-0.5 rounded-full font-medium ${SKILL_LEVEL_COLORS[guard.skillLevel]}`}>
                     {SKILL_LEVEL_LABELS[guard.skillLevel]}
                   </span>
+                  {guard.trainingStatus && guard.trainingStatus !== "none" && (
+                    <span className={`px-2 py-0.5 rounded-full font-medium ${TRAINING_STATUS_COLORS[guard.trainingStatus]}`}>
+                      {TRAINING_STATUS_LABELS[guard.trainingStatus]}
+                    </span>
+                  )}
                   {guard.experienceYears > 0 && (
                     <span className="text-text-secondary">経験{guard.experienceYears}年</span>
                   )}

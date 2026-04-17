@@ -77,6 +77,11 @@ export default function SitesPage() {
 
   const endingSoon = activeSites.filter((s) => isProjectEnding(s.endDate));
   const certShortage = activeSites.filter((s) => checkCertificationShortage(s));
+  const understaffed = activeSites.filter((s) => {
+    if (!s.requiredGuards || s.requiredGuards <= 0) return false;
+    const todayCount = shifts.filter((sh) => sh.siteId === s.id && sh.date === today && sh.status !== "cancelled").length;
+    return todayCount < s.requiredGuards;
+  });
 
   return (
     <div className="space-y-4">
@@ -128,6 +133,22 @@ export default function SitesPage() {
                 {s.name}
               </span>
             ))}
+          </div>
+        </Card>
+      )}
+
+      {understaffed.length > 0 && (
+        <Card className="!border-danger/30 !bg-danger/5 !py-3">
+          <p className="text-sm font-medium text-danger mb-1">本日の人員不足現場（{understaffed.length}件）</p>
+          <div className="flex flex-wrap gap-1.5">
+            {understaffed.map((s) => {
+              const count = shifts.filter((sh) => sh.siteId === s.id && sh.date === today && sh.status !== "cancelled").length;
+              return (
+                <span key={s.id} className="text-xs px-2 py-0.5 rounded bg-danger/10 text-danger">
+                  {s.name}（{count}/{s.requiredGuards}）
+                </span>
+              );
+            })}
           </div>
         </Card>
       )}
