@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { getShifts, getGuards, getSites, getAttendance, getShiftsByGuard, getAttendanceByGuard, clockIn, clockOut, addLocation, getLocations } from "@/lib/store";
+import { getShifts, getGuards, getSites, getAttendance, getShiftsByGuard, getAttendanceByGuard, clockIn, clockOut, addLocation, getLocations, updateAttendance } from "@/lib/store";
 import { useToast } from "@/lib/toast";
 import { Card } from "@/components/ui/Card";
 import type { Shift, Guard, Site, AttendanceRecord, LocationLog } from "@/lib/types";
@@ -34,7 +34,9 @@ function AdminAttendance() {
   const [locations, setLocations] = useState<LocationLog[]>([]);
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [guardSearch, setGuardSearch] = useState("");
+  const [editing, setEditing] = useState<AttendanceRecord | null>(null);
   const [mounted, setMounted] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     setMounted(true);
@@ -204,6 +206,12 @@ function AdminAttendance() {
                   <div className="flex items-center gap-2">
                     {shift && <span>予定 {shift.startTime}〜{shift.endTime}</span>}
                     <span>{calcWorkedHours(record)}</span>
+                    <button
+                      onClick={() => setEditing(record)}
+                      className="text-accent hover:underline cursor-pointer no-print"
+                    >
+                      修正
+                    </button>
                   </div>
                 </div>
                 {/* GPS location history */}
@@ -246,6 +254,112 @@ function AdminAttendance() {
           })}
         </div>
       )}
+
+      {editing && (
+        <AttendanceEditModal
+          record={editing}
+          onClose={() => setEditing(null)}
+          onSave={(updates) => {
+            updateAttendance(editing.id, updates);
+            setAllAttendance(getAttendance());
+            setEditing(null);
+            showToast("勤怠記録を更新しました", "success");
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function AttendanceEditModal({
+  record, onClose, onSave,
+}: {
+  record: AttendanceRecord;
+  onClose: () => void;
+  onSave: (updates: Partial<AttendanceRecord>) => void;
+}) {
+  const [clockInTime, setClockInTime] = useState(record.clockIn ?? "");
+  const [clockOutTime, setClockOutTime] = useState(record.clockOut ?? "");
+  const [status, setStatus] = useState<AttendanceRecord["status"]>(record.status);
+  const [notes, setNotes] = useState(record.notes ?? "");
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  function handleSave() {
+    onSave({
+      clockIn: clockInTime || null,
+      clockOut: clockOutTime || null,
+      status,
+      notes: notes.trim(),
+    });
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-card-bg border border-border rounded-t-xl sm:rounded-xl p-5 space-y-4">
+        <h2 className="text-lg font-bold">勤怠記録を修正</h2>
+        <p className="text-xs text-text-secondary">{record.date}</p>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-text-primary mb-1">出勤時刻</label>
+            <input
+              type="time"
+              value={clockInTime}
+              onChange={(e) => setClockInTime(e.target.value)}
+              className="w-full rounded-lg border border-border bg-sub-bg px-3 py-2 text-text-primary"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-text-primary mb-1">退勤時刻</label>
+            <input
+              type="time"
+              value={clockOutTime}
+              onChange={(e) => setClockOutTime(e.target.value)}
+              className="w-full rounded-lg border border-border bg-sub-bg px-3 py-2 text-text-primary"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-text-primary mb-1">ステータス</label>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as AttendanceRecord["status"])}
+            className="w-full rounded-lg border border-border bg-sub-bg px-3 py-2 text-text-primary appearance-none cursor-pointer"
+          >
+            <option value="pending">未出勤</option>
+            <option value="on_duty">勤務中</option>
+            <option value="completed">勤務完了</option>
+            <option value="absent">欠勤</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-text-primary mb-1">備考</label>
+          <textarea
+            rows={2}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="打刻忘れによる手動修正など"
+            className="w-full rounded-lg border border-border bg-sub-bg px-3 py-2 text-text-primary resize-vertical"
+          />
+        </div>
+
+        <div className="flex gap-2 pt-2">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg border border-border text-text-secondary hover:bg-sub-bg cursor-pointer">
+            キャンセル
+          </button>
+          <button onClick={handleSave} className="flex-1 py-2.5 rounded-lg bg-accent text-white font-medium hover:bg-accent-dark cursor-pointer">
+            保存
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

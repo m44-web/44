@@ -372,6 +372,20 @@ export function clockOut(shiftId: string): void {
   setItem(STORAGE_KEYS.shifts, shifts);
 }
 
+export function updateAttendance(id: string, updates: Partial<AttendanceRecord>): void {
+  const records = getAttendance().map((a) => {
+    if (a.id !== id) return a;
+    const merged = { ...a, ...updates };
+    // Auto-derive status from clock times when not explicitly set
+    if (!("status" in updates)) {
+      if (merged.clockOut) merged.status = "completed";
+      else if (merged.clockIn) merged.status = "on_duty";
+    }
+    return merged;
+  });
+  setItem(STORAGE_KEYS.attendance, records);
+}
+
 // --- Equipment ---
 export function getEquipment(): EquipmentItem[] {
   return getItem<EquipmentItem[]>(STORAGE_KEYS.equipment, []);
