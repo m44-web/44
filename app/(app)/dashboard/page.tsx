@@ -561,6 +561,7 @@ function GuardDashboard({ guardId }: { guardId: string }) {
 
                   {/* Time - BIG */}
                   <div className="mt-3 bg-sub-bg rounded-xl p-3 text-center">
+                    {!att?.clockIn && <ShiftCountdown startTime={shift.startTime} />}
                     <p className="text-3xl font-bold font-mono text-text-primary">
                       {shift.startTime} 〜 {shift.endTime}
                     </p>
@@ -1040,6 +1041,36 @@ function SurplusGuards({ activeGuards, shifts }: { activeGuards: Guard[]; shifts
       </div>
     </div>
   );
+}
+
+function ShiftCountdown({ startTime }: { startTime: string }) {
+  const [countdown, setCountdown] = useState("");
+  useEffect(() => {
+    function update() {
+      const [h, m] = startTime.split(":").map(Number);
+      const now = new Date();
+      const start = new Date();
+      start.setHours(h, m, 0, 0);
+      const diffMs = start.getTime() - now.getTime();
+      if (diffMs <= 0) {
+        setCountdown("");
+        return;
+      }
+      const diffMin = Math.floor(diffMs / 60000);
+      if (diffMin < 60) {
+        setCountdown(`あと${diffMin}分で開始`);
+      } else {
+        const h2 = Math.floor(diffMin / 60);
+        const m2 = diffMin % 60;
+        setCountdown(`あと${h2}時間${m2}分で開始`);
+      }
+    }
+    update();
+    const interval = setInterval(update, 30000);
+    return () => clearInterval(interval);
+  }, [startTime]);
+  if (!countdown) return null;
+  return <p className="text-xs text-accent font-medium mb-1">{countdown}</p>;
 }
 
 function LiveClock() {
