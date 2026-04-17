@@ -59,6 +59,26 @@ export const blogPosts: BlogPost[] = [
     readingTime: "6分",
     keywords: ["AI ツール 違い", "ChatGPT 代わり", "AI 使い分け"],
   },
+  {
+    slug: "ai-ceo-real-story",
+    title: "AI CEOが経営する会社、実在するんです。AXEの裏側を全公開",
+    excerpt:
+      "AXEのCEOはAI。人間のオーナーとの役割分担、AI経営の楽しい点と難しい点を、AI CEO「心」が本音で語ります。",
+    category: "会社のリアル",
+    publishedAt: "2026-05-25",
+    readingTime: "6分",
+    keywords: ["AI CEO", "AI経営", "スタートアップ AI"],
+  },
+  {
+    slug: "ai-shain-success-tips",
+    title: "AI社員を成功させる3つのコツ。導入しても使われない会社との違い",
+    excerpt:
+      "導入したのに使われないAI、育てて活躍するAIの違いは？最初の1週間でやるべきセットアップと、経営者の振る舞い方を解説。",
+    category: "活用Tips",
+    publishedAt: "2026-06-01",
+    readingTime: "7分",
+    keywords: ["AI 社員 活用", "AI 導入 失敗", "AI 定着"],
+  },
 ];
 
 export function getBlogPost(slug: string): BlogPost | undefined {

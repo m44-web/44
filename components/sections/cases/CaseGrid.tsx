@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { MotionWrapper } from "@/components/ui/MotionWrapper";
 import type { CaseStudy } from "@/lib/data/cases";
@@ -19,46 +20,45 @@ export function CaseGrid({ cases }: CaseGridProps) {
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {cases.map((caseStudy, index) => (
         <MotionWrapper key={caseStudy.id} delay={index * 0.1}>
-          <Card className="h-full flex flex-col">
-            {/* Thumbnail placeholder */}
-            <div className="relative aspect-video rounded-lg bg-gradient-to-br from-accent/10 to-accent/5 mb-4 overflow-hidden flex items-center justify-center">
-              <svg
-                width="48"
-                height="48"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1"
-                className="text-accent/30"
-              >
-                <rect x="2" y="3" width="20" height="14" rx="2" />
-                <line x1="8" y1="21" x2="16" y2="21" />
-                <line x1="12" y1="17" x2="12" y2="21" />
-              </svg>
-            </div>
+          <Link href={`/cases/${caseStudy.id}`} className="block h-full group">
+            <Card className="h-full flex flex-col transition-transform group-hover:-translate-y-1">
+              <div className="relative aspect-video rounded-lg bg-gradient-to-br from-accent/10 to-accent/5 mb-4 overflow-hidden flex items-center justify-center">
+                <svg
+                  width="48"
+                  height="48"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1"
+                  className="text-accent/30"
+                >
+                  <rect x="2" y="3" width="20" height="14" rx="2" />
+                  <line x1="8" y1="21" x2="16" y2="21" />
+                  <line x1="12" y1="17" x2="12" y2="21" />
+                </svg>
+              </div>
 
-            {/* Industry badge */}
-            <span className="inline-block self-start text-xs font-medium text-accent bg-accent/10 rounded-full px-3 py-1 mb-3">
-              {caseStudy.industry}
-            </span>
+              <span className="inline-block self-start text-xs font-medium text-accent bg-accent/10 rounded-full px-3 py-1 mb-3">
+                {caseStudy.industry}
+              </span>
 
-            <h3 className="text-lg font-bold text-text-primary mb-1">
-              {caseStudy.title}
-            </h3>
-            <p className="text-sm text-text-secondary mb-3">
-              {caseStudy.location}
-            </p>
-            <p className="text-sm text-text-secondary leading-relaxed mb-4 flex-1">
-              {caseStudy.summary}
-            </p>
-
-            {/* Effect highlight */}
-            <div className="pt-3 border-t border-border">
-              <p className="text-sm font-medium text-accent">
-                {caseStudy.effect}
+              <h3 className="text-lg font-bold text-text-primary mb-1 group-hover:text-accent transition-colors">
+                {caseStudy.title}
+              </h3>
+              <p className="text-sm text-text-secondary mb-3">
+                {caseStudy.location}
               </p>
-            </div>
-          </Card>
+              <p className="text-sm text-text-secondary leading-relaxed mb-4 flex-1">
+                {caseStudy.summary}
+              </p>
+
+              <div className="pt-3 border-t border-border">
+                <p className="text-sm font-medium text-accent">
+                  {caseStudy.effect}
+                </p>
+              </div>
+            </Card>
+          </Link>
         </MotionWrapper>
       ))}
     </div>
