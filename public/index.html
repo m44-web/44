@@ -7816,6 +7816,24 @@ window.importBackupJSON = function(){
   };
 })();
 
+/* ── 53. スクロールスロットリング (rAFベース) ── */
+(function(){
+  var listEl=document.getElementById('list');
+  if(!listEl)return;
+  var pending=false,lastTop=0;
+  var handlers=[];
+  window._onListScroll=function(fn){handlers.push(fn);};
+  listEl.addEventListener('scroll',function(){
+    lastTop=listEl.scrollTop;
+    if(pending)return;
+    pending=true;
+    requestAnimationFrame(function(){
+      pending=false;
+      for(var i=0;i<handlers.length;i++){try{handlers[i](lastTop);}catch(e){}}
+    });
+  },{passive:true});
+})();
+
 })();
 </script>
 </body>
