@@ -8299,6 +8299,32 @@ window.importBackupJSON = function(){
   },2900);
 })();
 
+/* ── 63. グローバルエラーバウンダリ ── */
+(function(){
+  var recent=[],MAX=5,WINDOW=30000;
+  function friendly(msg){
+    msg=String(msg||'');
+    if(msg.indexOf('NetworkError')>=0||msg.indexOf('Failed to fetch')>=0)return '📡 通信エラー。オフラインで作業続行中。';
+    if(msg.indexOf('quota')>=0||msg.indexOf('Quota')>=0)return '💾 ストレージ容量超過。古いデータを削除してください。';
+    if(msg.indexOf('JSON')>=0)return '📄 データ形式エラー。';
+    if(msg.indexOf('null')>=0||msg.indexOf('undefined')>=0)return '⚠ データ欠損が検出されました。';
+    return null;
+  }
+  function handle(msg){
+    var now=Date.now();
+    recent=recent.filter(function(t){return now-t<WINDOW;});
+    recent.push(now);
+    if(recent.length>MAX)return;
+    var f=friendly(msg);
+    if(f&&typeof showToast==='function')showToast(f,3500);
+  }
+  window.addEventListener('error',function(e){handle(e.message);});
+  window.addEventListener('unhandledrejection',function(e){
+    var m=e.reason?(e.reason.message||e.reason.toString()):'';
+    handle(m);
+  });
+})();
+
 })();
 </script>
 </body>
