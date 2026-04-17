@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { AdminNav } from "./AdminNav";
+import { ExportDialog } from "./ExportDialog";
 import Link from "next/link";
 
 interface Employee {
@@ -34,6 +35,7 @@ export function EmployeeManagement() {
   const [showDeactivated, setShowDeactivated] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showImport, setShowImport] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState<ImportResult[] | null>(null);
   const [importCsvText, setImportCsvText] = useState("");
@@ -174,20 +176,12 @@ export function EmployeeManagement() {
       <Container className="py-6 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="font-semibold text-lg">従業員管理</h1>
-          <div className="flex items-center gap-2">
-            <a
-              href="/api/export?type=shifts&days=30"
-              className="text-xs px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted"
-            >
-              シフトCSV
-            </a>
-            <a
-              href="/api/export?type=gps&days=7"
-              className="text-xs px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted"
-            >
-              GPS CSV
-            </a>
-          </div>
+          <button
+            onClick={() => setShowExport(true)}
+            className="text-xs px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted"
+          >
+            CSVエクスポート
+          </button>
         </div>
         {/* Registration Form */}
         <Card>
@@ -424,6 +418,8 @@ export function EmployeeManagement() {
           )}
         </Card>
       </Container>
+
+      <ExportDialog open={showExport} onClose={() => setShowExport(false)} />
     </div>
   );
 }
