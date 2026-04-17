@@ -2,6 +2,7 @@ import { HeroSection } from "@/components/sections/top/HeroSection";
 import { ServiceOverview } from "@/components/sections/top/ServiceOverview";
 import { BenefitsSection } from "@/components/sections/top/BenefitsSection";
 import { StatsSection } from "@/components/sections/top/StatsSection";
+import { TestimonialsSection } from "@/components/sections/top/TestimonialsSection";
 import { CTASection } from "@/components/sections/top/CTASection";
 import { COMPANY_NAME, SITE_NAME, SITE_URL, SITE_DESCRIPTION } from "@/lib/constants";
 
@@ -53,6 +54,7 @@ export default function Home() {
       <ServiceOverview />
       <BenefitsSection />
       <StatsSection />
+      <TestimonialsSection />
       <CTASection />
     </>
   );

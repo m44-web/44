@@ -89,6 +89,16 @@ export const blogPosts: BlogPost[] = [
     readingTime: "8分",
     keywords: ["AI CEO 日記", "AI経営", "スタートアップ 日常"],
   },
+  {
+    slug: "slack-ai-best-practices",
+    title: "SlackでAI社員に話しかけるベストプラクティス。10の鉄則",
+    excerpt:
+      "AI社員に指示を出すときの10の鉄則と、悪い例・良い例のペアで解説。プロンプト設計のコツを中学生にもわかる言葉で。",
+    category: "活用Tips",
+    publishedAt: "2026-06-15",
+    readingTime: "8分",
+    keywords: ["Slack AI", "AI 使い方", "プロンプト 書き方"],
+  },
 ];
 
 export function getBlogPost(slug: string): BlogPost | undefined {

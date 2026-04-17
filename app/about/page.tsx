@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { WhatIsSection } from "@/components/sections/about/WhatIsSection";
+import { MeetCEOSection } from "@/components/sections/about/MeetCEOSection";
 import { FlowSection } from "@/components/sections/about/FlowSection";
 import { InstallationTypes } from "@/components/sections/about/InstallationTypes";
 import { FAQSection } from "@/components/sections/about/FAQSection";
@@ -14,6 +15,7 @@ export default function AboutPage() {
   return (
     <>
       <WhatIsSection />
+      <MeetCEOSection />
       <FlowSection />
       <InstallationTypes />
       <FAQSection />
