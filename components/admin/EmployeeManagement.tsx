@@ -195,50 +195,59 @@ export function EmployeeManagement() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm text-text-muted mb-1">名前</label>
+                <label htmlFor="emp-name" className="block text-sm text-text-muted mb-1">名前</label>
                 <input
+                  id="emp-name"
+                  aria-invalid={!!errors.name}
+                  aria-describedby={errors.name ? "emp-name-err" : undefined}
                   {...register("name")}
                   className="w-full px-3 py-2 bg-surface-light border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="山田太郎"
                 />
                 {errors.name && (
-                  <p className="mt-1 text-xs text-danger">{errors.name.message}</p>
+                  <p id="emp-name-err" className="mt-1 text-xs text-danger" role="alert">{errors.name.message}</p>
                 )}
               </div>
               <div>
-                <label className="block text-sm text-text-muted mb-1">メール</label>
+                <label htmlFor="emp-email" className="block text-sm text-text-muted mb-1">メール</label>
                 <input
+                  id="emp-email"
                   type="email"
+                  aria-invalid={!!errors.email}
+                  aria-describedby={errors.email ? "emp-email-err" : undefined}
                   {...register("email")}
                   className="w-full px-3 py-2 bg-surface-light border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="yamada@example.com"
                 />
                 {errors.email && (
-                  <p className="mt-1 text-xs text-danger">{errors.email.message}</p>
+                  <p id="emp-email-err" className="mt-1 text-xs text-danger" role="alert">{errors.email.message}</p>
                 )}
               </div>
               <div>
-                <label className="block text-sm text-text-muted mb-1">パスワード</label>
+                <label htmlFor="emp-pw" className="block text-sm text-text-muted mb-1">パスワード</label>
                 <input
+                  id="emp-pw"
                   type="password"
+                  aria-invalid={!!errors.password}
+                  aria-describedby={errors.password ? "emp-pw-err" : undefined}
                   {...register("password")}
                   className="w-full px-3 py-2 bg-surface-light border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="6文字以上"
                 />
                 {errors.password && (
-                  <p className="mt-1 text-xs text-danger">{errors.password.message}</p>
+                  <p id="emp-pw-err" className="mt-1 text-xs text-danger" role="alert">{errors.password.message}</p>
                 )}
               </div>
             </div>
 
             {serverError && (
-              <div className="p-3 bg-danger/10 border border-danger/30 rounded-lg text-danger text-sm">
+              <div role="alert" className="p-3 bg-danger/10 border border-danger/30 rounded-lg text-danger text-sm">
                 {serverError}
               </div>
             )}
 
             {successMsg && (
-              <div className="p-3 bg-success/10 border border-success/30 rounded-lg text-success text-sm">
+              <div role="status" className="p-3 bg-success/10 border border-success/30 rounded-lg text-success text-sm">
                 {successMsg}
               </div>
             )}
@@ -324,8 +333,10 @@ export function EmployeeManagement() {
               登録済み従業員 ({visible.length}名)
             </h2>
             <div className="flex items-center gap-3 flex-wrap">
+              <label htmlFor="emp-search" className="sr-only">従業員検索</label>
               <input
-                type="text"
+                id="emp-search"
+                type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="名前 / メールで検索"
