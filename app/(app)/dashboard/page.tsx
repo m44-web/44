@@ -208,6 +208,38 @@ function AdminDashboard() {
               );
             })}
           </div>
+          {/* Week totals */}
+          {(() => {
+            function calcH(s: Shift): number {
+              const [sh, sm] = s.startTime.split(":").map(Number);
+              const [eh, em] = s.endTime.split(":").map(Number);
+              let h = eh - sh + (em - sm) / 60; if (h < 0) h += 24; return h;
+            }
+            const totalHours = weekShifts.reduce((sum, s) => sum + calcH(s), 0);
+            const uniqueGuards = new Set(weekShifts.map((s) => s.guardId)).size;
+            const dayCount = weekShifts.filter((s) => s.shiftType !== "night").length;
+            const nightCount = weekShifts.filter((s) => s.shiftType === "night").length;
+            return (
+              <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-border text-center">
+                <div>
+                  <p className="text-[10px] text-text-secondary">総シフト</p>
+                  <p className="text-lg font-bold text-text-primary">{weekShifts.length}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-text-secondary">総稼働時間</p>
+                  <p className="text-lg font-bold text-accent">{totalHours.toFixed(0)}h</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-text-secondary">日勤/夜勤</p>
+                  <p className="text-sm font-bold text-text-primary">{dayCount}/{nightCount}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-text-secondary">稼働人員</p>
+                  <p className="text-lg font-bold text-success">{uniqueGuards}名</p>
+                </div>
+              </div>
+            );
+          })()}
         </Card>
       </div>
 
