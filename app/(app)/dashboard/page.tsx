@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -63,34 +63,42 @@ function AdminDashboard({ data }: { data: {
   const today = todayStr();
   const thisMonth = today.slice(0, 7);
 
-  const activeGuards = guards.filter((g) => g.status === "active");
-  const activeSites = sites.filter((s) => s.status === "active");
-  const onDuty = todayAttendance.filter((a) => a.status === "on_duty").length;
-  const completedToday = todayAttendance.filter((a) => a.status === "completed").length;
-  const pendingRequests = shiftRequests.filter((r) => r.status === "pending").length;
-  const todayReports = reports.filter((r) => r.date === today).length;
+  const stats = useMemo(() => {
+    const activeGuards = guards.filter((g) => g.status === "active");
+    const activeSites = sites.filter((s) => s.status === "active");
+    const thisMonthShifts = shifts.filter((s) => s.date.startsWith(thisMonth) && s.status !== "cancelled");
+    const guardsWithTodayShift = new Set(todayShifts.map((s) => s.guardId));
+    const twelveHoursAgo = Date.now() - 12 * 60 * 60 * 1000;
+    const guardsWithLocation = new Set(locations.filter((l) => new Date(l.timestamp).getTime() > twelveHoursAgo).map((l) => l.guardId));
+    const missingLocationCount = [...guardsWithTodayShift].filter((id) => !guardsWithLocation.has(id)).length;
+    return {
+      activeGuards,
+      activeSites,
+      onDuty: todayAttendance.filter((a) => a.status === "on_duty").length,
+      completedToday: todayAttendance.filter((a) => a.status === "completed").length,
+      pendingRequests: shiftRequests.filter((r) => r.status === "pending").length,
+      todayReports: reports.filter((r) => r.date === today).length,
+      thisMonthShifts,
+      missingLocationCount,
+    };
+  }, [guards, sites, shifts, todayShifts, todayAttendance, shiftRequests, reports, locations, today, thisMonth]);
 
-  // This month stats
-  const thisMonthShifts = shifts.filter((s) => s.date.startsWith(thisMonth) && s.status !== "cancelled");
-  const completedMonthShifts = thisMonthShifts.filter((s) => s.status === "completed");
+  const { activeGuards, activeSites, onDuty, completedToday, pendingRequests, todayReports, thisMonthShifts, missingLocationCount } = stats;
 
-  // Week shifts with navigation
-  const weekDates: string[] = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date();
-    d.setDate(d.getDate() + i + weekOffset * 7);
-    weekDates.push(d.toISOString().split("T")[0]);
-  }
-  const weekShifts = shifts.filter((s) => weekDates.includes(s.date) && s.status !== "cancelled");
-  const weekLabel = weekOffset === 0 ? "今週" : weekOffset === 1 ? "来週" : weekOffset === -1 ? "先週" : `${weekOffset > 0 ? "+" : ""}${weekOffset}週`;
-
-  // Guards without location
-  const guardsWithTodayShift = new Set(todayShifts.map((s) => s.guardId));
-  const guardsWithLocation = new Set(locations.filter((l) => {
-    const hoursAgo = (Date.now() - new Date(l.timestamp).getTime()) / (1000 * 60 * 60);
-    return hoursAgo < 12;
-  }).map((l) => l.guardId));
-  const missingLocationCount = [...guardsWithTodayShift].filter((id) => !guardsWithLocation.has(id)).length;
+  const { weekDates, weekShifts, weekLabel } = useMemo(() => {
+    const dates: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i + weekOffset * 7);
+      dates.push(d.toISOString().split("T")[0]);
+    }
+    const dateSet = new Set(dates);
+    return {
+      weekDates: dates,
+      weekShifts: shifts.filter((s) => dateSet.has(s.date) && s.status !== "cancelled"),
+      weekLabel: weekOffset === 0 ? "今週" : weekOffset === 1 ? "来週" : weekOffset === -1 ? "先週" : `${weekOffset > 0 ? "+" : ""}${weekOffset}週`,
+    };
+  }, [shifts, weekOffset]);
 
   return (
     <div className="space-y-5">
@@ -635,39 +643,49 @@ function GuardDashboard({ guardId, data }: { guardId: string; data: {
   );
 }
 
+const DAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
+
 function SurplusGuards({ activeGuards, shifts }: { activeGuards: Guard[]; shifts: Shift[] }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  const today = new Date().toISOString().split("T")[0];
-  const dayLabels = ["日", "月", "火", "水", "木", "金", "土"];
+  const today = useMemo(() => new Date().toISOString().split("T")[0], []);
 
-  // Generate 14-day calendar (2 weeks)
-  const calendarDates: string[] = [];
-  for (let i = 0; i < 14; i++) {
-    const d = new Date();
-    d.setDate(d.getDate() + i + weekOffset * 14);
-    calendarDates.push(d.toISOString().split("T")[0]);
-  }
+  // Pre-group shifts by date once for fast lookup
+  const shiftsByDate = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const s of shifts) {
+      if (s.status === "cancelled") continue;
+      if (!map.has(s.date)) map.set(s.date, new Set());
+      map.get(s.date)!.add(s.guardId);
+    }
+    return map;
+  }, [shifts]);
 
-  // Pre-compute surplus count per date
-  const surplusByDate = new Map<string, number>();
-  for (const dateStr of calendarDates) {
-    const dayShifts = shifts.filter((s) => s.date === dateStr && s.status !== "cancelled");
-    const guardsWithShift = new Set(dayShifts.map((s) => s.guardId));
-    surplusByDate.set(dateStr, activeGuards.filter((g) => !guardsWithShift.has(g.id)).length);
-  }
+  const { calendarDates, surplusByDate } = useMemo(() => {
+    const dates: string[] = [];
+    const surplus = new Map<string, number>();
+    for (let i = 0; i < 14; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i + weekOffset * 14);
+      const dateStr = d.toISOString().split("T")[0];
+      dates.push(dateStr);
+      const assigned = shiftsByDate.get(dateStr);
+      surplus.set(dateStr, assigned ? activeGuards.filter((g) => !assigned.has(g.id)).length : activeGuards.length);
+    }
+    return { calendarDates: dates, surplusByDate: surplus };
+  }, [activeGuards, shiftsByDate, weekOffset]);
 
-  // Get guards for selected date
   const viewDate = selectedDate ?? today;
-  const viewDayShifts = shifts.filter((s) => s.date === viewDate && s.status !== "cancelled");
-  const viewGuardsWithShift = new Set(viewDayShifts.map((s) => s.guardId));
-  const availableGuards = activeGuards.filter((g) => !viewGuardsWithShift.has(g.id));
+  const availableGuards = useMemo(() => {
+    const assigned = shiftsByDate.get(viewDate);
+    return assigned ? activeGuards.filter((g) => !assigned.has(g.id)) : activeGuards;
+  }, [activeGuards, shiftsByDate, viewDate]);
 
   const viewD = new Date(viewDate + "T00:00:00");
-  const viewLabel = viewDate === today ? "本日" : `${viewD.getMonth() + 1}/${viewD.getDate()}(${dayLabels[viewD.getDay()]})`;
-
+  const viewLabel = viewDate === today ? "本日" : `${viewD.getMonth() + 1}/${viewD.getDate()}(${DAY_LABELS[viewD.getDay()]})`;
   const periodLabel = weekOffset === 0 ? "今後2週間" : weekOffset > 0 ? `${weekOffset * 2}〜${weekOffset * 2 + 2}週後` : "";
+  const dayLabels = DAY_LABELS;
 
   return (
     <div>

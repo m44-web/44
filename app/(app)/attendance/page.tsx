@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getShifts, getGuards, getSites, getAttendance, getShiftsByGuard, getAttendanceByGuard, clockIn, clockOut, addLocation, getLocations } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
@@ -43,18 +43,30 @@ function AdminAttendance() {
     setLocations(getLocations());
   }, []);
 
+  const { attendance, dateShifts, onDuty, completed, absent, notYetClocked, locationsByGuard } = useMemo(() => {
+    const att = allAttendance.filter((a) => a.date === selectedDate);
+    const ds = shifts.filter((s) => s.date === selectedDate && s.status !== "cancelled");
+    const scheduledGuardIds = new Set(ds.map((s) => s.guardId));
+    const attendedGuardIds = new Set(att.map((a) => a.guardId));
+    const locMap = new Map<string, LocationLog[]>();
+    for (const l of locations) {
+      if (!l.timestamp.startsWith(selectedDate)) continue;
+      if (!locMap.has(l.guardId)) locMap.set(l.guardId, []);
+      locMap.get(l.guardId)!.push(l);
+    }
+    for (const arr of locMap.values()) arr.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    return {
+      attendance: att,
+      dateShifts: ds,
+      onDuty: att.filter((a) => a.status === "on_duty").length,
+      completed: att.filter((a) => a.status === "completed").length,
+      absent: att.filter((a) => a.status === "absent").length,
+      notYetClocked: [...scheduledGuardIds].filter((id) => !attendedGuardIds.has(id)),
+      locationsByGuard: locMap,
+    };
+  }, [allAttendance, shifts, locations, selectedDate]);
+
   if (!mounted) return null;
-
-  const attendance = allAttendance.filter((a) => a.date === selectedDate);
-  const dateShifts = shifts.filter((s) => s.date === selectedDate && s.status !== "cancelled");
-  const onDuty = attendance.filter((a) => a.status === "on_duty").length;
-  const completed = attendance.filter((a) => a.status === "completed").length;
-  const absent = attendance.filter((a) => a.status === "absent").length;
-
-  // Guards scheduled but no attendance record
-  const scheduledGuardIds = new Set(dateShifts.map((s) => s.guardId));
-  const attendedGuardIds = new Set(attendance.map((a) => a.guardId));
-  const notYetClocked = [...scheduledGuardIds].filter((id) => !attendedGuardIds.has(id));
 
   const statusColors: Record<AttendanceRecord["status"], string> = {
     pending: "bg-sub-bg text-text-secondary",
@@ -159,10 +171,8 @@ function AdminAttendance() {
                 </div>
                 {/* GPS location history */}
                 {(() => {
-                  const guardLocs = locations
-                    .filter((l) => l.guardId === record.guardId && l.timestamp.startsWith(selectedDate))
-                    .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-                  if (guardLocs.length === 0) return null;
+                  const guardLocs = locationsByGuard.get(record.guardId);
+                  if (!guardLocs || guardLocs.length === 0) return null;
                   const typeLabels: Record<string, string> = { clock_in: "上番", clock_out: "下番", manual: "手動", periodic: "定期" };
                   const typeColors: Record<string, string> = { clock_in: "text-success", clock_out: "text-danger", manual: "text-accent", periodic: "text-text-secondary" };
                   return (

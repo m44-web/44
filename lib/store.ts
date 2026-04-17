@@ -26,11 +26,18 @@ function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
+// In-memory cache to avoid redundant JSON.parse on repeated reads within the same tick.
+// Invalidated when setItem writes to that key.
+const cache = new Map<string, unknown>();
+
 function getItem<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
+  if (cache.has(key)) return cache.get(key) as T;
   try {
     const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
+    const value = raw ? JSON.parse(raw) : fallback;
+    cache.set(key, value);
+    return value;
   } catch {
     return fallback;
   }
@@ -38,6 +45,7 @@ function getItem<T>(key: string, fallback: T): T {
 
 function setItem<T>(key: string, value: T): void {
   if (typeof window === "undefined") return;
+  cache.set(key, value);
   localStorage.setItem(key, JSON.stringify(value));
 }
 
@@ -232,7 +240,10 @@ export function initializeStore(): void {
   if (!currentVersion || currentVersion !== DATA_VERSION) {
     // Clear old data and re-seed with latest schema
     const currentUser = localStorage.getItem(STORAGE_KEYS.currentUser);
-    Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
+    Object.values(STORAGE_KEYS).forEach((key) => {
+      localStorage.removeItem(key);
+      cache.delete(key);
+    });
     seedAll();
     // Restore login session if there was one
     if (currentUser) localStorage.setItem(STORAGE_KEYS.currentUser, currentUser);

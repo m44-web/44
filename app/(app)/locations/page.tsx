@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getLatestLocations, addLocation, getGuards, getSites, getShifts } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
@@ -144,30 +144,38 @@ function AdminLocationView() {
   useEffect(() => {
     setMounted(true);
     refresh();
-    const interval = setInterval(refresh, 30000);
-    return () => clearInterval(interval);
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const start = () => { if (interval == null) interval = setInterval(refresh, 30000); };
+    const stop = () => { if (interval != null) { clearInterval(interval); interval = null; } };
+    const onVis = () => { if (document.hidden) stop(); else { refresh(); start(); } };
+    if (!document.hidden) start();
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, []);
 
+  const today = useMemo(() => new Date().toISOString().split("T")[0], []);
+  const guardStatuses = useMemo(() => {
+    const todayShifts = shifts.filter((s) => s.date === today && s.status !== "cancelled");
+    const shiftByGuard = new Map(todayShifts.map((s) => [s.guardId, s]));
+    const locByGuard = new Map(locations.map((l) => [l.guardId, l]));
+    const siteById = new Map(sites.map((s) => [s.id, s]));
+    const twelveHoursAgo = Date.now() - 12 * 60 * 60 * 1000;
+    return guards.filter((g) => g.status === "active").map((guard) => {
+      const todayShift = shiftByGuard.get(guard.id);
+      const loc = locByGuard.get(guard.id);
+      const site = todayShift ? siteById.get(todayShift.siteId) : undefined;
+      let locationStatus: "sent" | "old" | "none" = "none";
+      if (loc) locationStatus = new Date(loc.timestamp).getTime() > twelveHoursAgo ? "sent" : "old";
+      return { guard, todayShift, site, loc, locationStatus };
+    });
+  }, [guards, shifts, locations, sites, today]);
+
+  const todayShiftsCount = useMemo(() => shifts.filter((s) => s.date === today && s.status !== "cancelled").length, [shifts, today]);
+
   if (!mounted) return null;
-
-  const today = new Date().toISOString().split("T")[0];
-  const todayShifts = shifts.filter((s) => s.date === today && s.status !== "cancelled");
-  const activeGuards = guards.filter((g) => g.status === "active");
-
-  const guardStatuses = activeGuards.map((guard) => {
-    const todayShift = todayShifts.find((s) => s.guardId === guard.id);
-    const loc = locations.find((l) => l.guardId === guard.id);
-    const site = todayShift ? sites.find((s) => s.id === todayShift.siteId) : undefined;
-
-    let locationStatus: "sent" | "old" | "none" = "none";
-    if (loc) {
-      const locTime = new Date(loc.timestamp).getTime();
-      const hoursAgo = (Date.now() - locTime) / (1000 * 60 * 60);
-      locationStatus = hoursAgo < 12 ? "sent" : "old";
-    }
-
-    return { guard, todayShift, site, loc, locationStatus };
-  });
 
   return (
     <div className="space-y-4">
@@ -178,7 +186,7 @@ function AdminLocationView() {
         </button>
       </div>
 
-      <p className="text-sm text-text-secondary">本日 {today} のシフト: {todayShifts.length}件</p>
+      <p className="text-sm text-text-secondary">本日 {today} のシフト: {todayShiftsCount}件</p>
 
       {/* Legend */}
       <div className="flex flex-wrap gap-3 text-xs">

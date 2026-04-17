@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getChatGeneral, getChatBySite, addChatMessage, getSites, getHandoverBySite, addHandoverNote, getShiftsByGuard } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
@@ -16,21 +16,23 @@ export default function ChatPage() {
   const [mounted, setMounted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  function refresh() {
+  const refresh = useCallback(() => {
     if (selectedChannel === "general") {
-      setMessages(getChatGeneral());
-      setHandoverNotes([]);
+      const next = getChatGeneral();
+      setMessages((prev) => (prev.length === next.length && prev[prev.length - 1]?.id === next[next.length - 1]?.id ? prev : next));
+      setHandoverNotes((prev) => (prev.length === 0 ? prev : []));
     } else {
-      setMessages(getChatBySite(selectedChannel));
-      setHandoverNotes(getHandoverBySite(selectedChannel));
+      const nextMsgs = getChatBySite(selectedChannel);
+      const nextNotes = getHandoverBySite(selectedChannel);
+      setMessages((prev) => (prev.length === nextMsgs.length && prev[prev.length - 1]?.id === nextMsgs[nextMsgs.length - 1]?.id ? prev : nextMsgs));
+      setHandoverNotes((prev) => (prev.length === nextNotes.length && prev[0]?.id === nextNotes[0]?.id ? prev : nextNotes));
     }
-  }
+  }, [selectedChannel]);
 
   useEffect(() => {
     setMounted(true);
     const allSites = getSites().filter((s) => s.status === "active");
     setSites(allSites);
-    // Guard: auto-select today's site
     if (user?.role !== "admin" && user?.guardId) {
       const today = new Date().toISOString().split("T")[0];
       const myShifts = getShiftsByGuard(user.guardId);
@@ -41,9 +43,24 @@ export default function ChatPage() {
 
   useEffect(() => {
     refresh();
-    const interval = setInterval(refresh, 5000);
-    return () => clearInterval(interval);
-  }, [selectedChannel]);
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const start = () => {
+      if (interval == null) interval = setInterval(refresh, 5000);
+    };
+    const stop = () => {
+      if (interval != null) { clearInterval(interval); interval = null; }
+    };
+    const onVisibilityChange = () => {
+      if (document.hidden) stop();
+      else { refresh(); start(); }
+    };
+    if (!document.hidden) start();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [refresh]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
