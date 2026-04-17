@@ -4848,13 +4848,15 @@ window.importBackupJSON = function(){
 /* ── 10. 深層パフォーマンス最適化 ── */
 /* innerHTML一括生成 + イベント委譲 + rAFコアレス + 変更検知スキップ */
 (function(){
-  var PAGE_SIZE=50,currentPage=1,rafPending=false;
+  var PAGE_SIZE=50,rafPending=false;
   function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
   /* カードHTML一括生成 */
   function cardHTML(r){
     var st2=gst(r),s=ST[st2]||ST['new'],ds=days(r[6]),a=ac(st2,ds);
-    var h='<button class="card" type="button" data-rid="'+r[0]+'">';
+    var pins=window._crmPins||{},isPinned=pins[r[0]];
+    var h='<button class="card" type="button" data-rid="'+r[0]+'"'+(isPinned?' style="position:relative"':'')+'>';
+    if(isPinned)h+='<span style="position:absolute;top:4px;right:6px;font-size:12px;z-index:2">\uD83D\uDCCC</span>';
     h+='<div class="cstripe" style="background:'+a+'"></div><div class="cbody">';
     /* 行1 */
     h+='<div class="cr1"><div style="display:flex;align-items:center;gap:5px;flex:1;min-width:0">';
@@ -4915,30 +4917,40 @@ window.importBackupJSON = function(){
     if(typeof openPanel==='function')openPanel(rid);
   },false);
 
-  /* ページネーション適用 */
-  function applyPag(){
-    var cards=listEl.querySelectorAll('.card[data-rid]');
-    if(!cards.length)return;
-    var limit=PAGE_SIZE*currentPage,hidden=0;
-    for(var i=0;i<cards.length;i++){
-      if(i<limit){cards[i].style.display='';}
-      else{cards[i].style.display='none';hidden++;}
-    }
+  /* 仮想ページネーション — 追加分のみDOMに挿入 */
+  var _fullFiltered=[],_shownCount=0,_loadingMore=false;
+  function appendNextPage(){
+    if(_shownCount>=_fullFiltered.length)return;
+    var end=Math.min(_shownCount+PAGE_SIZE,_fullFiltered.length);
+    var parts=[];
+    for(var i=_shownCount;i<end;i++)parts.push(cardHTML(_fullFiltered[i]));
+    var w=document.createElement('div');w.innerHTML=parts.join('');
+    var old=document.getElementById('ux-load-more');
+    var frag=document.createDocumentFragment();
+    while(w.firstChild)frag.appendChild(w.firstChild);
+    if(old)old.parentNode.insertBefore(frag,old);
+    else listEl.appendChild(frag);
+    _shownCount=end;
+    updateLoadMoreBtn();
+  }
+  function updateLoadMoreBtn(){
     var old=document.getElementById('ux-load-more');if(old)old.remove();
-    if(hidden>0){
-      var btn=document.createElement('button');btn.id='ux-load-more';btn.type='button';
-      btn.textContent='\u3055\u3089\u306B\u8868\u793A ('+hidden+'\u4EF6)';
-      btn.style.cssText='display:block;width:calc(100% - 24px);margin:8px 12px;padding:12px;background:#f7f6f3;border:1.5px solid #e9e9e7;border-radius:8px;font-size:12px;font-weight:600;color:#718096;cursor:pointer;font-family:inherit;text-align:center';
-      btn.addEventListener('click',function(){currentPage++;applyPag();});
-      listEl.appendChild(btn);
-    }
+    var remain=_fullFiltered.length-_shownCount;
+    if(remain<=0)return;
+    var btn=document.createElement('button');btn.id='ux-load-more';btn.type='button';
+    btn.textContent='\u3055\u3089\u306B\u8868\u793A ('+remain+'\u4EF6)';
+    btn.style.cssText='display:block;width:calc(100% - 24px);margin:8px 12px;padding:12px;background:#f7f6f3;border:1.5px solid #e9e9e7;border-radius:8px;font-size:12px;font-weight:600;color:#718096;cursor:pointer;font-family:inherit;text-align:center';
+    btn.addEventListener('click',appendNextPage);
+    listEl.appendChild(btn);
   }
 
   /* スクロール末尾で自動読込 */
   listEl.addEventListener('scroll',function(){
-    if(listEl.scrollTop+listEl.clientHeight>=listEl.scrollHeight-100){
-      var hidden=listEl.querySelectorAll('.card[data-rid][style*="display:none"],.card[data-rid][style*="display: none"]');
-      if(hidden.length>0){currentPage++;applyPag();}
+    if(_loadingMore)return;
+    if(_shownCount>=_fullFiltered.length)return;
+    if(listEl.scrollTop+listEl.clientHeight>=listEl.scrollHeight-200){
+      _loadingMore=true;
+      requestAnimationFrame(function(){appendNextPage();_loadingMore=false;});
     }
   },{passive:true});
 
@@ -5028,17 +5040,17 @@ window.importBackupJSON = function(){
     for(var ci2=0;ci2<listEl.childNodes.length;ci2++){if(listEl.childNodes[ci2]!==empty)toRm.push(listEl.childNodes[ci2]);}
     for(var ci3=0;ci3<toRm.length;ci3++)listEl.removeChild(toRm[ci3]);
 
-    if(filtered.length===0){empty.style.display="block";try{renderTasksUX();}catch(e){}return;}
+    if(filtered.length===0){empty.style.display="block";_fullFiltered=[];_shownCount=0;try{renderTasksUX();}catch(e){}return;}
     empty.style.display="none";
 
-    /* innerHTML一括生成 (5〜10倍高速) */
+    /* 仮想ページング: 最初のPAGE_SIZE件のみDOM挿入 */
+    _fullFiltered=filtered;
+    _shownCount=0;
+    var firstCount=Math.min(PAGE_SIZE,filtered.length);
     var htmlParts=[];
-    for(var hi=0;hi<filtered.length;hi++){
-      htmlParts.push(cardHTML(filtered[hi]));
-    }
+    for(var hi=0;hi<firstCount;hi++)htmlParts.push(cardHTML(filtered[hi]));
     var wrapper=document.createElement('div');
     wrapper.innerHTML=htmlParts.join('');
-    /* DocumentFragmentに移動 */
     var frag=document.createDocumentFragment();
     while(wrapper.firstChild)frag.appendChild(wrapper.firstChild);
 
@@ -5056,10 +5068,8 @@ window.importBackupJSON = function(){
 
     listEl.appendChild(frag);
     listEl.scrollTop=0;
-
-    /* ページネーション */
-    currentPage=1;
-    applyPag();
+    _shownCount=firstCount;
+    updateLoadMoreBtn();
 
     /* タスク一覧更新 */
     try{renderTasksUX();}catch(e){}
@@ -5389,31 +5399,7 @@ window.importBackupJSON = function(){
     }
   };
 
-  /* カードにピンバッジを追加 — cardHTML生成後にDOM操作 */
-  var _origRender3=window.render;
-  window.render=function(){
-    var r=_origRender3();
-    /* ピン留めカードにバッジ追加 */
-    requestAnimationFrame(function(){
-      var pins=window._crmPins||{};
-      var cards=document.querySelectorAll('.card[data-rid]');
-      for(var i=0;i<cards.length;i++){
-        var rid=parseInt(cards[i].getAttribute('data-rid'));
-        if(pins[rid]){
-          var existing=cards[i].querySelector('.pin-badge');
-          if(!existing){
-            var badge=document.createElement('span');
-            badge.className='pin-badge';
-            badge.textContent='\uD83D\uDCCC';
-            badge.style.cssText='position:absolute;top:4px;right:6px;font-size:12px;z-index:2';
-            cards[i].style.position='relative';
-            cards[i].appendChild(badge);
-          }
-        }
-      }
-    });
-    return r;
-  };
+  /* ピンバッジは cardHTML 内で直接描画 (feature 10) — 追加のrenderラッパー不要 */
 
   /* 詳細パネルにピン留めボタンを追加 */
   var _origPanel=window.openPanel;
@@ -5515,7 +5501,7 @@ window.importBackupJSON = function(){
   }
   window.addEventListener('online',retryFailedQueue);
   setTimeout(retryFailedQueue,5000);
-  setInterval(retryFailedQueue,60000);
+  setInterval(function(){if(!document.hidden)retryFailedQueue();},60000);
 
   /* 同期バッジ — ヘッダーの #sb-dot を拡張表示 */
   function updateSyncBadge(){
@@ -5526,8 +5512,12 @@ window.importBackupJSON = function(){
     else{dot.style.background='';dot.title='\u540C\u671F\u5B8C\u4E86';}
   }
 
-  /* 接続監視ヘルスチェック — 30秒ごと */
+  /* Page Visibility — 非表示時はバックグラウンド処理を停止 */
+  function isActive(){return !document.hidden;}
+
+  /* 接続監視ヘルスチェック — 30秒ごと (タブ表示時のみ) */
   setInterval(function(){
+    if(!isActive())return;
     if(!window.sbClient)return;
     if(!navigator.onLine)return;
     /* 軽量な select(id).limit(1) で接続確認 */
@@ -5538,8 +5528,9 @@ window.importBackupJSON = function(){
     }).catch(function(){});
   },30000);
 
-  /* realtime再接続 — 切断時に自動復旧 */
+  /* realtime再接続 — 切断時に自動復旧 (タブ表示時のみ) */
   setInterval(function(){
+    if(!isActive())return;
     if(!window.sbClient)return;
     if(!window.sbRealtime){
       if(typeof subscribeRealtime==='function')subscribeRealtime();
@@ -5595,17 +5586,32 @@ window.importBackupJSON = function(){
   fab.addEventListener('touchend',function(){fab.style.transform='';},{passive:true});
   document.body.appendChild(fab);
 
-  /* パネル/ダッシュボード/メニュー表示中はFAB非表示 */
+  /* パネル/ダッシュボード/メニュー表示中はFAB非表示 — イベント駆動 */
   function updateFabVisibility(){
     var pnl=document.getElementById('pnl');
     var dash=document.getElementById('dashboard');
     var menu=document.getElementById('menu');
     var hide=(pnl&&pnl.classList.contains('open'))||
-             (dash&&dash.style.display!=='none')||
+             (dash&&dash.style.display!=='none'&&dash.style.display!=='')||
              (menu&&menu.style.display&&menu.style.display!=='none');
     fab.style.display=hide?'none':'flex';
   }
-  setInterval(updateFabVisibility,500);
+  /* openPanel / closePanel / openDashboard をラップ */
+  ['openPanel','closePanel','openDashboard'].forEach(function(fn){
+    var orig=window[fn];
+    if(typeof orig!=='function')return;
+    window[fn]=function(){
+      var r=orig.apply(this,arguments);
+      requestAnimationFrame(updateFabVisibility);
+      return r;
+    };
+  });
+  /* メニューのdisplay変更をMutationObserverで検知 */
+  var menuEl=document.getElementById('menu');
+  if(menuEl&&window.MutationObserver){
+    new MutationObserver(updateFabVisibility).observe(menuEl,{attributes:true,attributeFilter:['style']});
+  }
+  updateFabVisibility();
 })();
 
 /* ── 17. Pull-to-Refresh ── */
