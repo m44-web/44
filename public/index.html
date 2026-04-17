@@ -8835,6 +8835,50 @@ window.importBackupJSON = function(){
   };
 })();
 
+/* ── 72. パフォーマンス/統計パネル (隠しコマンド: Shift+P 3回) ── */
+(function(){
+  var pCount=0,pTimer=null;
+  document.addEventListener('keydown',function(e){
+    if(!e.shiftKey||e.key!=='P')return;
+    var t=e.target;
+    if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;
+    pCount++;
+    if(pTimer)clearTimeout(pTimer);
+    pTimer=setTimeout(function(){pCount=0;},800);
+    if(pCount>=3){
+      pCount=0;
+      window.showPerfPanel();
+    }
+  });
+
+  window.showPerfPanel=function(){
+    var old=document.getElementById('ux-perf');if(old){old.remove();return;}
+    var d=window.D||[];
+    var total=d.length;
+    var size=0;
+    try{size=(localStorage.getItem('crm-store')||'').length;}catch(e){}
+    var nav=performance.getEntriesByType('navigation')[0]||{};
+    var loadTime=nav.domContentLoadedEventEnd?Math.round(nav.domContentLoadedEventEnd):0;
+    var mem=performance.memory?Math.round(performance.memory.usedJSHeapSize/1048576):null;
+    var cards=document.querySelectorAll('#list .card').length;
+
+    var panel=document.createElement('div');panel.id='ux-perf';
+    panel.style.cssText='position:fixed;bottom:10px;right:10px;background:#1a202c;color:#e2e8f0;padding:12px;border-radius:8px;font-family:monospace;font-size:11px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);min-width:240px;line-height:1.6';
+    panel.innerHTML='<div style="font-weight:700;color:#60a5fa;margin-bottom:6px">⚡ PERF / STATS</div>'+
+      '<div>案件総数: <b style="color:#fff">'+total+'</b></div>'+
+      '<div>表示中カード: <b style="color:#fff">'+cards+'</b></div>'+
+      '<div>ストレージ: <b style="color:#fff">'+(size/1024).toFixed(1)+' KB</b></div>'+
+      (mem?'<div>JSヒープ: <b style="color:#fff">'+mem+' MB</b></div>':'')+
+      '<div>DOMロード: <b style="color:#fff">'+loadTime+' ms</b></div>'+
+      '<div>機能数: <b style="color:#fff">72</b></div>'+
+      '<div>オンライン: <b style="color:'+(navigator.onLine?'#4ade80':'#f87171')+'">'+(navigator.onLine?'●':'○')+'</b></div>'+
+      '<div style="margin-top:8px;font-size:9px;color:#9ca3af;cursor:pointer" onclick="this.parentNode.remove()">タップで閉じる</div>';
+    panel.addEventListener('click',function(){panel.remove();});
+    document.body.appendChild(panel);
+    setTimeout(function(){if(panel.parentNode)panel.remove();},8000);
+  };
+})();
+
 })();
 </script>
 </body>
