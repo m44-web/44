@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { AdminNav } from "./AdminNav";
 
 interface EmployeeData {
@@ -103,11 +104,11 @@ export function EmployeeDetail({ userId }: { userId: string }) {
       <AdminNav />
 
       <Container className="py-6 space-y-6">
-        <div className="flex items-center gap-2 text-sm text-text-muted">
-          <Link href="/admin/employees" className="hover:text-text">従業員管理</Link>
-          <span>/</span>
-          <span className="text-text">{user.name}</span>
-        </div>
+        <Breadcrumb items={[
+          { label: "ダッシュボード", href: "/admin" },
+          { label: "従業員管理", href: "/admin/employees" },
+          { label: user.name },
+        ]} />
         <Card>
           <div className="flex items-start gap-4 flex-wrap">
             <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-2xl font-bold text-primary">

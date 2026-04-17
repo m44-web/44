@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { AdminNav } from "./AdminNav";
 
 interface ShiftData {
@@ -181,11 +182,11 @@ export function ShiftDetail({ shiftId }: { shiftId: string }) {
       <AdminNav />
 
       <Container className="py-6 space-y-6">
-        <div className="flex items-center gap-2 text-sm text-text-muted">
-          <Link href="/admin/shifts" className="hover:text-text">シフト履歴</Link>
-          <span>/</span>
-          <span className="text-text">{shift.userName} - {new Date(shift.startedAt).toLocaleDateString("ja-JP")}</span>
-        </div>
+        <Breadcrumb items={[
+          { label: "ダッシュボード", href: "/admin" },
+          { label: "シフト履歴", href: "/admin/shifts" },
+          { label: `${shift.userName} - ${new Date(shift.startedAt).toLocaleDateString("ja-JP")}` },
+        ]} />
         {/* Overview */}
         <Card>
           <div className="flex items-start justify-between flex-wrap gap-4">
