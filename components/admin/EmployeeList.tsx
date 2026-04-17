@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Card } from "@/components/ui/Card";
+import { SkeletonList } from "@/components/ui/Skeleton";
 import { useRealtime } from "./RealtimeProvider";
 import Link from "next/link";
 
@@ -73,6 +74,7 @@ export function EmployeeList() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
   const [sortBy, setSortBy] = useState<SortBy>("status");
+  const [initialLoad, setInitialLoad] = useState(true);
   const { lastEvent } = useRealtime();
 
   const fetchData = useCallback(async () => {
@@ -91,6 +93,8 @@ export function EmployeeList() {
       }
     } catch {
       // ignore
+    } finally {
+      setInitialLoad(false);
     }
   }, []);
 
@@ -178,7 +182,9 @@ export function EmployeeList() {
         </div>
       </div>
 
-      {employees.length === 0 && (
+      {initialLoad && <SkeletonList count={4} />}
+
+      {!initialLoad && employees.length === 0 && (
         <p className="text-text-muted text-sm">
           従業員が登録されていません。「従業員管理」から登録してください。
         </p>
