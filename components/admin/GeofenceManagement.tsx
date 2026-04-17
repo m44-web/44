@@ -124,59 +124,99 @@ export function GeofenceManagement() {
             <strong>禁止エリア:</strong> 入ると違反。
           </p>
           <form onSubmit={add} className="grid grid-cols-1 sm:grid-cols-6 gap-3">
-            <input
-              type="text"
-              placeholder="エリア名"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="sm:col-span-2 px-3 py-2 bg-surface-light border border-white/10 rounded-lg text-sm"
-              required
-            />
-            <input
-              type="number"
-              step="any"
-              placeholder="緯度"
-              value={form.latitude}
-              onChange={(e) => setForm({ ...form, latitude: e.target.value })}
-              className="px-3 py-2 bg-surface-light border border-white/10 rounded-lg text-sm"
-              required
-            />
-            <input
-              type="number"
-              step="any"
-              placeholder="経度"
-              value={form.longitude}
-              onChange={(e) => setForm({ ...form, longitude: e.target.value })}
-              className="px-3 py-2 bg-surface-light border border-white/10 rounded-lg text-sm"
-              required
-            />
-            <input
-              type="number"
-              placeholder="半径(m)"
-              value={form.radiusM}
-              onChange={(e) => setForm({ ...form, radiusM: e.target.value })}
-              className="px-3 py-2 bg-surface-light border border-white/10 rounded-lg text-sm"
-              required
-            />
-            <select
-              value={form.type}
-              onChange={(e) =>
-                setForm({ ...form, type: e.target.value as "allowed" | "forbidden" })
-              }
-              className="px-3 py-2 bg-surface-light border border-white/10 rounded-lg text-sm"
-            >
-              <option value="allowed">許可エリア</option>
-              <option value="forbidden">禁止エリア</option>
-            </select>
+            <div className="sm:col-span-2">
+              <label htmlFor="geo-name" className="sr-only">エリア名</label>
+              <input
+                id="geo-name"
+                type="text"
+                placeholder="エリア名"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className="w-full px-3 py-2 bg-surface-light border border-white/10 rounded-lg text-sm"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="geo-lat" className="sr-only">緯度</label>
+              <input
+                id="geo-lat"
+                type="number"
+                step="any"
+                placeholder="緯度"
+                value={form.latitude}
+                onChange={(e) => setForm({ ...form, latitude: e.target.value })}
+                className="w-full px-3 py-2 bg-surface-light border border-white/10 rounded-lg text-sm"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="geo-lng" className="sr-only">経度</label>
+              <input
+                id="geo-lng"
+                type="number"
+                step="any"
+                placeholder="経度"
+                value={form.longitude}
+                onChange={(e) => setForm({ ...form, longitude: e.target.value })}
+                className="w-full px-3 py-2 bg-surface-light border border-white/10 rounded-lg text-sm"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="geo-radius" className="sr-only">半径(m)</label>
+              <input
+                id="geo-radius"
+                type="number"
+                placeholder="半径(m)"
+                value={form.radiusM}
+                onChange={(e) => setForm({ ...form, radiusM: e.target.value })}
+                className="w-full px-3 py-2 bg-surface-light border border-white/10 rounded-lg text-sm"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="geo-type" className="sr-only">エリア種別</label>
+              <select
+                id="geo-type"
+                value={form.type}
+                onChange={(e) =>
+                  setForm({ ...form, type: e.target.value as "allowed" | "forbidden" })
+                }
+                className="w-full px-3 py-2 bg-surface-light border border-white/10 rounded-lg text-sm"
+              >
+                <option value="allowed">許可エリア</option>
+                <option value="forbidden">禁止エリア</option>
+              </select>
+            </div>
             {err && (
-              <div className="sm:col-span-6 p-2 bg-danger/10 border border-danger/30 rounded text-danger text-sm">
+              <div role="alert" className="sm:col-span-6 p-2 bg-danger/10 border border-danger/30 rounded text-danger text-sm">
                 {err}
               </div>
             )}
-            <div className="sm:col-span-6">
+            <div className="sm:col-span-6 flex items-center gap-3">
               <Button type="submit" loading={saving}>
                 エリアを追加
               </Button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!navigator.geolocation) return;
+                  navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                      setForm((f) => ({
+                        ...f,
+                        latitude: pos.coords.latitude.toFixed(6),
+                        longitude: pos.coords.longitude.toFixed(6),
+                      }));
+                    },
+                    () => setErr("位置情報を取得できませんでした"),
+                    { enableHighAccuracy: true }
+                  );
+                }}
+                className="text-xs px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted"
+              >
+                📍 現在地を使用
+              </button>
             </div>
           </form>
         </Card>
