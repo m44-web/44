@@ -1,11 +1,12 @@
 import { db } from "./db";
 import { shifts, gpsLogs, users, geofences } from "./db/schema";
-import { isNull, gte, eq, desc, and } from "drizzle-orm";
+import { isNull, gte, eq, desc, and, lte } from "drizzle-orm";
 import { evaluateActivity, haversineMeters } from "./activity";
 import { eventBus } from "./event-bus";
 
 const LOOKBACK_MS = 15 * 60 * 1000;
-const CHECK_INTERVAL_MS = 60 * 1000; // Check every minute
+const CHECK_INTERVAL_MS = 60 * 1000;
+const MAX_SHIFT_MS = 12 * 60 * 60 * 1000;
 
 // Track which (userId:status) pairs have already alerted, to avoid spam
 const alerted = new Set<string>();
@@ -118,6 +119,35 @@ function checkOnce() {
           }
         }
       }
+    }
+
+    // Auto-end shifts that exceed max duration
+    const maxCutoff = new Date(Date.now() - MAX_SHIFT_MS);
+    const overdueShifts = db
+      .select({ id: shifts.id, userId: shifts.userId })
+      .from(shifts)
+      .where(and(isNull(shifts.endedAt), lte(shifts.startedAt, maxCutoff)))
+      .all();
+
+    for (const s of overdueShifts) {
+      db.update(shifts)
+        .set({ endedAt: new Date() })
+        .where(eq(shifts.id, s.id))
+        .run();
+
+      const userName = activeShifts.find((a) => a.userId === s.userId)?.userName ?? "不明";
+      eventBus.emit("app_event", {
+        type: "shift_end",
+        userId: s.userId,
+        userName,
+      });
+      eventBus.emit("app_event", {
+        type: "activity_alert",
+        userId: s.userId,
+        userName,
+        status: "auto_ended",
+        message: "12時間超過により自動終了",
+      });
     }
 
     // Clear stale alert keys so they can fire again later

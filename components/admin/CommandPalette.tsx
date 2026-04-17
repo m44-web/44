@@ -18,19 +18,56 @@ export function CommandPalette() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Global shortcut: Cmd+K / Ctrl+K
+  // Global shortcuts
   useEffect(() => {
+    let gPending = false;
+    let gTimer: ReturnType<typeof setTimeout> | null = null;
+
     const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
+
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setOpen((v) => !v);
-      } else if (e.key === "Escape" && open) {
+        return;
+      }
+      if (e.key === "Escape" && open) {
         setOpen(false);
+        return;
+      }
+
+      if (isInput) return;
+
+      if (e.key === "g" && !gPending) {
+        gPending = true;
+        gTimer = setTimeout(() => { gPending = false; }, 500);
+        return;
+      }
+
+      if (gPending) {
+        gPending = false;
+        if (gTimer) clearTimeout(gTimer);
+        const shortcuts: Record<string, string> = {
+          d: "/admin",
+          e: "/admin/employees",
+          s: "/admin/shifts",
+          a: "/admin/audit",
+          f: "/admin/geofences",
+        };
+        const path = shortcuts[e.key.toLowerCase()];
+        if (path) {
+          e.preventDefault();
+          router.push(path);
+        }
       }
     };
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open]);
+    return () => {
+      window.removeEventListener("keydown", handler);
+      if (gTimer) clearTimeout(gTimer);
+    };
+  }, [open, router]);
 
   const fetchEmployees = useCallback(async () => {
     try {
@@ -157,19 +194,29 @@ export function CommandPalette() {
             ))
           )}
         </div>
-        <div className="px-4 py-2 border-t border-white/10 text-xs text-text-muted flex items-center justify-between">
-          <span>
-            <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-[10px]">
-              ⌘K
-            </kbd>{" "}
-            で開閉
-          </span>
-          <span>
-            <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-[10px]">
-              Esc
-            </kbd>{" "}
-            で閉じる
-          </span>
+        <div className="px-4 py-2 border-t border-white/10 text-xs text-text-muted space-y-1">
+          <div className="flex items-center justify-between">
+            <span>
+              <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-[10px]">⌘K</kbd> で開閉
+            </span>
+            <span>
+              <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-[10px]">Esc</kbd> で閉じる
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-[10px]">
+              <kbd className="px-1 py-0.5 bg-white/10 rounded">g</kbd>→
+              <kbd className="px-1 py-0.5 bg-white/10 rounded">d</kbd> ダッシュボード
+            </span>
+            <span className="text-[10px]">
+              <kbd className="px-1 py-0.5 bg-white/10 rounded">g</kbd>→
+              <kbd className="px-1 py-0.5 bg-white/10 rounded">e</kbd> 従業員
+            </span>
+            <span className="text-[10px]">
+              <kbd className="px-1 py-0.5 bg-white/10 rounded">g</kbd>→
+              <kbd className="px-1 py-0.5 bg-white/10 rounded">s</kbd> シフト
+            </span>
+          </div>
         </div>
       </div>
     </div>

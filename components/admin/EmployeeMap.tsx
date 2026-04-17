@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import { Card } from "@/components/ui/Card";
 import { useRealtime } from "./RealtimeProvider";
@@ -87,6 +87,10 @@ const Circle = dynamic(
   () => import("react-leaflet").then((m) => m.Circle),
   { ssr: false }
 );
+const MapFitBounds = dynamic(
+  () => import("./MapFitBounds").then((m) => m.MapFitBounds),
+  { ssr: false }
+);
 
 function formatTime(ts: number) {
   return new Date(ts).toLocaleTimeString("ja-JP");
@@ -119,6 +123,7 @@ export function EmployeeMap() {
   const [showTrails, setShowTrails] = useState(true);
   const [showGeofences, setShowGeofences] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
+  const [fitTrigger, setFitTrigger] = useState(0);
   const { lastEvent } = useRealtime();
 
   const fetchData = useCallback(async () => {
@@ -192,6 +197,12 @@ export function EmployeeMap() {
     [locationsWithGps]
   );
 
+  const fitBounds = useMemo<Array<[number, number]>>(
+    () => locationsWithGps.map((l) => [l.gps!.latitude, l.gps!.longitude]),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [locationsWithGps, fitTrigger]
+  );
+
   const alertCount = locations.filter(
     (l) => l.activity.status === "idle" || l.activity.status === "stale"
   ).length;
@@ -231,6 +242,15 @@ export function EmployeeMap() {
               エリア
             </label>
           )}
+          {locationsWithGps.length > 0 && (
+            <button
+              onClick={() => setFitTrigger((t) => t + 1)}
+              className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-text-muted"
+              title="全員を表示"
+            >
+              ◎ 全員
+            </button>
+          )}
           <button
             onClick={() => setFullscreen((f) => !f)}
             className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-text-muted"
@@ -252,6 +272,10 @@ export function EmployeeMap() {
               attribution='&copy; <a href="https://www.openstreetmap.org/">OSM</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
+
+            {fitTrigger > 0 && fitBounds.length > 0 && (
+              <MapFitBounds bounds={fitBounds} key={fitTrigger} />
+            )}
 
             {showGeofences &&
               geofences.map((fence) => (

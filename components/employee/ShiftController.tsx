@@ -275,6 +275,7 @@ export function ShiftController({ userName }: { userName: string }) {
   }, []);
 
   const handleStartShift = async () => {
+    if (!confirm("勤務を開始しますか？\nGPS追跡と音声録音が自動的に開始されます。")) return;
     setLoading(true);
     setError("");
     try {
@@ -301,6 +302,7 @@ export function ShiftController({ userName }: { userName: string }) {
   };
 
   const handleEndShift = async () => {
+    if (!confirm("勤務を終了しますか？\nGPS追跡と音声録音が停止します。")) return;
     setLoading(true);
     setError("");
     try {
