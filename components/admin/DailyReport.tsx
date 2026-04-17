@@ -6,6 +6,8 @@ import { Container } from "@/components/ui/Container";
 import { AdminNav } from "./AdminNav";
 import Link from "next/link";
 
+type TabView = "daily" | "weekly";
+
 interface EmployeeSummary {
   userId: string;
   userName: string;
@@ -45,8 +47,30 @@ function formatTime(ts: number): string {
   });
 }
 
+interface WeekData {
+  weekStart: string;
+  weekEnd: string;
+  employees: Array<{
+    userId: string;
+    userName: string;
+    shifts: number;
+    totalMs: number;
+    daysWorked: number;
+  }>;
+  totalShifts: number;
+  totalMs: number;
+  uniqueWorkers: number;
+}
+
+interface WeeklyResponse {
+  weeks: WeekData[];
+  totalEmployees: number;
+}
+
 export function DailyReport() {
+  const [tab, setTab] = useState<TabView>("daily");
   const [data, setData] = useState<DailyData | null>(null);
+  const [weeklyData, setWeeklyData] = useState<WeeklyResponse | null>(null);
   const [date, setDate] = useState(() => {
     const d = new Date();
     return d.toISOString().slice(0, 10);
@@ -65,9 +89,22 @@ export function DailyReport() {
     }
   }, [date]);
 
+  const fetchWeeklyReport = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/reports/weekly?weeks=4");
+      if (res.ok) setWeeklyData(await res.json());
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    fetchReport();
-  }, [fetchReport]);
+    if (tab === "daily") fetchReport();
+    else fetchWeeklyReport();
+  }, [tab, fetchReport, fetchWeeklyReport]);
 
   const prevDay = () => {
     const d = new Date(date);
@@ -94,31 +131,51 @@ export function DailyReport() {
       <AdminNav />
       <Container className="py-6 space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <h1 className="font-semibold text-lg">日次レポート</h1>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={prevDay}
-              className="px-2 py-1 text-sm rounded bg-white/5 hover:bg-white/10 text-text-muted"
-              aria-label="前日"
-            >
-              ←
-            </button>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              max={new Date().toISOString().slice(0, 10)}
-              className="px-3 py-1.5 bg-surface-light border border-white/10 rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-            <button
-              onClick={nextDay}
-              disabled={date >= new Date().toISOString().slice(0, 10)}
-              className="px-2 py-1 text-sm rounded bg-white/5 hover:bg-white/10 text-text-muted disabled:opacity-30"
-              aria-label="翌日"
-            >
-              →
-            </button>
+          <div className="flex items-center gap-4">
+            <h1 className="font-semibold text-lg">レポート</h1>
+            <div className="flex rounded-lg overflow-hidden border border-white/10 text-xs" role="group" aria-label="レポート種別">
+              <button
+                onClick={() => setTab("daily")}
+                aria-pressed={tab === "daily"}
+                className={`px-3 py-1.5 ${tab === "daily" ? "bg-primary text-white" : "text-text-muted hover:bg-white/5"}`}
+              >
+                日次
+              </button>
+              <button
+                onClick={() => setTab("weekly")}
+                aria-pressed={tab === "weekly"}
+                className={`px-3 py-1.5 ${tab === "weekly" ? "bg-primary text-white" : "text-text-muted hover:bg-white/5"}`}
+              >
+                週次
+              </button>
+            </div>
           </div>
+          {tab === "daily" && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={prevDay}
+                className="px-2 py-1 text-sm rounded bg-white/5 hover:bg-white/10 text-text-muted"
+                aria-label="前日"
+              >
+                ←
+              </button>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                max={new Date().toISOString().slice(0, 10)}
+                className="px-3 py-1.5 bg-surface-light border border-white/10 rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <button
+                onClick={nextDay}
+                disabled={date >= new Date().toISOString().slice(0, 10)}
+                className="px-2 py-1 text-sm rounded bg-white/5 hover:bg-white/10 text-text-muted disabled:opacity-30"
+                aria-label="翌日"
+              >
+                →
+              </button>
+            </div>
+          )}
         </div>
 
         {loading && (
@@ -127,7 +184,63 @@ export function DailyReport() {
           </div>
         )}
 
-        {data && !loading && (
+        {tab === "weekly" && !loading && weeklyData && (
+          <>
+            {weeklyData.weeks.map((week) => {
+              const rate = weeklyData.totalEmployees > 0
+                ? Math.round((week.uniqueWorkers / weeklyData.totalEmployees) * 100)
+                : 0;
+              return (
+                <Card key={week.weekStart}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-sm">
+                      {week.weekStart} 〜 {week.weekEnd}
+                    </h3>
+                    <div className="flex items-center gap-3 text-xs text-text-muted">
+                      <span>出勤率 <span className={rate >= 80 ? "text-success" : rate >= 50 ? "text-warning" : "text-danger"}>{rate}%</span></span>
+                      <span>{week.totalShifts}シフト</span>
+                      <span>{formatHours(week.totalMs)}</span>
+                    </div>
+                  </div>
+                  {week.employees.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {week.employees.map((emp) => {
+                        const maxMs = Math.max(...week.employees.map((e) => e.totalMs), 1);
+                        const barWidth = Math.round((emp.totalMs / maxMs) * 100);
+                        return (
+                          <div key={emp.userId} className="flex items-center gap-3 text-sm">
+                            <Link
+                              href={`/admin/employees/${emp.userId}`}
+                              className="w-24 truncate hover:text-primary flex-shrink-0"
+                            >
+                              {emp.userName}
+                            </Link>
+                            <div className="flex-1 h-5 bg-white/5 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-primary/40 rounded-full"
+                                style={{ width: `${barWidth}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-text-muted w-20 text-right flex-shrink-0 font-mono">
+                              {formatHours(emp.totalMs)}
+                            </span>
+                            <span className="text-xs text-text-muted w-12 text-right flex-shrink-0">
+                              {emp.daysWorked}日
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-text-muted text-sm">データなし</p>
+                  )}
+                </Card>
+              );
+            })}
+          </>
+        )}
+
+        {tab === "daily" && data && !loading && (
           <>
             {/* Summary Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
