@@ -13,10 +13,38 @@
   --color-text-muted: #94a3b8;
 }
 
+:root[data-theme="light"] {
+  --color-surface: #ffffff;
+  --color-surface-light: #f1f5f9;
+  --color-background: #f8fafc;
+  --color-text: #0f172a;
+  --color-text-muted: #64748b;
+}
+
 body {
   background-color: var(--color-background);
   color: var(--color-text);
   font-family: system-ui, -apple-system, sans-serif;
+}
+
+:root[data-theme="light"] .bg-surface {
+  background-color: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+:root[data-theme="light"] .bg-surface-light {
+  background-color: #f1f5f9;
+}
+:root[data-theme="light"] .border-white\/10 {
+  border-color: rgba(15, 23, 42, 0.08);
+}
+:root[data-theme="light"] .border-white\/5 {
+  border-color: rgba(15, 23, 42, 0.05);
+}
+:root[data-theme="light"] .bg-white\/5 {
+  background-color: rgba(15, 23, 42, 0.03);
+}
+:root[data-theme="light"] .bg-white\/10 {
+  background-color: rgba(15, 23, 42, 0.06);
 }
 
 input:-webkit-autofill {

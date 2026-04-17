@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ShiftTimer } from "./ShiftTimer";
 import { StatusIndicator } from "./StatusIndicator";
 
@@ -30,6 +31,9 @@ export function ShiftController({ userName }: { userName: string }) {
     Array<{ shiftId: string; latitude: number; longitude: number; accuracy?: number; at: number }>
   >([]);
   const [queuedCount, setQueuedCount] = useState(0);
+  const [permState, setPermState] = useState<PermissionState | "unknown">(
+    "unknown"
+  );
   const [myStats, setMyStats] = useState<{
     todayShifts: Array<{ id: string; startedAt: number; endedAt: number | null }>;
     todayWorkedMs: number;
@@ -103,6 +107,18 @@ export function ShiftController({ userName }: { userName: string }) {
   useEffect(() => {
     fetchMyStats();
   }, [fetchMyStats]);
+
+  // Check geolocation permission state
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.permissions) return;
+    navigator.permissions
+      .query({ name: "geolocation" as PermissionName })
+      .then((status) => {
+        setPermState(status.state);
+        status.onchange = () => setPermState(status.state);
+      })
+      .catch(() => setPermState("unknown"));
+  }, []);
 
   const startGps = useCallback(
     (shiftId: string) => {
@@ -290,6 +306,7 @@ export function ShiftController({ userName }: { userName: string }) {
           <p className="text-sm text-text-muted">{userName}</p>
         </div>
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <a
             href="/settings"
             className="text-sm text-text-muted hover:text-text px-2 py-1"
@@ -306,6 +323,24 @@ export function ShiftController({ userName }: { userName: string }) {
         {error && (
           <div className="w-full max-w-sm p-3 bg-danger/10 border border-danger/30 rounded-lg text-danger text-sm text-center">
             {error}
+          </div>
+        )}
+
+        {permState === "denied" && (
+          <div className="w-full max-w-sm p-3 bg-warning/10 border border-warning/30 rounded-lg text-warning text-sm">
+            <p className="font-semibold">⚠️ 位置情報の許可が必要です</p>
+            <p className="text-xs mt-1 text-warning/80">
+              ブラウザの設定から位置情報を許可してください。設定 → プライバシーとセキュリティ → 位置情報。
+            </p>
+          </div>
+        )}
+
+        {permState === "prompt" && !shift && (
+          <div className="w-full max-w-sm p-3 bg-primary/10 border border-primary/30 rounded-lg text-primary text-sm">
+            <p className="font-semibold">📍 位置情報とマイクを使用します</p>
+            <p className="text-xs mt-1 text-primary/80">
+              勤務開始ボタンを押すと、GPS追跡とマイク録音の許可を求められます。どちらも許可してください。
+            </p>
           </div>
         )}
 

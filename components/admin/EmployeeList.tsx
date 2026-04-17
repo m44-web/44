@@ -48,9 +48,12 @@ const statusStyles: Record<
   },
 };
 
+type Filter = "all" | "active" | "alert";
+
 export function EmployeeList() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [filter, setFilter] = useState<Filter>("all");
   const { lastEvent } = useRealtime();
 
   const fetchData = useCallback(async () => {
@@ -89,12 +92,48 @@ export function EmployeeList() {
   }, [lastEvent, fetchData]);
 
   const locMap = new Map(locations.map((l) => [l.userId, l.activity]));
-  const onShift = employees.filter((e) => e.isOnShift);
+
+  let onShift = employees.filter((e) => e.isOnShift);
   const offShift = employees.filter((e) => !e.isOnShift);
+
+  if (filter === "alert") {
+    onShift = onShift.filter((e) => {
+      const a = locMap.get(e.id);
+      return a?.status === "idle" || a?.status === "stale";
+    });
+  }
+
+  const alertCount = employees.filter((e) => {
+    if (!e.isOnShift) return false;
+    const a = locMap.get(e.id);
+    return a?.status === "idle" || a?.status === "stale";
+  }).length;
 
   return (
     <Card>
-      <h2 className="font-semibold mb-4">従業員ステータス</h2>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <h2 className="font-semibold">従業員ステータス</h2>
+        <div className="flex rounded-lg overflow-hidden border border-white/10 text-xs">
+          <button
+            onClick={() => setFilter("all")}
+            className={`px-2 py-1 ${filter === "all" ? "bg-primary text-white" : "text-text-muted hover:bg-white/5"}`}
+          >
+            全て
+          </button>
+          <button
+            onClick={() => setFilter("active")}
+            className={`px-2 py-1 ${filter === "active" ? "bg-primary text-white" : "text-text-muted hover:bg-white/5"}`}
+          >
+            稼働中
+          </button>
+          <button
+            onClick={() => setFilter("alert")}
+            className={`px-2 py-1 ${filter === "alert" ? "bg-warning text-white" : "text-text-muted hover:bg-white/5"}`}
+          >
+            ⚠ ({alertCount})
+          </button>
+        </div>
+      </div>
 
       {employees.length === 0 && (
         <p className="text-text-muted text-sm">
@@ -141,7 +180,7 @@ export function EmployeeList() {
         </div>
       )}
 
-      {offShift.length > 0 && (
+      {filter === "all" && offShift.length > 0 && (
         <div>
           <h3 className="text-sm font-medium text-text-muted mb-2">
             オフライン ({offShift.length})

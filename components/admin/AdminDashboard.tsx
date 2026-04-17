@@ -10,6 +10,7 @@ import { StatsBar } from "./StatsBar";
 import { Toasts } from "./Toasts";
 import { AlertWatcher } from "./AlertWatcher";
 import { CommandPalette } from "./CommandPalette";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import Link from "next/link";
 
 function ConnectionBadge() {
@@ -47,17 +48,18 @@ function DashboardContent({ userName }: { userName: string }) {
             <ConnectionBadge />
             <AlertWatcher />
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-text-muted hidden sm:inline">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="text-sm text-text-muted hidden md:inline">
               {userName}
             </span>
+            <ThemeToggle />
             <Link href="/admin/employees">
               <Button variant="ghost" className="text-sm">
                 従業員管理
               </Button>
             </Link>
             <Link href="/settings">
-              <Button variant="ghost" className="text-sm">
+              <Button variant="ghost" className="text-sm hidden sm:inline-flex">
                 設定
               </Button>
             </Link>
