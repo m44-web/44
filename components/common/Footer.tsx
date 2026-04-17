@@ -54,6 +54,22 @@ export function Footer() {
                   info@axe-ai.jp
                 </a>
               </li>
+              <li>
+                <Link
+                  href="/privacy"
+                  className="hover:text-accent transition-colors"
+                >
+                  プライバシーポリシー
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/terms"
+                  className="hover:text-accent transition-colors"
+                >
+                  利用規約
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
