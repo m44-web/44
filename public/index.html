@@ -8761,6 +8761,80 @@ window.importBackupJSON = function(){
   };
 })();
 
+/* ── 71. 曜日別アクティビティチャート (ダッシュボード) ── */
+(function(){
+  var _origDash=window.openDashboard;
+  if(typeof _origDash!=='function')return;
+  window.openDashboard=function(){
+    _origDash.apply(this,arguments);
+    setTimeout(function(){
+      var modal=document.querySelector('#ux-dash')||document.querySelector('[style*="z-index: 120"]')||document.querySelector('[style*="z-index:120"]');
+      if(!modal)return;
+      var body=modal.querySelector('[style*="overflow-y"]')||modal;
+      if(document.getElementById('ux-dayact'))return;
+
+      var days=['日','月','火','水','木','金','土'];
+      var apCounts=new Array(7).fill(0);
+      var conCounts=new Array(7).fill(0);
+      var d=window.D||[],del=window.deletedIds||{};
+      d.forEach(function(r){
+        if(del[r[0]])return;
+        if(r[6]){
+          var dt=new Date(r[6]);
+          if(!isNaN(dt.getTime()))apCounts[dt.getDay()]++;
+        }
+        if(r[18]){
+          var dt2=new Date(r[18]);
+          if(!isNaN(dt2.getTime()))conCounts[dt2.getDay()]++;
+        }
+      });
+      var max=Math.max.apply(null,apCounts.concat(conCounts));
+      if(max===0)return;
+
+      var sec=document.createElement('div');sec.id='ux-dayact';
+      sec.style.cssText='margin-top:16px;padding:14px;background:#fff;border-radius:10px;border:1.5px solid #e9e9e7';
+      var ti=document.createElement('div');
+      ti.textContent='📅 曜日別アクティビティ';
+      ti.style.cssText='font-size:13px;font-weight:800;color:#37352f;margin-bottom:10px';
+      sec.appendChild(ti);
+
+      var legend=document.createElement('div');
+      legend.style.cssText='display:flex;gap:10px;font-size:10px;color:#718096;margin-bottom:6px';
+      legend.innerHTML='<span><span style="display:inline-block;width:10px;height:10px;background:#2383e2;border-radius:2px;vertical-align:middle;margin-right:3px"></span>AP</span>'+
+        '<span><span style="display:inline-block;width:10px;height:10px;background:#059669;border-radius:2px;vertical-align:middle;margin-right:3px"></span>契約</span>';
+      sec.appendChild(legend);
+
+      var chart=document.createElement('div');
+      chart.style.cssText='display:flex;align-items:flex-end;gap:4px;height:100px';
+      for(var i=0;i<7;i++){
+        var col=document.createElement('div');
+        col.style.cssText='flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%';
+        var bars=document.createElement('div');
+        bars.style.cssText='display:flex;gap:2px;width:100%;justify-content:center;align-items:flex-end;height:80px';
+        var apH=Math.max(2,Math.round((apCounts[i]/max)*76));
+        var coH=Math.max(2,Math.round((conCounts[i]/max)*76));
+        bars.innerHTML='<div style="width:40%;height:'+apH+'px;background:#2383e2;border-radius:2px 2px 0 0" title="AP:'+apCounts[i]+'"></div>'+
+          '<div style="width:40%;height:'+coH+'px;background:#059669;border-radius:2px 2px 0 0" title="契約:'+conCounts[i]+'"></div>';
+        var lbl=document.createElement('div');
+        lbl.textContent=days[i];
+        lbl.style.cssText='font-size:10px;color:#718096;margin-top:4px;font-weight:600';
+        col.appendChild(bars);col.appendChild(lbl);
+        chart.appendChild(col);
+      }
+      sec.appendChild(chart);
+
+      /* ベストデー */
+      var bestAp=apCounts.indexOf(Math.max.apply(null,apCounts));
+      var bestCon=conCounts.indexOf(Math.max.apply(null,conCounts));
+      var tip=document.createElement('div');
+      tip.style.cssText='margin-top:8px;font-size:10px;color:#718096';
+      tip.innerHTML='💡 AP最多: <b>'+days[bestAp]+'曜日</b> / 成約最多: <b>'+days[bestCon]+'曜日</b>';
+      sec.appendChild(tip);
+      body.appendChild(sec);
+    },400);
+  };
+})();
+
 })();
 </script>
 </body>
