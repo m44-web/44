@@ -10,15 +10,19 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
     setError("");
+    setLoading(true);
     const success = login(email, password);
     if (success) {
       router.push("/dashboard");
     } else {
       setError("メールアドレスが見つかりません");
+      setLoading(false);
     }
   }
 
@@ -75,9 +79,10 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full bg-accent text-white font-semibold rounded-lg px-4 py-3 hover:bg-accent-dark transition-colors cursor-pointer"
+            disabled={loading}
+            className="w-full bg-accent text-white font-semibold rounded-lg px-4 py-3 hover:bg-accent-dark transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait"
           >
-            ログイン
+            {loading ? "ログイン中..." : "ログイン"}
           </button>
 
           <div className="text-xs text-text-secondary text-center space-y-1 pt-2">

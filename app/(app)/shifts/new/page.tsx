@@ -40,6 +40,7 @@ function NewShiftForm() {
   const [endTime, setEndTime] = useState("18:00");
   const [notes, setNotes] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -86,6 +87,7 @@ function NewShiftForm() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting) return;
     const errs: Record<string, string> = {};
     if (!guardId) errs.guardId = "警備員を選択してください";
     if (!siteId) errs.siteId = "現場を選択してください";
@@ -96,6 +98,7 @@ function NewShiftForm() {
       setErrors(errs);
       return;
     }
+    setSubmitting(true);
     for (const d of dates) {
       addShift({ guardId, siteId, date: d, startTime, endTime, shiftType, status: "scheduled", notes: notes.trim() });
     }
@@ -251,8 +254,12 @@ function NewShiftForm() {
         </div>
 
         <div className="pt-2">
-          <button type="submit" className="w-full bg-accent text-white font-semibold rounded-lg px-4 py-3 hover:bg-accent-dark transition-colors cursor-pointer">
-            シフトを作成{multiMode && multiDates.size > 1 ? `（${multiDates.size}件）` : ""}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full bg-accent text-white font-semibold rounded-lg px-4 py-3 hover:bg-accent-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+          >
+            {submitting ? "作成中..." : `シフトを作成${multiMode && multiDates.size > 1 ? `（${multiDates.size}件）` : ""}`}
           </button>
         </div>
       </form>

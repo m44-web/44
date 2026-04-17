@@ -44,9 +44,11 @@ export function GuardForm({ onSubmit, defaultValues }: GuardFormProps) {
   const [trainingStatus, setTrainingStatus] = useState<TrainingStatus>(defaultValues?.trainingStatus ?? "none");
   const [notes, setNotes] = useState(defaultValues?.notes ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting) return;
     const errs: Record<string, string> = {};
     if (!name.trim()) errs.name = "名前を入力してください";
     if (!nameKana.trim()) errs.nameKana = "フリガナを入力してください";
@@ -56,6 +58,7 @@ export function GuardForm({ onSubmit, defaultValues }: GuardFormProps) {
       setErrors(errs);
       return;
     }
+    setSubmitting(true);
     onSubmit({
       name: name.trim(), nameKana: nameKana.trim(), phone: phone.trim(), email: email.trim(),
       certifications: certs, licenses, skillLevel, experienceYears, hourlyRate, nightHourlyRate, shiftPreference, trainingStatus, notes: notes.trim(),
@@ -188,8 +191,12 @@ export function GuardForm({ onSubmit, defaultValues }: GuardFormProps) {
       </div>
 
       <div className="pt-2">
-        <button type="submit" className="w-full bg-accent text-white font-semibold rounded-lg px-4 py-3 hover:bg-accent-dark transition-colors cursor-pointer">
-          {defaultValues ? "更新する" : "登録する"}
+        <button
+          type="submit"
+          disabled={submitting}
+          className="w-full bg-accent text-white font-semibold rounded-lg px-4 py-3 hover:bg-accent-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+        >
+          {submitting ? "処理中..." : defaultValues ? "更新する" : "登録する"}
         </button>
       </div>
     </form>
