@@ -70,3 +70,35 @@ button, a {
   content-visibility: auto;
   contain-intrinsic-size: auto 200px;
 }
+
+/* Print styles */
+@media print {
+  /* Hide navigation and non-essential UI */
+  aside, nav, header, button, a[href^="tel:"], a[target="_blank"] {
+    display: none !important;
+  }
+  /* Remove shadows and backgrounds for cleaner print */
+  * {
+    box-shadow: none !important;
+    background: white !important;
+    color: black !important;
+    border-color: #ccc !important;
+  }
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .rounded-xl, .rounded-2xl, .rounded-lg {
+    border-radius: 4px !important;
+  }
+  /* Ensure text is readable */
+  body {
+    font-size: 11pt;
+  }
+  h1 { font-size: 16pt; margin-bottom: 8pt; }
+  h2 { font-size: 13pt; margin-bottom: 6pt; }
+  /* Page breaks */
+  .break-before { page-break-before: always; }
+  .break-after { page-break-after: always; }
+  .no-print { display: none !important; }
+}

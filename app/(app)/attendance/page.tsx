@@ -87,7 +87,16 @@ function AdminAttendance() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">勤怠管理</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">勤怠管理</h1>
+        <button
+          onClick={() => window.print()}
+          className="text-sm px-3 py-1.5 rounded-lg border border-border text-text-secondary hover:text-accent hover:border-accent/30 cursor-pointer transition-colors no-print inline-flex items-center gap-1"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>
+          印刷
+        </button>
+      </div>
 
       <input
         type="date"
@@ -158,6 +167,15 @@ function AdminAttendance() {
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full shrink-0 ${statusColors[record.status]}`}>
                       {ATTENDANCE_STATUS_LABELS[record.status]}
                     </span>
+                    {(() => {
+                      if (!shift || !record.clockIn) return null;
+                      const [sh, sm] = shift.startTime.split(":").map(Number);
+                      const [ih, im] = record.clockIn.split(":").map(Number);
+                      const diffMin = (ih * 60 + im) - (sh * 60 + sm);
+                      if (diffMin >= 10) return <span className="text-[10px] px-1.5 py-0.5 rounded-full shrink-0 bg-danger/10 text-danger">遅刻 {diffMin}分</span>;
+                      if (diffMin <= -15) return <span className="text-[10px] px-1.5 py-0.5 rounded-full shrink-0 bg-success/10 text-success">早め {Math.abs(diffMin)}分</span>;
+                      return null;
+                    })()}
                   </div>
                   <p className="text-sm font-mono text-text-secondary shrink-0">
                     {record.clockIn ?? "--:--"} 〜 {record.clockOut ?? "--:--"}
