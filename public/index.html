@@ -8524,6 +8524,94 @@ window.importBackupJSON = function(){
   };
 })();
 
+/* ── 68. 検索サジェスト (履歴+顧客名) ── */
+(function(){
+  var HK='crm-search-history';
+  function getHist(){try{return JSON.parse(localStorage.getItem(HK)||'[]');}catch(e){return [];}}
+  function pushHist(q){
+    if(!q||q.length<2)return;
+    var h=getHist().filter(function(x){return x!==q;});
+    h.unshift(q);
+    h=h.slice(0,8);
+    try{localStorage.setItem(HK,JSON.stringify(h));}catch(e){}
+  }
+
+  var srch=document.getElementById('srch');
+  if(!srch)return;
+
+  var dd=document.createElement('div');dd.id='ux-srch-dd';
+  dd.style.cssText='position:absolute;background:#fff;border:1.5px solid #e2e8f0;border-radius:8px;max-height:280px;overflow-y:auto;z-index:100;box-shadow:0 4px 16px rgba(0,0,0,0.12);display:none;font-size:12px';
+  document.body.appendChild(dd);
+
+  function position(){
+    var rect=srch.getBoundingClientRect();
+    dd.style.top=(rect.bottom+window.scrollY+2)+'px';
+    dd.style.left=(rect.left+window.scrollX)+'px';
+    dd.style.width=rect.width+'px';
+  }
+
+  function show(){
+    var q=(srch.value||'').toLowerCase().trim();
+    var items=[];
+    /* 顧客名マッチ */
+    if(q.length>=1){
+      var d=window.D||[],seen={};
+      for(var i=0;i<d.length&&items.length<6;i++){
+        var n=String(d[i][1]||'');
+        if(n.toLowerCase().indexOf(q)>=0&&!seen[n]){
+          items.push({t:'name',v:n,ic:'👤'});
+          seen[n]=1;
+        }
+      }
+    }
+    /* エリアマッチ */
+    if(q.length>=1){
+      var d2=window.D||[],seenA={};
+      for(var j=0;j<d2.length&&items.length<10;j++){
+        var a=String(d2[j][3]||'');
+        if(a.toLowerCase().indexOf(q)>=0&&!seenA[a]){
+          items.push({t:'area',v:a,ic:'📍'});
+          seenA[a]=1;
+        }
+      }
+    }
+    /* 履歴 */
+    if(q.length===0){
+      getHist().forEach(function(h){
+        items.push({t:'hist',v:h,ic:'🕒'});
+      });
+    }
+    if(items.length===0){dd.style.display='none';return;}
+    dd.innerHTML='';
+    items.forEach(function(it){
+      var row=document.createElement('div');
+      row.style.cssText='padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;color:#37352f;border-bottom:1px solid #f7f6f3';
+      row.innerHTML='<span style="flex-shrink:0">'+it.ic+'</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+String(it.v).replace(/</g,'&lt;')+'</span>';
+      row.addEventListener('mouseenter',function(){row.style.background='#f0f4f8';});
+      row.addEventListener('mouseleave',function(){row.style.background='';});
+      row.addEventListener('mousedown',function(e){
+        e.preventDefault();
+        srch.value=it.v;
+        pushHist(it.v);
+        window.srch=it.v;
+        dd.style.display='none';
+        if(typeof render==='function')render();
+      });
+      dd.appendChild(row);
+    });
+    position();
+    dd.style.display='block';
+  }
+
+  srch.addEventListener('focus',show);
+  srch.addEventListener('input',show);
+  srch.addEventListener('blur',function(){setTimeout(function(){dd.style.display='none';},200);});
+  srch.addEventListener('keydown',function(e){
+    if(e.key==='Enter'&&srch.value.trim())pushHist(srch.value.trim());
+  });
+  window.addEventListener('resize',position);
+})();
+
 })();
 </script>
 </body>
