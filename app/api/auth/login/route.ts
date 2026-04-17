@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { verifyPassword, createSession } from "@/lib/auth";
 import { loginSchema } from "@/lib/validations";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
+import { audit } from "@/lib/audit";
 
 export async function POST(request: Request) {
   const identifier = getClientIdentifier(request);
@@ -51,6 +52,13 @@ export async function POST(request: Request) {
     }
 
     await createSession(user.id);
+
+    audit({
+      actorId: user.id,
+      actorName: user.name,
+      action: "login",
+      detail: `from ${identifier}`,
+    });
 
     return NextResponse.json({
       user: {

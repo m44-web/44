@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { users, shifts, gpsLogs, audioRecordings, sessions } from "@/lib/db/schema";
 import { eq, desc, isNull, and } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 
 export async function GET(
   _request: Request,
@@ -129,6 +130,15 @@ export async function DELETE(
 
   // Invalidate all sessions for this user
   db.delete(sessions).where(eq(sessions.userId, id)).run();
+
+  audit({
+    actorId: session.userId,
+    actorName: session.userName,
+    action: "deactivate_employee",
+    targetType: "user",
+    targetId: id,
+    detail: target.name,
+  });
 
   return NextResponse.json({ ok: true });
 }

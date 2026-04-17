@@ -57,6 +57,9 @@ export function CommandPalette() {
   const actions: Array<{ label: string; href: string; hint: string }> = [
     { label: "ダッシュボード", href: "/admin", hint: "" },
     { label: "従業員管理", href: "/admin/employees", hint: "" },
+    { label: "シフト履歴", href: "/admin/shifts", hint: "" },
+    { label: "エリア管理", href: "/admin/geofences", hint: "" },
+    { label: "監査ログ", href: "/admin/audit", hint: "" },
     { label: "設定", href: "/settings", hint: "" },
   ];
 

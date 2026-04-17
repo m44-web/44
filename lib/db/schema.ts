@@ -52,6 +52,17 @@ export const geofences = sqliteTable("geofences", {
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
 
+export const auditLogs = sqliteTable("audit_logs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  actorId: text("actor_id").references(() => users.id),
+  actorName: text("actor_name"),
+  action: text("action").notNull(),
+  targetType: text("target_type"),
+  targetId: text("target_id"),
+  detail: text("detail"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+});
+
 export const audioRecordings = sqliteTable("audio_recordings", {
   id: text("id").primaryKey(),
   shiftId: text("shift_id")

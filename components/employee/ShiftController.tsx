@@ -400,9 +400,22 @@ export function ShiftController({ userName }: { userName: string }) {
         </div>
 
         {!shift && (
-          <p className="text-text-muted text-sm text-center">
-            勤務開始するとGPS追跡と音声録音が自動的に開始されます
-          </p>
+          <div className="text-center space-y-2 max-w-sm">
+            <p className="text-text-muted text-sm">
+              勤務開始するとGPS追跡と音声録音が自動的に開始されます
+            </p>
+            <p className="text-xs text-text-muted/60">
+              💡 ブラウザのタブを閉じるとGPS追跡は止まります。画面を点けたまま、このタブを開いたままにしてください。
+            </p>
+          </div>
+        )}
+
+        {shift && (
+          <div className="max-w-sm w-full bg-success/5 border border-success/20 rounded-lg p-3 text-xs text-success/80 space-y-1">
+            <p>✓ 画面を消さないでください（WakeLock有効）</p>
+            <p>✓ ブラウザを閉じるとGPS追跡が止まります</p>
+            <p>✓ 電波が弱い場所ではGPSデータは自動的にキューされ、オンライン復帰時に送信されます</p>
+          </div>
         )}
 
         {/* My Stats */}

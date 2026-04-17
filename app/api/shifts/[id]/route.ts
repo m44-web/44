@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { shifts, users, gpsLogs, audioRecordings } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 
 export async function GET(
   _request: Request,
@@ -100,6 +101,14 @@ export async function DELETE(
     .set({ endedAt: new Date() })
     .where(eq(shifts.id, id))
     .run();
+
+  audit({
+    actorId: session.userId,
+    actorName: session.userName,
+    action: "force_end_shift",
+    targetType: "shift",
+    targetId: id,
+  });
 
   return NextResponse.json({ ok: true });
 }

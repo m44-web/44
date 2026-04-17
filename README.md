@@ -1,36 +1,122 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 営業監視システム
 
-## Getting Started
+営業スタッフの稼働状況をリアルタイムで監視する Web アプリ。従業員のスマホから GPS と音声を自動収集し、管理者はダッシュボードから地図・ステータス・録音を確認できます。
 
-First, run the development server:
+## 主な機能
+
+### 従業員
+- 勤務開始/終了ボタン一つで GPS 追跡と音声録音を開始
+- 勤務時間のリアルタイム表示
+- 本日/今週の勤務実績カード
+- オフライン時の GPS キュー自動再送
+- 位置情報・マイク許可状態の自動判定
+- 画面スリープ防止（WakeLock）
+
+### 管理者
+- **リアルタイム地図**: 稼働中の全員を色分け表示（稼働中/停滞中/GPS未更新）
+- **軌跡表示**: シフト中の移動ルートを地図にポリライン描画
+- **サボり検知**: 10分以内に50m未満しか動いていない場合に警告
+- **エリア管理（ジオフェンス）**: 許可・禁止エリアを円で登録し、違反を自動検知
+- **アラート通知**: ブラウザ通知 + 音で即時に知らせる
+- **シフト詳細**: 移動距離、タイムライン、録音リスト、管理者メモ
+- **従業員詳細**: 総勤務時間、シフト履歴、GPS記録点数
+- **統計ダッシュボード**: 本日/今週の数値 + 過去7日間の棒グラフ
+- **コマンドパレット**: ⌘K でページ・従業員を横断検索
+- **CSV エクスポート**: シフト・GPS をダウンロード
+- **監査ログ**: ログイン/無効化/強制終了などを記録
+- **強制シフト終了**: 従業員が終了し忘れた場合に管理者が終了可能
+
+### 共通
+- ダーク/ライトテーマ切替
+- PWA 対応（ホーム画面追加）
+- パスワード変更
+- APIレートリミット（ログイン、GPS）
+
+## 技術スタック
+
+| 項目 | 選定 |
+|------|------|
+| フレームワーク | Next.js 16 (App Router) |
+| DB | SQLite + Drizzle ORM |
+| 認証 | Cookie + セッションテーブル |
+| リアルタイム | Server-Sent Events (SSE) |
+| 地図 | Leaflet + OpenStreetMap |
+| 音声 | MediaRecorder API |
+| UI | Tailwind CSS v4 |
+
+## セットアップ
 
 ```bash
+# 依存パッケージインストール
+npm install
+
+# DB テーブル作成
+npx drizzle-kit push
+
+# 開発サーバ起動
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+起動後、初回のみ管理者アカウントを作成:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+curl -X POST http://localhost:3000/api/seed
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- 初期管理者: `admin@example.com` / `admin123`
+- `/` でログイン後、自動的に役割に応じた画面にリダイレクトされます
 
-## Learn More
+## 使い方
 
-To learn more about Next.js, take a look at the following resources:
+### 1. 管理者による初期設定
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. `admin@example.com` / `admin123` でログイン → `/admin` にリダイレクト
+2. 「従業員管理」→ 従業員を登録（名前・メール・パスワード）
+3. （任意）「エリア管理」→ 営業区域を登録
+4. （任意）ヘッダーの 🔕 アイコンをクリックしてアラート通知を有効化
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 2. 従業員の日常利用
 
-## Deploy on Vercel
+1. 発行されたアカウントでログイン → `/employee`
+2. 「勤務開始」をタップ → GPS/マイクの権限を許可
+3. 営業活動を実施（画面を点けたままバックグラウンドで動作）
+4. 終了時に「勤務終了」
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 3. 管理者による確認
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- ダッシュボードの地図で全員の位置をリアルタイム確認
+- 🚫 や ⚠️ のアイコンが出ている従業員をタップして詳細確認
+- シフト詳細ページで移動軌跡・録音・勤務時間を確認
+- 月末に CSV エクスポートで集計
+
+## 主要 API
+
+| メソッド | パス | 用途 |
+|---------|------|------|
+| POST | `/api/auth/login` | ログイン |
+| GET | `/api/gps/latest` | 稼働中全員の最新位置+activity+geofence |
+| GET | `/api/gps/trail?shiftId=` | GPS軌跡取得 |
+| GET | `/api/stats` | 統計情報 + 7日間トレンド |
+| GET | `/api/export?type=shifts&days=30` | CSV ダウンロード |
+| GET | `/api/audit` | 監査ログ |
+| GET | `/api/events` | SSE リアルタイムストリーム |
+
+## データ保存
+
+- DB: `data/monitor.db` (SQLite, WALモード)
+- 音声: `data/audio/*.{webm,mp4}`
+
+どちらも `.gitignore` 対象。
+
+## 本番デプロイ
+
+```bash
+npm run build
+npm run start
+```
+
+SSE と SQLite を使用するため、単一 Node.js プロセスでの運用を想定しています。
+
+## ライセンス
+
+Private. 2026.
