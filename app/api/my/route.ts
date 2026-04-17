@@ -42,6 +42,19 @@ export async function GET() {
       return acc + (end - s.startedAt.getTime());
     }, 0);
 
+  const dailyBreakdown: Array<{ date: string; ms: number }> = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000);
+    const dateStr = d.toISOString().slice(0, 10);
+    const dayMs = weekShifts
+      .filter((s) => s.startedAt.toISOString().slice(0, 10) === dateStr)
+      .reduce((acc, s) => {
+        const end = s.endedAt?.getTime() ?? Date.now();
+        return acc + (end - s.startedAt.getTime());
+      }, 0);
+    dailyBreakdown.push({ date: dateStr, ms: dayMs });
+  }
+
   return NextResponse.json({
     activeShift: activeShift
       ? {
@@ -57,5 +70,6 @@ export async function GET() {
     todayWorkedMs: sum(todayShifts),
     weekWorkedMs: sum(weekShifts),
     weekShiftsCount: weekShifts.length,
+    dailyBreakdown,
   });
 }

@@ -56,6 +56,7 @@ export function ShiftController({ userName }: { userName: string }) {
     todayWorkedMs: number;
     weekWorkedMs: number;
     weekShiftsCount: number;
+    dailyBreakdown: Array<{ date: string; ms: number }>;
   } | null>(null);
 
   const fetchMyStats = useCallback(async () => {
@@ -521,6 +522,30 @@ export function ShiftController({ userName }: { userName: string }) {
                 <p className="font-bold">{myStats.weekShiftsCount}回</p>
               </div>
             </div>
+            {myStats.dailyBreakdown && (
+              <div className="mt-4">
+                <p className="text-text-muted text-[10px] mb-1">過去7日間</p>
+                <div className="flex items-end gap-1 h-12">
+                  {myStats.dailyBreakdown.map((d) => {
+                    const max = Math.max(...myStats.dailyBreakdown.map((x) => x.ms), 3600000);
+                    const h = d.ms > 0 ? Math.max((d.ms / max) * 100, 6) : 0;
+                    const isToday = d.date === new Date().toISOString().slice(0, 10);
+                    return (
+                      <div key={d.date} className="flex-1 flex flex-col items-center justify-end h-full">
+                        <div
+                          className={`w-full rounded-t ${isToday ? "bg-primary" : d.ms > 0 ? "bg-primary/40" : "bg-white/5"}`}
+                          style={{ height: `${h}%` }}
+                          title={`${d.date}: ${formatMs(d.ms)}`}
+                        />
+                        <span className="text-[8px] text-text-muted mt-0.5">
+                          {new Date(d.date + "T00:00:00").toLocaleDateString("ja-JP", { weekday: "narrow" })}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </Card>
         )}
       </div>
