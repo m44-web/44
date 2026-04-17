@@ -57,6 +57,7 @@ export default function ShiftsPage() {
     return { year: now.getFullYear(), month: now.getMonth() };
   });
   const [statusFilter, setStatusFilter] = useState<"all" | Shift["status"]>("all");
+  const [siteFilter, setSiteFilter] = useState<string>("all");
   const [mounted, setMounted] = useState(false);
   const { showToast } = useToast();
   const { confirm } = useConfirm();
@@ -130,8 +131,9 @@ export default function ShiftsPage() {
   }
 
   const activeShifts = shifts.filter((s) => {
-    if (statusFilter === "all") return s.status !== "cancelled";
-    return s.status === statusFilter;
+    const statusOk = statusFilter === "all" ? s.status !== "cancelled" : s.status === statusFilter;
+    const siteOk = siteFilter === "all" || s.siteId === siteFilter;
+    return statusOk && siteOk;
   });
 
   // Calendar data
@@ -189,8 +191,8 @@ export default function ShiftsPage() {
         </div>
       </div>
 
-      {/* Status filter */}
-      <div className="flex flex-wrap gap-1.5">
+      {/* Status + Site filter */}
+      <div className="flex flex-wrap items-center gap-1.5">
         {([
           { key: "all", label: "稼働中" },
           { key: "scheduled", label: "予定" },
@@ -208,6 +210,19 @@ export default function ShiftsPage() {
             {f.label}
           </button>
         ))}
+        {user?.role === "admin" && sites.length > 0 && (
+          <select
+            value={siteFilter}
+            onChange={(e) => setSiteFilter(e.target.value)}
+            className="text-xs px-2 py-1 rounded-full border border-border bg-sub-bg text-text-secondary cursor-pointer ml-auto"
+            aria-label="現場フィルタ"
+          >
+            <option value="all">全現場</option>
+            {sites.filter((s) => s.status === "active").map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {viewMode === "calendar" ? (
