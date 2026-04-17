@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRealtime } from "./RealtimeProvider";
 import { AppEvent } from "@/lib/event-bus";
 
@@ -13,6 +13,44 @@ interface Toast {
 }
 
 const TOAST_DURATION_MS = 4000;
+
+interface NotifPrefs {
+  soundEnabled: boolean;
+  shiftAlerts: boolean;
+  activityAlerts: boolean;
+  geofenceAlerts: boolean;
+}
+
+function loadNotifPrefs(): NotifPrefs {
+  try {
+    const s = localStorage.getItem("notif_prefs");
+    if (s) return { soundEnabled: true, shiftAlerts: true, activityAlerts: true, geofenceAlerts: true, ...JSON.parse(s) };
+  } catch {}
+  return { soundEnabled: true, shiftAlerts: true, activityAlerts: true, geofenceAlerts: true };
+}
+
+function shouldShow(event: AppEvent, prefs: NotifPrefs): boolean {
+  if (event.type === "shift_start" || event.type === "shift_end") return prefs.shiftAlerts;
+  if (event.type === "activity_alert") return prefs.activityAlerts;
+  if (event.type === "geofence_alert") return prefs.geofenceAlerts;
+  return true;
+}
+
+function playNotifSound(tone: "info" | "success" | "warning") {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.value = 0.1;
+    osc.frequency.value = tone === "warning" ? 600 : tone === "success" ? 800 : 500;
+    osc.type = "sine";
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+    setTimeout(() => ctx.close(), 500);
+  } catch {}
+}
 
 function toastFromEvent(event: AppEvent, id: number): Toast | null {
   switch (event.type) {
@@ -73,10 +111,17 @@ export function Toasts() {
 
   useEffect(() => {
     if (!lastEvent) return;
+    const prefs = loadNotifPrefs();
+    if (!shouldShow(lastEvent, prefs)) return;
+
     const toast = toastFromEvent(lastEvent, Date.now() + Math.random());
     if (!toast) return;
 
     setToasts((prev) => [...prev, toast]);
+
+    if (prefs.soundEnabled) {
+      playNotifSound(toast.tone);
+    }
 
     const timer = setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== toast.id));

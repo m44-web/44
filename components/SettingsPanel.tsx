@@ -23,6 +23,33 @@ const schema = z
 
 type Input = z.infer<typeof schema>;
 
+interface NotifPrefs {
+  soundEnabled: boolean;
+  shiftAlerts: boolean;
+  activityAlerts: boolean;
+  geofenceAlerts: boolean;
+}
+
+const DEFAULT_NOTIF_PREFS: NotifPrefs = {
+  soundEnabled: true,
+  shiftAlerts: true,
+  activityAlerts: true,
+  geofenceAlerts: true,
+};
+
+function loadNotifPrefs(): NotifPrefs {
+  if (typeof window === "undefined") return DEFAULT_NOTIF_PREFS;
+  try {
+    const s = localStorage.getItem("notif_prefs");
+    if (s) return { ...DEFAULT_NOTIF_PREFS, ...JSON.parse(s) };
+  } catch {}
+  return DEFAULT_NOTIF_PREFS;
+}
+
+function saveNotifPrefs(prefs: NotifPrefs) {
+  localStorage.setItem("notif_prefs", JSON.stringify(prefs));
+}
+
 export function SettingsPanel({
   userName,
   userEmail,
@@ -43,12 +70,15 @@ export function SettingsPanel({
   } | null>(null);
   const [cleanupResult, setCleanupResult] = useState<string | null>(null);
   const [cleaningUp, setCleaningUp] = useState(false);
+  const [notifPrefs, setNotifPrefs] = useState<NotifPrefs>(DEFAULT_NOTIF_PREFS);
+  const [notifSaved, setNotifSaved] = useState(false);
 
   useEffect(() => {
     const chunk = localStorage.getItem("audio_chunk_min");
     if (chunk) setAudioChunkMin(parseInt(chunk, 10));
     const gps = localStorage.getItem("gps_interval_sec");
     if (gps) setGpsIntervalSec(parseInt(gps, 10));
+    setNotifPrefs(loadNotifPrefs());
   }, []);
 
   useEffect(() => {
@@ -157,6 +187,74 @@ export function SettingsPanel({
           </dl>
         </Card>
 
+        {userRole === "admin" && (
+          <Card>
+            <h2 className="font-semibold mb-1">通知設定</h2>
+            <p className="text-xs text-text-muted mb-4">
+              ダッシュボードのリアルタイム通知をカスタマイズします。
+            </p>
+            <div className="space-y-3">
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="text-sm">通知音</span>
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.soundEnabled}
+                  onChange={(e) => setNotifPrefs((p) => ({ ...p, soundEnabled: e.target.checked }))}
+                  className="accent-primary w-4 h-4"
+                />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer">
+                <div>
+                  <span className="text-sm">シフト開始/終了</span>
+                  <p className="text-[10px] text-text-muted">従業員の出退勤を通知</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.shiftAlerts}
+                  onChange={(e) => setNotifPrefs((p) => ({ ...p, shiftAlerts: e.target.checked }))}
+                  className="accent-primary w-4 h-4"
+                />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer">
+                <div>
+                  <span className="text-sm">アクティビティアラート</span>
+                  <p className="text-[10px] text-text-muted">アイドル・無応答を通知</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.activityAlerts}
+                  onChange={(e) => setNotifPrefs((p) => ({ ...p, activityAlerts: e.target.checked }))}
+                  className="accent-primary w-4 h-4"
+                />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer">
+                <div>
+                  <span className="text-sm">エリア違反アラート</span>
+                  <p className="text-[10px] text-text-muted">ジオフェンス違反を通知</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={notifPrefs.geofenceAlerts}
+                  onChange={(e) => setNotifPrefs((p) => ({ ...p, geofenceAlerts: e.target.checked }))}
+                  className="accent-primary w-4 h-4"
+                />
+              </label>
+              <div className="flex items-center gap-3 pt-1">
+                <Button
+                  onClick={() => {
+                    saveNotifPrefs(notifPrefs);
+                    setNotifSaved(true);
+                    setTimeout(() => setNotifSaved(false), 2000);
+                  }}
+                >
+                  保存
+                </Button>
+                {notifSaved && <span className="text-xs text-success">保存しました</span>}
+              </div>
+            </div>
+          </Card>
+        )}
+
         {userRole === "employee" && (
           <Card>
             <h2 className="font-semibold mb-1">記録設定</h2>
@@ -253,61 +351,70 @@ export function SettingsPanel({
           <h2 className="font-semibold mb-4">パスワード変更</h2>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
-              <label className="block text-sm text-text-muted mb-1">
+              <label htmlFor="currentPassword" className="block text-sm text-text-muted mb-1">
                 現在のパスワード
               </label>
               <input
+                id="currentPassword"
                 type="password"
                 autoComplete="current-password"
+                aria-invalid={!!errors.currentPassword}
+                aria-describedby={errors.currentPassword ? "cur-pw-err" : undefined}
                 {...register("currentPassword")}
                 className="w-full px-3 py-2 bg-surface-light border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
               />
               {errors.currentPassword && (
-                <p className="mt-1 text-xs text-danger">
+                <p id="cur-pw-err" className="mt-1 text-xs text-danger" role="alert">
                   {errors.currentPassword.message}
                 </p>
               )}
             </div>
             <div>
-              <label className="block text-sm text-text-muted mb-1">
+              <label htmlFor="newPassword" className="block text-sm text-text-muted mb-1">
                 新しいパスワード
               </label>
               <input
+                id="newPassword"
                 type="password"
                 autoComplete="new-password"
+                aria-invalid={!!errors.newPassword}
+                aria-describedby={errors.newPassword ? "new-pw-err" : undefined}
                 {...register("newPassword")}
                 className="w-full px-3 py-2 bg-surface-light border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
               />
               {errors.newPassword && (
-                <p className="mt-1 text-xs text-danger">
+                <p id="new-pw-err" className="mt-1 text-xs text-danger" role="alert">
                   {errors.newPassword.message}
                 </p>
               )}
             </div>
             <div>
-              <label className="block text-sm text-text-muted mb-1">
+              <label htmlFor="confirmPassword" className="block text-sm text-text-muted mb-1">
                 新しいパスワード（確認）
               </label>
               <input
+                id="confirmPassword"
                 type="password"
                 autoComplete="new-password"
+                aria-invalid={!!errors.confirmPassword}
+                aria-describedby={errors.confirmPassword ? "confirm-pw-err" : undefined}
                 {...register("confirmPassword")}
                 className="w-full px-3 py-2 bg-surface-light border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
               />
               {errors.confirmPassword && (
-                <p className="mt-1 text-xs text-danger">
+                <p id="confirm-pw-err" className="mt-1 text-xs text-danger" role="alert">
                   {errors.confirmPassword.message}
                 </p>
               )}
             </div>
 
             {serverError && (
-              <div className="p-3 bg-danger/10 border border-danger/30 rounded-lg text-danger text-sm">
+              <div role="alert" className="p-3 bg-danger/10 border border-danger/30 rounded-lg text-danger text-sm">
                 {serverError}
               </div>
             )}
             {successMsg && (
-              <div className="p-3 bg-success/10 border border-success/30 rounded-lg text-success text-sm">
+              <div role="status" className="p-3 bg-success/10 border border-success/30 rounded-lg text-success text-sm">
                 {successMsg}
               </div>
             )}
