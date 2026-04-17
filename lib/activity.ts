@@ -1,3 +1,46 @@
+// Ramer-Douglas-Peucker line simplification for GPS trails
+export function simplifyTrail(
+  points: Array<{ lat: number; lng: number }>,
+  epsilon: number = 0.00005
+): Array<{ lat: number; lng: number }> {
+  if (points.length <= 2) return points;
+
+  let maxDist = 0;
+  let maxIdx = 0;
+  const first = points[0];
+  const last = points[points.length - 1];
+
+  for (let i = 1; i < points.length - 1; i++) {
+    const d = perpendicularDist(points[i], first, last);
+    if (d > maxDist) {
+      maxDist = d;
+      maxIdx = i;
+    }
+  }
+
+  if (maxDist > epsilon) {
+    const left = simplifyTrail(points.slice(0, maxIdx + 1), epsilon);
+    const right = simplifyTrail(points.slice(maxIdx), epsilon);
+    return [...left.slice(0, -1), ...right];
+  }
+  return [first, last];
+}
+
+function perpendicularDist(
+  p: { lat: number; lng: number },
+  a: { lat: number; lng: number },
+  b: { lat: number; lng: number }
+): number {
+  const dx = b.lng - a.lng;
+  const dy = b.lat - a.lat;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) return Math.sqrt((p.lng - a.lng) ** 2 + (p.lat - a.lat) ** 2);
+  const t = Math.max(0, Math.min(1, ((p.lng - a.lng) * dx + (p.lat - a.lat) * dy) / lenSq));
+  const projLng = a.lng + t * dx;
+  const projLat = a.lat + t * dy;
+  return Math.sqrt((p.lng - projLng) ** 2 + (p.lat - projLat) ** 2);
+}
+
 // Haversine formula: distance between two GPS points in meters
 export function haversineMeters(
   lat1: number,

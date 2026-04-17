@@ -6,6 +6,7 @@ import { EmployeeMap } from "./EmployeeMap";
 import { EmployeeList } from "./EmployeeList";
 import { AudioPanel } from "./AudioPanel";
 import { StatsBar } from "./StatsBar";
+import { ShiftTimeline } from "./ShiftTimeline";
 import { Toasts } from "./Toasts";
 import { AlertWatcher } from "./AlertWatcher";
 import { CommandPalette } from "./CommandPalette";
@@ -43,6 +44,7 @@ function DashboardContent({ userName }: { userName: string }) {
 
       <Container className="py-4 space-y-6">
         <StatsBar />
+        <ShiftTimeline />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <EmployeeMap />

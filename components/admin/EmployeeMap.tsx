@@ -124,6 +124,7 @@ export function EmployeeMap() {
   const [showGeofences, setShowGeofences] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
   const [fitTrigger, setFitTrigger] = useState(0);
+  const [highlightUser, setHighlightUser] = useState("");
   const { lastEvent } = useRealtime();
 
   const fetchData = useCallback(async () => {
@@ -242,6 +243,18 @@ export function EmployeeMap() {
               エリア
             </label>
           )}
+          {locationsWithGps.length > 1 && (
+            <select
+              value={highlightUser}
+              onChange={(e) => setHighlightUser(e.target.value)}
+              className="text-xs bg-surface-light border border-white/10 rounded px-1.5 py-1 text-text-muted"
+            >
+              <option value="">全員表示</option>
+              {locationsWithGps.map((l) => (
+                <option key={l.userId} value={l.userId}>{l.userName}</option>
+              ))}
+            </select>
+          )}
           {locationsWithGps.length > 0 && (
             <button
               onClick={() => setFitTrigger((t) => t + 1)}
@@ -305,8 +318,8 @@ export function EmployeeMap() {
                     positions={trail.points.map((p) => [p.lat, p.lng])}
                     pathOptions={{
                       color: colorForUser(trail.userId),
-                      weight: 3,
-                      opacity: 0.7,
+                      weight: highlightUser && highlightUser !== trail.userId ? 1 : 3,
+                      opacity: highlightUser && highlightUser !== trail.userId ? 0.2 : 0.7,
                     }}
                   />
                 ) : null
@@ -314,16 +327,17 @@ export function EmployeeMap() {
 
             {locationsWithGps.map((loc) => {
               const color = statusColors[loc.activity.status];
+              const dimmed = highlightUser && highlightUser !== loc.userId;
               return (
                 <CircleMarker
                   key={loc.userId}
                   center={[loc.gps!.latitude, loc.gps!.longitude]}
-                  radius={10}
+                  radius={dimmed ? 6 : 10}
                   pathOptions={{
                     color: "#ffffff",
-                    weight: 2,
+                    weight: dimmed ? 1 : 2,
                     fillColor: color,
-                    fillOpacity: 0.9,
+                    fillOpacity: dimmed ? 0.3 : 0.9,
                   }}
                 >
                   <Tooltip
