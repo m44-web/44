@@ -7873,6 +7873,65 @@ window.importBackupJSON = function(){
   }
 })();
 
+/* ── 55. 担当者オートコンプリート (編集フォーム) ── */
+(function(){
+  function collectPersons(){
+    var d=window.D||[],set={};
+    for(var i=0;i<d.length;i++){
+      var p1=(d[i][7]||'').trim(),p2=(d[i][16]||'').trim();
+      if(p1&&p1!=='なし')set[p1]=true;
+      if(p2&&p2!=='なし')set[p2]=true;
+    }
+    return Object.keys(set).sort();
+  }
+
+  function attachAutocomplete(input){
+    if(!input||input._acAttached)return;
+    input._acAttached=true;
+    var dd=document.createElement('div');
+    dd.style.cssText='position:absolute;background:#fff;border:1.5px solid #e2e8f0;border-radius:6px;max-height:140px;overflow-y:auto;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.1);display:none;font-size:12px';
+    document.body.appendChild(dd);
+
+    function show(){
+      var q=(input.value||'').toLowerCase().trim();
+      var persons=collectPersons();
+      var matches=persons.filter(function(p){return p.toLowerCase().indexOf(q)>=0&&p.toLowerCase()!==q;}).slice(0,5);
+      if(matches.length===0){dd.style.display='none';return;}
+      dd.innerHTML='';
+      matches.forEach(function(p){
+        var it=document.createElement('div');
+        it.textContent=p;
+        it.style.cssText='padding:6px 10px;cursor:pointer;color:#37352f';
+        it.addEventListener('mouseenter',function(){it.style.background='#f0f4f8';});
+        it.addEventListener('mouseleave',function(){it.style.background='';});
+        it.addEventListener('mousedown',function(e){e.preventDefault();input.value=p;dd.style.display='none';input.dispatchEvent(new Event('change',{bubbles:true}));});
+        dd.appendChild(it);
+      });
+      var rect=input.getBoundingClientRect();
+      dd.style.top=(rect.bottom+window.scrollY+2)+'px';
+      dd.style.left=(rect.left+window.scrollX)+'px';
+      dd.style.width=rect.width+'px';
+      dd.style.display='block';
+    }
+    input.addEventListener('input',show);
+    input.addEventListener('focus',show);
+    input.addEventListener('blur',function(){setTimeout(function(){dd.style.display='none';},200);});
+  }
+
+  var mo=new MutationObserver(function(){
+    var eb=document.getElementById('epnl-body');
+    if(!eb)return;
+    var inputs=eb.querySelectorAll('input[type="text"]');
+    for(var i=0;i<inputs.length;i++){
+      var inp=inputs[i];
+      var lbl=inp.previousElementSibling;
+      var lt=lbl?(lbl.textContent||''):'';
+      if(lt.indexOf('担当')>=0)attachAutocomplete(inp);
+    }
+  });
+  mo.observe(document.body,{childList:true,subtree:true});
+})();
+
 })();
 </script>
 </body>
