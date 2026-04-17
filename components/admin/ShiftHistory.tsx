@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { AdminNav } from "./AdminNav";
 
 interface Shift {
   id: string;
@@ -31,15 +30,43 @@ function formatDuration(ms: number) {
 export function ShiftHistory() {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | "active" | "completed">("all");
 
+  const fetchShifts = (cursor?: string | null, statusVal?: string) => {
+    const s = statusVal ?? (status === "all" ? "" : status);
+    const params = new URLSearchParams();
+    if (cursor) params.set("cursor", cursor);
+    if (s) params.set("status", s);
+    params.set("limit", "50");
+    return fetch(`/api/shifts?${params}`).then((r) => r.json());
+  };
+
   useEffect(() => {
-    fetch("/api/shifts")
-      .then((r) => r.json())
-      .then((data) => setShifts(data.shifts))
+    setLoading(true);
+    setShifts([]);
+    const s = status === "all" ? undefined : status;
+    fetchShifts(null, s)
+      .then((data) => {
+        setShifts(data.shifts);
+        setNextCursor(data.nextCursor);
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [status]);
+
+  const loadMore = () => {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    const s = status === "all" ? undefined : status;
+    fetchShifts(nextCursor, s)
+      .then((data) => {
+        setShifts((prev) => [...prev, ...data.shifts]);
+        setNextCursor(data.nextCursor);
+      })
+      .finally(() => setLoadingMore(false));
+  };
 
   const q = search.trim().toLowerCase();
   const filtered = shifts.filter((s) => {
@@ -50,37 +77,20 @@ export function ShiftHistory() {
     return matchQ && matchS;
   });
 
-  const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/";
-  };
-
   return (
     <div className="min-h-screen">
-      <header className="bg-surface border-b border-white/10">
-        <Container className="flex items-center justify-between py-3">
-          <div className="flex items-center gap-4">
-            <Link href="/admin" className="text-text-muted hover:text-text text-sm">
-              ← ダッシュボード
-            </Link>
-            <h1 className="font-semibold">シフト履歴</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <a
-              href="/api/export?type=shifts&days=30"
-              className="text-sm px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted"
-            >
-              30日分CSV
-            </a>
-            <ThemeToggle />
-            <Button variant="ghost" onClick={handleLogout} className="text-sm">
-              ログアウト
-            </Button>
-          </div>
-        </Container>
-      </header>
+      <AdminNav />
 
       <Container className="py-6">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="font-semibold text-lg">シフト履歴</h1>
+          <a
+            href="/api/export?type=shifts&days=30"
+            className="text-xs px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted"
+          >
+            30日分CSV
+          </a>
+        </div>
         <Card>
           <div className="flex items-center gap-3 mb-4 flex-wrap">
             <input
@@ -162,6 +172,17 @@ export function ShiftHistory() {
                   })}
                 </tbody>
               </table>
+              {nextCursor && (
+                <div className="mt-4 text-center">
+                  <button
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                    className="px-4 py-2 text-sm bg-white/5 hover:bg-white/10 rounded-lg text-text-muted disabled:opacity-50"
+                  >
+                    {loadingMore ? "読み込み中..." : "さらに読み込む"}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </Card>

@@ -7,6 +7,7 @@ import { createEmployeeSchema, CreateEmployeeInput } from "@/lib/validations";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
+import { AdminNav } from "./AdminNav";
 import Link from "next/link";
 
 interface Employee {
@@ -91,11 +92,6 @@ export function EmployeeManagement() {
     }
   };
 
-  const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/";
-  };
-
   const query = searchQuery.trim().toLowerCase();
   const visible = employees
     .filter((e) => (showDeactivated ? true : !e.deactivatedAt))
@@ -108,40 +104,26 @@ export function EmployeeManagement() {
 
   return (
     <div className="min-h-screen">
-      <header className="bg-surface border-b border-white/10">
-        <Container className="flex items-center justify-between py-3">
-          <div className="flex items-center gap-4">
-            <Link href="/admin" className="text-text-muted hover:text-text text-sm">
-              ← ダッシュボード
-            </Link>
-            <h1 className="font-semibold">従業員管理</h1>
-          </div>
-          <div className="flex items-center gap-3">
+      <AdminNav />
+
+      <Container className="py-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="font-semibold text-lg">従業員管理</h1>
+          <div className="flex items-center gap-2">
             <a
               href="/api/export?type=shifts&days=30"
-              className="text-sm px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted"
+              className="text-xs px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted"
             >
               シフトCSV
             </a>
             <a
               href="/api/export?type=gps&days=7"
-              className="text-sm px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted"
+              className="text-xs px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted"
             >
               GPS CSV
             </a>
-            <Link href="/settings">
-              <Button variant="ghost" className="text-sm">
-                設定
-              </Button>
-            </Link>
-            <Button variant="ghost" onClick={handleLogout} className="text-sm">
-              ログアウト
-            </Button>
           </div>
-        </Container>
-      </header>
-
-      <Container className="py-6 space-y-6">
+        </div>
         {/* Registration Form */}
         <Card>
           <h2 className="font-semibold mb-4">新規従業員登録</h2>

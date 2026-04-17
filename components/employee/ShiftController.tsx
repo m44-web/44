@@ -44,6 +44,10 @@ export function ShiftController({ userName }: { userName: string }) {
   const [permState, setPermState] = useState<PermissionState | "unknown">(
     "unknown"
   );
+  const [batteryLevel, setBatteryLevel] = useState<number | null>(null);
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== "undefined" ? navigator.onLine : true
+  );
   const [myStats, setMyStats] = useState<{
     todayShifts: Array<{ id: string; startedAt: number; endedAt: number | null }>;
     todayWorkedMs: number;
@@ -106,12 +110,41 @@ export function ShiftController({ userName }: { userName: string }) {
     [flushQueue]
   );
 
-  // Retry queued on online
+  // Retry queued on online + track network state
   useEffect(() => {
-    const onOnline = () => flushQueue();
+    const onOnline = () => {
+      setIsOnline(true);
+      flushQueue();
+    };
+    const onOffline = () => setIsOnline(false);
     window.addEventListener("online", onOnline);
-    return () => window.removeEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
   }, [flushQueue]);
+
+  // Battery API
+  useEffect(() => {
+    if (typeof navigator === "undefined") return;
+    const nav = navigator as Navigator & {
+      getBattery?: () => Promise<{ level: number; addEventListener: (e: string, fn: () => void) => void; removeEventListener: (e: string, fn: () => void) => void }>;
+    };
+    if (!nav.getBattery) return;
+    let battery: { level: number; addEventListener: (e: string, fn: () => void) => void; removeEventListener: (e: string, fn: () => void) => void } | null = null;
+    const update = () => {
+      if (battery) setBatteryLevel(Math.round(battery.level * 100));
+    };
+    nav.getBattery().then((b) => {
+      battery = b;
+      update();
+      b.addEventListener("levelchange", update);
+    });
+    return () => {
+      battery?.removeEventListener("levelchange", update);
+    };
+  }, []);
 
   // Hydrate from current active shift (in case of page reload mid-shift)
   useEffect(() => {
@@ -368,8 +401,28 @@ export function ShiftController({ userName }: { userName: string }) {
               <StatusIndicator active={gpsActive} label="GPS追跡中" />
               <StatusIndicator active={recordingActive} label="録音中" />
             </div>
+            <div className="flex justify-center gap-4 mt-3 text-xs text-text-muted">
+              <span className={isOnline ? "text-success" : "text-danger"}>
+                {isOnline ? "● オンライン" : "● オフライン"}
+              </span>
+              {batteryLevel !== null && (
+                <span className={batteryLevel <= 15 ? "text-danger" : batteryLevel <= 30 ? "text-warning" : "text-text-muted"}>
+                  🔋 {batteryLevel}%
+                </span>
+              )}
+            </div>
+            {!isOnline && (
+              <p className="text-xs text-warning text-center mt-2">
+                ⚠️ オフラインです。GPSデータはキューに保存されています。
+              </p>
+            )}
+            {batteryLevel !== null && batteryLevel <= 15 && (
+              <p className="text-xs text-danger text-center mt-2">
+                ⚠️ バッテリー残量が少なくなっています。充電してください。
+              </p>
+            )}
             {queuedCount > 0 && (
-              <p className="text-xs text-warning text-center mt-3">
+              <p className="text-xs text-warning text-center mt-2">
                 ⚠️ 未送信 {queuedCount}件（オンライン復帰後に自動送信）
               </p>
             )}

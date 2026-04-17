@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
+import { AdminNav } from "./AdminNav";
 
 interface ShiftData {
   shift: {
@@ -148,11 +149,6 @@ export function ShiftDetail({ shiftId }: { shiftId: string }) {
     }
   };
 
-  const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/";
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -181,21 +177,14 @@ export function ShiftDetail({ shiftId }: { shiftId: string }) {
 
   return (
     <div className="min-h-screen">
-      <header className="bg-surface border-b border-white/10">
-        <Container className="flex items-center justify-between py-3">
-          <div className="flex items-center gap-4">
-            <Link href="/admin" className="text-text-muted hover:text-text text-sm">
-              ← ダッシュボード
-            </Link>
-            <h1 className="font-semibold">シフト詳細</h1>
-          </div>
-          <Button variant="ghost" onClick={handleLogout} className="text-sm">
-            ログアウト
-          </Button>
-        </Container>
-      </header>
+      <AdminNav />
 
       <Container className="py-6 space-y-6">
+        <div className="flex items-center gap-2 text-sm text-text-muted">
+          <Link href="/admin/shifts" className="hover:text-text">シフト履歴</Link>
+          <span>/</span>
+          <span className="text-text">{shift.userName} - {new Date(shift.startedAt).toLocaleDateString("ja-JP")}</span>
+        </div>
         {/* Overview */}
         <Card>
           <div className="flex items-start justify-between flex-wrap gap-4">

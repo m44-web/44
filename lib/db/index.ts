@@ -1,7 +1,8 @@
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import * as schema from "./schema";
-import { mkdirSync } from "fs";
+import { mkdirSync, existsSync } from "fs";
 import { join } from "path";
 
 type DbInstance = ReturnType<typeof drizzle<typeof schema>>;
@@ -20,7 +21,19 @@ function createDb(): DbInstance {
   sqlite.pragma("journal_mode = WAL");
   sqlite.pragma("foreign_keys = ON");
   sqlite.pragma("busy_timeout = 5000");
-  return drizzle(sqlite, { schema });
+
+  const d = drizzle(sqlite, { schema });
+
+  const migrationsDir = join(process.cwd(), "drizzle");
+  if (existsSync(migrationsDir)) {
+    try {
+      migrate(d, { migrationsFolder: migrationsDir });
+    } catch {
+      // migrations may not exist yet
+    }
+  }
+
+  return d;
 }
 
 function getDb(): DbInstance {

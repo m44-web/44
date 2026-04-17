@@ -2,11 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { AdminNav } from "./AdminNav";
 
 interface Geofence {
   id: string;
@@ -105,11 +104,6 @@ export function GeofenceManagement() {
     fetchData();
   };
 
-  const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/";
-  };
-
   const center: [number, number] =
     geofences.length > 0
       ? [geofences[0].latitude, geofences[0].longitude]
@@ -117,24 +111,10 @@ export function GeofenceManagement() {
 
   return (
     <div className="min-h-screen">
-      <header className="bg-surface border-b border-white/10">
-        <Container className="flex items-center justify-between py-3">
-          <div className="flex items-center gap-4">
-            <Link href="/admin" className="text-text-muted hover:text-text text-sm">
-              ← ダッシュボード
-            </Link>
-            <h1 className="font-semibold">エリア管理（ジオフェンス）</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button variant="ghost" onClick={handleLogout} className="text-sm">
-              ログアウト
-            </Button>
-          </div>
-        </Container>
-      </header>
+      <AdminNav />
 
       <Container className="py-6 space-y-6">
+        <h1 className="font-semibold text-lg">エリア管理（ジオフェンス）</h1>
         <Card>
           <p className="text-sm text-text-muted mb-3">
             営業区域を登録すると、従業員が指定エリアの外に出たり、禁止エリアに入った場合にアラートを発します。

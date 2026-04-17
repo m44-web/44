@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { AdminNav } from "./AdminNav";
 
 interface LogEntry {
   id: number;
@@ -27,42 +25,40 @@ const actionLabels: Record<string, string> = {
 export function AuditLog() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/audit")
+    fetch("/api/audit?limit=50")
       .then((r) => r.json())
-      .then((data) => setLogs(data.logs))
+      .then((data) => {
+        setLogs(data.logs);
+        setNextCursor(data.nextCursor);
+      })
       .finally(() => setLoading(false));
   }, []);
 
-  const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/";
+  const loadMore = () => {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    fetch(`/api/audit?limit=50&cursor=${nextCursor}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setLogs((prev) => [...prev, ...data.logs]);
+        setNextCursor(data.nextCursor);
+      })
+      .finally(() => setLoadingMore(false));
   };
 
   return (
     <div className="min-h-screen">
-      <header className="bg-surface border-b border-white/10">
-        <Container className="flex items-center justify-between py-3">
-          <div className="flex items-center gap-4">
-            <Link href="/admin" className="text-text-muted hover:text-text text-sm">
-              ← ダッシュボード
-            </Link>
-            <h1 className="font-semibold">監査ログ</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button variant="ghost" onClick={handleLogout} className="text-sm">
-              ログアウト
-            </Button>
-          </div>
-        </Container>
-      </header>
+      <AdminNav />
 
       <Container className="py-6">
+        <h1 className="font-semibold text-lg mb-4">監査ログ</h1>
         <Card>
           <p className="text-sm text-text-muted mb-4">
-            ログイン、従業員の無効化、シフトの強制終了などの重要操作を記録しています（最新200件）。
+            ログイン、従業員の無効化、シフトの強制終了などの重要操作を記録しています。
           </p>
           {loading ? (
             <p className="text-text-muted text-sm">読み込み中...</p>
@@ -98,6 +94,17 @@ export function AuditLog() {
                   ))}
                 </tbody>
               </table>
+              {nextCursor && (
+                <div className="mt-4 text-center">
+                  <button
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                    className="px-4 py-2 text-sm bg-white/5 hover:bg-white/10 rounded-lg text-text-muted disabled:opacity-50"
+                  >
+                    {loadingMore ? "読み込み中..." : "さらに読み込む"}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </Card>

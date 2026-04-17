@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real, index } from "drizzle-orm/sqlite-core";
 
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
@@ -16,7 +16,9 @@ export const sessions = sqliteTable("sessions", {
     .notNull()
     .references(() => users.id),
   expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
-});
+}, (t) => [
+  index("sessions_user_id_idx").on(t.userId),
+]);
 
 export const shifts = sqliteTable("shifts", {
   id: text("id").primaryKey(),
@@ -26,7 +28,11 @@ export const shifts = sqliteTable("shifts", {
   startedAt: integer("started_at", { mode: "timestamp_ms" }).notNull(),
   endedAt: integer("ended_at", { mode: "timestamp_ms" }),
   adminNote: text("admin_note"),
-});
+}, (t) => [
+  index("shifts_user_id_idx").on(t.userId),
+  index("shifts_ended_at_idx").on(t.endedAt),
+  index("shifts_started_at_idx").on(t.startedAt),
+]);
 
 export const gpsLogs = sqliteTable("gps_logs", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -40,7 +46,12 @@ export const gpsLogs = sqliteTable("gps_logs", {
   longitude: real("longitude").notNull(),
   accuracy: real("accuracy"),
   recordedAt: integer("recorded_at", { mode: "timestamp_ms" }).notNull(),
-});
+}, (t) => [
+  index("gps_logs_shift_id_idx").on(t.shiftId),
+  index("gps_logs_user_id_idx").on(t.userId),
+  index("gps_logs_recorded_at_idx").on(t.recordedAt),
+  index("gps_logs_shift_recorded_idx").on(t.shiftId, t.recordedAt),
+]);
 
 export const geofences = sqliteTable("geofences", {
   id: text("id").primaryKey(),
@@ -61,7 +72,10 @@ export const auditLogs = sqliteTable("audit_logs", {
   targetId: text("target_id"),
   detail: text("detail"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
-});
+}, (t) => [
+  index("audit_logs_created_at_idx").on(t.createdAt),
+  index("audit_logs_action_idx").on(t.action),
+]);
 
 export const audioRecordings = sqliteTable("audio_recordings", {
   id: text("id").primaryKey(),
@@ -74,4 +88,8 @@ export const audioRecordings = sqliteTable("audio_recordings", {
   filePath: text("file_path").notNull(),
   durationSec: integer("duration_sec"),
   recordedAt: integer("recorded_at", { mode: "timestamp_ms" }).notNull(),
-});
+}, (t) => [
+  index("audio_recordings_shift_id_idx").on(t.shiftId),
+  index("audio_recordings_user_id_idx").on(t.userId),
+  index("audio_recordings_recorded_at_idx").on(t.recordedAt),
+]);

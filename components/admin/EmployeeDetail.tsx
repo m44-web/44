@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
+import { AdminNav } from "./AdminNav";
 
 interface EmployeeData {
   user: {
@@ -74,11 +75,6 @@ export function EmployeeDetail({ userId }: { userId: string }) {
     fetchData();
   }, [fetchData]);
 
-  const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/";
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -104,21 +100,14 @@ export function EmployeeDetail({ userId }: { userId: string }) {
 
   return (
     <div className="min-h-screen">
-      <header className="bg-surface border-b border-white/10">
-        <Container className="flex items-center justify-between py-3">
-          <div className="flex items-center gap-4">
-            <Link href="/admin" className="text-text-muted hover:text-text text-sm">
-              ← ダッシュボード
-            </Link>
-            <h1 className="font-semibold">従業員詳細</h1>
-          </div>
-          <Button variant="ghost" onClick={handleLogout} className="text-sm">
-            ログアウト
-          </Button>
-        </Container>
-      </header>
+      <AdminNav />
 
       <Container className="py-6 space-y-6">
+        <div className="flex items-center gap-2 text-sm text-text-muted">
+          <Link href="/admin/employees" className="hover:text-text">従業員管理</Link>
+          <span>/</span>
+          <span className="text-text">{user.name}</span>
+        </div>
         <Card>
           <div className="flex items-start gap-4 flex-wrap">
             <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-2xl font-bold text-primary">

@@ -15,12 +15,21 @@ interface Employee {
 
 interface Location {
   userId: string;
+  startedAt: number;
   activity: {
     status: "active" | "idle" | "stale" | "no_gps";
     message: string;
     distanceLast10Min: number;
   };
   geofence: { violation: boolean; matches: Array<{ name: string; type: string }> } | null;
+}
+
+function elapsedLabel(startMs: number): string {
+  const diff = Math.floor((Date.now() - startMs) / 60000);
+  if (diff < 60) return `${diff}分`;
+  const h = Math.floor(diff / 60);
+  const m = diff % 60;
+  return `${h}h${m.toString().padStart(2, "0")}m`;
 }
 
 const statusStyles: Record<
@@ -50,11 +59,20 @@ const statusStyles: Record<
 };
 
 type Filter = "all" | "active" | "alert";
+type SortBy = "name" | "status";
+
+const statusPriority: Record<string, number> = {
+  stale: 0,
+  idle: 1,
+  no_gps: 2,
+  active: 3,
+};
 
 export function EmployeeList() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
+  const [sortBy, setSortBy] = useState<SortBy>("status");
   const { lastEvent } = useRealtime();
 
   const fetchData = useCallback(async () => {
@@ -94,6 +112,7 @@ export function EmployeeList() {
 
   const locMap = new Map(locations.map((l) => [l.userId, l.activity]));
   const fenceMap = new Map(locations.map((l) => [l.userId, l.geofence]));
+  const shiftStartMap = new Map(locations.map((l) => [l.userId, l.startedAt]));
 
   let onShift = employees.filter((e) => e.isOnShift);
   const offShift = employees.filter((e) => !e.isOnShift);
@@ -105,6 +124,13 @@ export function EmployeeList() {
     });
   }
 
+  onShift.sort((a, b) => {
+    if (sortBy === "name") return a.name.localeCompare(b.name, "ja");
+    const aStatus = locMap.get(a.id)?.status ?? "no_gps";
+    const bStatus = locMap.get(b.id)?.status ?? "no_gps";
+    return (statusPriority[aStatus] ?? 9) - (statusPriority[bStatus] ?? 9);
+  });
+
   const alertCount = employees.filter((e) => {
     if (!e.isOnShift) return false;
     const a = locMap.get(e.id);
@@ -115,25 +141,35 @@ export function EmployeeList() {
     <Card>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <h2 className="font-semibold">従業員ステータス</h2>
-        <div className="flex rounded-lg overflow-hidden border border-white/10 text-xs">
-          <button
-            onClick={() => setFilter("all")}
-            className={`px-2 py-1 ${filter === "all" ? "bg-primary text-white" : "text-text-muted hover:bg-white/5"}`}
+        <div className="flex items-center gap-2">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortBy)}
+            className="text-xs bg-surface-light border border-white/10 rounded px-1.5 py-1 text-text-muted"
           >
-            全て
-          </button>
-          <button
-            onClick={() => setFilter("active")}
-            className={`px-2 py-1 ${filter === "active" ? "bg-primary text-white" : "text-text-muted hover:bg-white/5"}`}
-          >
-            稼働中
-          </button>
-          <button
-            onClick={() => setFilter("alert")}
-            className={`px-2 py-1 ${filter === "alert" ? "bg-warning text-white" : "text-text-muted hover:bg-white/5"}`}
-          >
-            ⚠ ({alertCount})
-          </button>
+            <option value="status">重要度順</option>
+            <option value="name">名前順</option>
+          </select>
+          <div className="flex rounded-lg overflow-hidden border border-white/10 text-xs">
+            <button
+              onClick={() => setFilter("all")}
+              className={`px-2 py-1 ${filter === "all" ? "bg-primary text-white" : "text-text-muted hover:bg-white/5"}`}
+            >
+              全て
+            </button>
+            <button
+              onClick={() => setFilter("active")}
+              className={`px-2 py-1 ${filter === "active" ? "bg-primary text-white" : "text-text-muted hover:bg-white/5"}`}
+            >
+              稼働中
+            </button>
+            <button
+              onClick={() => setFilter("alert")}
+              className={`px-2 py-1 ${filter === "alert" ? "bg-warning text-white" : "text-text-muted hover:bg-white/5"}`}
+            >
+              ⚠ ({alertCount})
+            </button>
+          </div>
         </div>
       </div>
 
@@ -152,6 +188,7 @@ export function EmployeeList() {
             {onShift.map((emp) => {
               const activity = locMap.get(emp.id);
               const fence = fenceMap.get(emp.id);
+              const shiftStart = shiftStartMap.get(emp.id);
               const style = activity ? statusStyles[activity.status] : statusStyles.no_gps;
               const isWarning = activity?.status === "idle" || activity?.status === "stale";
               const isFenceViolation = fence?.violation === true;
@@ -169,6 +206,11 @@ export function EmployeeList() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-medium text-sm truncate">{emp.name}</p>
+                      {shiftStart && (
+                        <span className="text-[10px] text-text-muted font-mono">
+                          {elapsedLabel(shiftStart)}
+                        </span>
+                      )}
                       {isWarning && <span className="text-xs">⚠️</span>}
                       {isFenceViolation && <span className="text-xs" title="エリア違反">🚫</span>}
                     </div>
