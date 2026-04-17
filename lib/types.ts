@@ -222,6 +222,7 @@ export type HandoverNote = {
   guardName: string;
   date: string;
   content: string;
+  pinned?: boolean;
   createdAt: string;
 };
 

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { getHandoverBySite, addHandoverNote, getSites, getGuard, getShiftsByGuard } from "@/lib/store";
+import { getHandoverBySite, addHandoverNote, getSites, getGuard, getShiftsByGuard, updateHandoverNote } from "@/lib/store";
+import { useToast } from "@/lib/toast";
 import { Card } from "@/components/ui/Card";
 import type { HandoverNote, Site, Shift } from "@/lib/types";
 
@@ -152,6 +153,13 @@ function AdminHandoverView() {
   const [notes, setNotes] = useState<HandoverNote[]>([]);
   const [search, setSearch] = useState("");
   const [mounted, setMounted] = useState(false);
+  const { showToast } = useToast();
+
+  function togglePin(id: string, current: boolean) {
+    updateHandoverNote(id, { pinned: !current });
+    setNotes(getHandoverBySite(selectedSiteId));
+    showToast(current ? "ピン止めを解除" : "ピン止めしました", "success");
+  }
 
   useEffect(() => {
     setMounted(true);
@@ -199,13 +207,27 @@ function AdminHandoverView() {
       ) : (
         <div className="space-y-2">
           {filteredNotes.slice(0, 30).map((note) => (
-            <Card key={note.id}>
+            <Card key={note.id} className={note.pinned ? "!border-warning/30 !bg-warning/5" : ""}>
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
+                    {note.pinned && (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-warning shrink-0">
+                        <path d="M16 3l5 5-7 7-1 5-4-4-5 2 1-5-4-4 5-1 7-7 3 2z" />
+                      </svg>
+                    )}
                     <span className="text-sm font-semibold text-text-primary">{note.guardName}</span>
                     <span className="text-xs px-2 py-0.5 rounded bg-accent/10 text-accent">{note.date}</span>
                   </div>
+                  <button
+                    onClick={() => togglePin(note.id, !!note.pinned)}
+                    className={`text-xs px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                      note.pinned ? "text-warning hover:bg-warning/10" : "text-text-secondary hover:text-warning hover:bg-sub-bg"
+                    }`}
+                    aria-label={note.pinned ? "ピン止めを解除" : "ピン止め"}
+                  >
+                    {note.pinned ? "解除" : "ピン止め"}
+                  </button>
                 </div>
                 <p className="text-sm text-text-primary whitespace-pre-wrap">{note.content}</p>
               </div>

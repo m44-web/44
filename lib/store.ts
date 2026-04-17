@@ -532,7 +532,11 @@ export function getHandoverNotes(): HandoverNote[] {
   return getItem<HandoverNote[]>(STORAGE_KEYS.handover, []);
 }
 export function getHandoverBySite(siteId: string): HandoverNote[] {
-  return getHandoverNotes().filter((h) => h.siteId === siteId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return getHandoverNotes().filter((h) => h.siteId === siteId).sort((a, b) => {
+    // Pinned first, then by createdAt descending
+    if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+    return b.createdAt.localeCompare(a.createdAt);
+  });
 }
 export function addHandoverNote(note: Omit<HandoverNote, "id" | "createdAt">): HandoverNote {
   const notes = getHandoverNotes();
@@ -540,6 +544,10 @@ export function addHandoverNote(note: Omit<HandoverNote, "id" | "createdAt">): H
   notes.push(newNote);
   setItem(STORAGE_KEYS.handover, notes);
   return newNote;
+}
+export function updateHandoverNote(id: string, updates: Partial<HandoverNote>): void {
+  const notes = getHandoverNotes().map((n) => (n.id === id ? { ...n, ...updates } : n));
+  setItem(STORAGE_KEYS.handover, notes);
 }
 
 // --- Backup / Restore ---
