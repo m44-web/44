@@ -55,6 +55,7 @@ export default function ShiftsPage() {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
+  const [statusFilter, setStatusFilter] = useState<"all" | Shift["status"]>("all");
   const [mounted, setMounted] = useState(false);
   const { showToast } = useToast();
   const { confirm } = useConfirm();
@@ -121,7 +122,10 @@ export default function ShiftsPage() {
     setSelectedDate(null);
   }
 
-  const activeShifts = shifts.filter((s) => s.status !== "cancelled");
+  const activeShifts = shifts.filter((s) => {
+    if (statusFilter === "all") return s.status !== "cancelled";
+    return s.status === statusFilter;
+  });
 
   // Calendar data
   const firstDay = new Date(currentMonth.year, currentMonth.month, 1);
@@ -176,6 +180,27 @@ export default function ShiftsPage() {
           </div>
           {user?.role === "admin" && <Button href="/shifts/new" size="sm">シフト作成</Button>}
         </div>
+      </div>
+
+      {/* Status filter */}
+      <div className="flex flex-wrap gap-1.5">
+        {([
+          { key: "all", label: "稼働中" },
+          { key: "scheduled", label: "予定" },
+          { key: "confirmed", label: "確定" },
+          { key: "completed", label: "完了" },
+          { key: "cancelled", label: "キャンセル" },
+        ] as const).map((f) => (
+          <button
+            key={f.key}
+            onClick={() => setStatusFilter(f.key)}
+            className={`text-xs px-3 py-1 rounded-full cursor-pointer transition-colors ${
+              statusFilter === f.key ? "bg-accent text-white" : "bg-sub-bg text-text-secondary hover:text-text-primary"
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
 
       {viewMode === "calendar" ? (

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getReports, getReportsByGuard, addReport, getShiftsByGuard, getShifts, getGuards, getSites } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
+import { Lightbox } from "@/components/ui/Lightbox";
 import type { DailyReport, Guard, Site, Shift } from "@/lib/types";
 
 const inputClasses =
@@ -22,6 +23,7 @@ function GuardReportsView({ guardId }: { guardId: string }) {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
   function refresh() {
@@ -76,9 +78,14 @@ function GuardReportsView({ guardId }: { guardId: string }) {
                   {report.attachments.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {report.attachments.map((att, i) => (
-                        <div key={i} className="w-20 h-20 rounded-lg overflow-hidden border border-border bg-sub-bg">
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setLightboxSrc(att.dataUrl)}
+                          className="w-20 h-20 rounded-lg overflow-hidden border border-border bg-sub-bg cursor-pointer active:scale-95 transition-transform"
+                        >
                           <img src={att.dataUrl} alt={att.name} className="w-full h-full object-cover" />
-                        </div>
+                        </button>
                       ))}
                     </div>
                   )}
@@ -98,6 +105,8 @@ function GuardReportsView({ guardId }: { guardId: string }) {
           onDone={() => { setShowForm(false); refresh(); }}
         />
       )}
+
+      {lightboxSrc && <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
     </div>
   );
 }
@@ -108,6 +117,7 @@ function AdminReportsView() {
   const [sites, setSites] = useState<Site[]>([]);
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [search, setSearch] = useState("");
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -181,9 +191,14 @@ function AdminReportsView() {
                   {report.attachments.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {report.attachments.map((att, i) => (
-                        <div key={i} className="w-16 h-16 rounded-lg overflow-hidden border border-border bg-sub-bg">
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setLightboxSrc(att.dataUrl)}
+                          className="w-16 h-16 rounded-lg overflow-hidden border border-border bg-sub-bg cursor-pointer active:scale-95 transition-transform"
+                        >
                           <img src={att.dataUrl} alt={att.name} className="w-full h-full object-cover" />
-                        </div>
+                        </button>
                       ))}
                     </div>
                   )}
@@ -193,6 +208,8 @@ function AdminReportsView() {
           })}
         </div>
       )}
+
+      {lightboxSrc && <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
     </div>
   );
 }
