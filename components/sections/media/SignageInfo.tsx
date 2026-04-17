@@ -3,13 +3,13 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Card } from "@/components/ui/Card";
 import { MotionWrapper } from "@/components/ui/MotionWrapper";
 
-const specs = [
-  { label: "ディスプレイサイズ", value: "横4m × 縦3m" },
-  { label: "解像度", value: "フルHD（1920×1080）" },
-  { label: "輝度", value: "6,000cd/m² 以上" },
-  { label: "配信時間", value: "6:00〜24:00（18時間/日）" },
-  { label: "ロール尺", value: "15秒 / 30秒" },
-  { label: "更新頻度", value: "リアルタイム対応可能" },
+const comparison = [
+  { label: "月額コスト", human: "10〜30万円", ai: "9,800円〜" },
+  { label: "稼働時間", human: "1日8時間", ai: "24時間365日" },
+  { label: "教育期間", human: "1〜3ヶ月", ai: "即日" },
+  { label: "退職リスク", human: "あり", ai: "なし" },
+  { label: "対応スピード", human: "数分〜数時間", ai: "数秒" },
+  { label: "同時対応数", human: "1件ずつ", ai: "無制限" },
 ];
 
 export function SignageInfo() {
@@ -18,8 +18,8 @@ export function SignageInfo() {
       <Container>
         <MotionWrapper>
           <SectionHeading
-            title="Route 36 沿線サイネージ"
-            subtitle="札幌市内の主要幹線道路「国道36号線」沿いに設置された大型LEDビジョン"
+            title="人間の社員 vs AI社員"
+            subtitle="コスト・稼働時間・教育すべてにおいて、AI社員が圧倒的"
           />
         </MotionWrapper>
 
@@ -27,13 +27,14 @@ export function SignageInfo() {
           <MotionWrapper delay={0.1}>
             <Card className="h-full">
               <h3 className="text-lg font-bold text-text-primary mb-4">
-                設置概要
+                AI社員の1日
               </h3>
               <p className="text-text-secondary leading-relaxed mb-6">
-                国道36号線は、札幌市中心部と千歳・苫小牧方面を結ぶ
-                北海道有数の交通量を誇る幹線道路です。
-                沿線の商業エリアに大型LEDビジョンを設置し、
-                1日あたり数万台の通行車両と歩行者にリーチします。
+                朝9時に「おはようございます」と出勤メッセージ。
+                今日のタスク予定と昨日の積み残しを報告。
+                会議の準備を自分で始め、終了後は議事録を作成。
+                17時に日報を自動集計してマネージャーに報告。
+                夜間も社員からの質問には即回答。
               </p>
               <div className="aspect-video rounded-lg bg-gradient-to-br from-accent/10 to-accent/5 flex items-center justify-center">
                 <div className="text-center">
@@ -46,10 +47,10 @@ export function SignageInfo() {
                     strokeWidth="1"
                     className="text-accent/40 mx-auto"
                   >
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                    <circle cx="12" cy="10" r="3" />
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
                   </svg>
-                  <p className="text-sm text-text-secondary mt-2">設置場所イメージ</p>
+                  <p className="text-sm text-text-secondary mt-2">AI社員イメージ</p>
                 </div>
               </div>
             </Card>
@@ -58,22 +59,30 @@ export function SignageInfo() {
           <MotionWrapper delay={0.2}>
             <Card className="h-full">
               <h3 className="text-lg font-bold text-text-primary mb-4">
-                スペック
+                比較表
               </h3>
               <div className="space-y-4">
-                {specs.map((spec) => (
+                {comparison.map((item) => (
                   <div
-                    key={spec.label}
-                    className="flex justify-between items-center py-2 border-b border-border last:border-0"
+                    key={item.label}
+                    className="grid grid-cols-3 items-center py-2 border-b border-border last:border-0"
                   >
                     <span className="text-text-secondary text-sm">
-                      {spec.label}
+                      {item.label}
                     </span>
-                    <span className="text-text-primary font-medium text-sm">
-                      {spec.value}
+                    <span className="text-text-secondary text-sm text-center">
+                      {item.human}
+                    </span>
+                    <span className="text-accent font-medium text-sm text-center">
+                      {item.ai}
                     </span>
                   </div>
                 ))}
+                <div className="grid grid-cols-3 items-center pt-2 text-xs text-text-secondary">
+                  <span></span>
+                  <span className="text-center">人間の社員</span>
+                  <span className="text-center text-accent">AI社員</span>
+                </div>
               </div>
             </Card>
           </MotionWrapper>

@@ -1,6 +1,6 @@
 export const stats = [
-  { label: "設置台数", value: 500, suffix: "台+", prefix: "" },
-  { label: "対応エリア", value: 12, suffix: "市町村", prefix: "" },
-  { label: "広告主数", value: 150, suffix: "社+", prefix: "" },
-  { label: "月間リーチ", value: 80, suffix: "万人+", prefix: "" },
+  { label: "AI社員の職種", value: 4, suffix: "職種", prefix: "" },
+  { label: "月額料金", value: 9800, suffix: "円〜", prefix: "" },
+  { label: "人件費と比較して", value: 90, suffix: "%削減", prefix: "" },
+  { label: "対応可能タスク", value: 100, suffix: "種類+", prefix: "" },
 ] as const;

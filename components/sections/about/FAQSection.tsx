@@ -4,9 +4,26 @@ import { Accordion } from "@/components/ui/Accordion";
 import { MotionWrapper } from "@/components/ui/MotionWrapper";
 import { faqs } from "@/lib/data/faqs";
 
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((faq) => ({
+    "@type": "Question",
+    name: faq.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: faq.answer,
+    },
+  })),
+};
+
 export function FAQSection() {
   return (
     <section className="py-24 bg-sub-bg">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       <Container>
         <MotionWrapper>
           <SectionHeading title="よくある質問" />

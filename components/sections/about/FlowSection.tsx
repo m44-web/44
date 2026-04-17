@@ -5,27 +5,27 @@ import { MotionWrapper } from "@/components/ui/MotionWrapper";
 const steps = [
   {
     number: "01",
-    title: "お問い合わせ・ヒアリング",
+    title: "お試し採用（無料）",
     description:
-      "ご要望・設置場所・予算感などをヒアリング。最適なサイネージプランをご提案します。",
+      "まずは2週間、無料でAI社員を試せます。SlackワークスペースにAI社員を追加するだけ。特別な設定は不要です。",
   },
   {
     number: "02",
-    title: "現地調査・プランニング",
+    title: "社内マニュアルを読み込ませる",
     description:
-      "設置場所を実際に確認し、サイネージのサイズ・配置・電源・通信環境などを調査。詳細なお見積りを作成します。",
+      "社内のマニュアルやFAQ資料をアップロード。AI社員がそれを理解し、社員からの質問に答えられるようになります。",
   },
   {
     number: "03",
-    title: "設置・コンテンツ制作",
+    title: "Slackで話しかけて仕事を任せる",
     description:
-      "サイネージの設置工事とコンテンツの制作を並行して進行。テスト配信で品質を確認します。",
+      "「@AI総務 昨日の会議の議事録まとめて」のように話しかけるだけ。人間の同僚に頼むのと同じ感覚で使えます。",
   },
   {
     number: "04",
-    title: "運用開始・サポート",
+    title: "本採用（有料プラン）",
     description:
-      "運用開始後も、コンテンツ更新・メンテナンス・効果測定レポートなど継続的にサポートします。",
+      "効果を実感できたら有料プランに切り替え。月額9,800円から。使い続けるほどAI社員があなたの会社に馴染んでいきます。",
   },
 ];
 
@@ -35,8 +35,8 @@ export function FlowSection() {
       <Container>
         <MotionWrapper>
           <SectionHeading
-            title="サービスの流れ"
-            subtitle="お問い合わせから運用開始まで、スムーズにサポートします"
+            title="AI社員の採用フロー"
+            subtitle="4ステップで、あなたの会社にAI社員がやってきます"
           />
         </MotionWrapper>
 
@@ -44,17 +44,14 @@ export function FlowSection() {
           {steps.map((step, index) => (
             <MotionWrapper key={step.number} delay={index * 0.15}>
               <div className="relative flex gap-6 pb-12 last:pb-0">
-                {/* Connector line */}
                 {index < steps.length - 1 && (
                   <div className="absolute left-6 top-14 w-px h-[calc(100%-3.5rem)] bg-gradient-to-b from-accent/50 to-accent/10" />
                 )}
 
-                {/* Step number */}
                 <div className="shrink-0 w-12 h-12 rounded-full bg-accent/10 border border-accent/30 flex items-center justify-center text-accent font-bold font-display text-sm">
                   {step.number}
                 </div>
 
-                {/* Content */}
                 <div className="pt-1">
                   <h3 className="text-lg font-bold text-text-primary mb-2">
                     {step.title}

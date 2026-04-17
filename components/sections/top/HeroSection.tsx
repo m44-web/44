@@ -34,7 +34,7 @@ export function HeroSection() {
           transition={{ duration: 0.6 }}
           className="text-accent text-sm tracking-[0.3em] uppercase mb-6 font-display"
         >
-          Digital Signage Solutions
+          Hire Your AI Employee
         </motion.p>
 
         <motion.h1
@@ -43,9 +43,9 @@ export function HeroSection() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="text-5xl font-bold tracking-tight sm:text-7xl lg:text-8xl"
         >
-          街に、
-          <span className="text-accent">動き</span>
-          を。
+          AIを、
+          <span className="text-accent">雇</span>
+          おう。
         </motion.h1>
 
         <motion.p
@@ -54,9 +54,9 @@ export function HeroSection() {
           transition={{ duration: 0.6, delay: 0.5 }}
           className="mt-8 text-lg text-text-secondary max-w-2xl mx-auto leading-relaxed sm:text-xl"
         >
-          北海道を中心に、デジタルサイネージの設置・運用・広告配信を
+          AIを「道具」としてではなく「社員」として。
           <br className="hidden sm:inline" />
-          ワンストップでサポート。あなたのビジネスに新しい発信力を。
+          Slackで話しかけるだけで、総務・営業・経理の仕事が進む。
         </motion.p>
 
         <motion.div
@@ -66,10 +66,10 @@ export function HeroSection() {
           className="mt-10 flex flex-col sm:flex-row gap-4 justify-center"
         >
           <Button href="/contact" size="lg">
-            無料相談はこちら
+            無料でAI社員を試す
           </Button>
           <Button href="/about" variant="outline" size="lg">
-            サービスを見る
+            AI社員とは？
           </Button>
         </motion.div>
       </div>

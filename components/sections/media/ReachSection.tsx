@@ -6,10 +6,10 @@ import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 const reachData = [
-  { label: "1日あたり交通量", value: 35000, suffix: "台", prefix: "約" },
-  { label: "月間インプレッション", value: 200, suffix: "万+", prefix: "" },
-  { label: "視認率", value: 92, suffix: "%", prefix: "" },
-  { label: "ブランド想起率", value: 68, suffix: "%", prefix: "" },
+  { label: "対応可能タスク", value: 100, suffix: "種類+", prefix: "" },
+  { label: "平均応答時間", value: 3, suffix: "秒", prefix: "" },
+  { label: "人件費削減率", value: 90, suffix: "%", prefix: "" },
+  { label: "稼働時間", value: 24, suffix: "時間/日", prefix: "" },
 ];
 
 function CountUp({ target, prefix, suffix }: { target: number; prefix: string; suffix: string }) {
@@ -43,8 +43,8 @@ export function ReachSection() {
     <section className="py-24">
       <Container>
         <SectionHeading
-          title="リーチ数"
-          subtitle="Route 36沿線サイネージの広告効果データ"
+          title="AI社員の実力"
+          subtitle="数字で見る、AI社員のパフォーマンス"
         />
 
         <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">

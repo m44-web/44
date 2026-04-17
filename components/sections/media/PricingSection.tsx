@@ -6,44 +6,61 @@ import { Button } from "@/components/ui/Button";
 
 const plans = [
   {
-    name: "スタンダード",
-    duration: "15秒",
-    frequency: "1時間あたり4回",
-    price: "月額 150,000円〜",
+    name: "お試し採用",
+    duration: "2週間無料",
+    frequency: "無料",
+    price: "0円",
     features: [
-      "15秒スポット配信",
-      "基本レポート（月次）",
-      "コンテンツ制作サポート",
-      "最低契約期間：3ヶ月",
+      "AI社員1名（1職種）",
+      "基本機能が使える",
+      "Slack連携",
+      "メールサポート",
+      "クレジットカード不要",
     ],
     popular: false,
   },
   {
-    name: "プレミアム",
-    duration: "30秒",
-    frequency: "1時間あたり6回",
-    price: "月額 280,000円〜",
+    name: "パート採用",
+    duration: "1職種・基本機能",
+    frequency: "月額制",
+    price: "月額 9,800円",
     features: [
-      "30秒スポット配信",
-      "詳細レポート（週次）",
-      "コンテンツ制作込み",
-      "時間帯指定可能",
-      "最低契約期間：1ヶ月",
+      "AI社員1名（1職種）",
+      "月1,000タスクまで",
+      "社内FAQ対応",
+      "議事録自動作成",
+      "日報集計",
+      "メールサポート",
+    ],
+    popular: false,
+  },
+  {
+    name: "正社員採用",
+    duration: "1職種・フル機能",
+    frequency: "月額制",
+    price: "月額 29,800円",
+    features: [
+      "AI社員1名（1職種フル機能）",
+      "タスク無制限",
+      "全機能利用可能",
+      "優先対応",
+      "カスタマイズ対応",
+      "チャット＋メールサポート",
     ],
     popular: true,
   },
   {
-    name: "エクスクルーシブ",
-    duration: "60秒",
-    frequency: "独占枠",
-    price: "月額 500,000円〜",
+    name: "チーム採用",
+    duration: "複数職種・全機能",
+    frequency: "月額制",
+    price: "月額 98,000円",
     features: [
-      "60秒独占枠配信",
-      "リアルタイムレポート",
-      "コンテンツ制作・更新無制限",
-      "全時間帯対応",
-      "専任担当者",
-      "契約期間：応相談",
+      "AI社員複数名（複数職種）",
+      "タスク無制限",
+      "全機能＋専用カスタマイズ",
+      "専任サポート担当",
+      "導入コンサルティング",
+      "月次活用レビュー",
     ],
     popular: false,
   },
@@ -55,12 +72,12 @@ export function PricingSection() {
       <Container>
         <MotionWrapper>
           <SectionHeading
-            title="料金イメージ"
-            subtitle="Route 36沿線大型LEDビジョンの広告掲載プラン"
+            title="採用プラン"
+            subtitle="AI社員の「月給」として。人間のパート社員より圧倒的に安い。"
           />
         </MotionWrapper>
 
-        <div className="grid gap-8 lg:grid-cols-3">
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           {plans.map((plan, index) => (
             <MotionWrapper key={plan.name} delay={index * 0.15}>
               <Card
@@ -70,7 +87,7 @@ export function PricingSection() {
               >
                 {plan.popular && (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent text-primary text-xs font-bold px-4 py-1 rounded-full">
-                    人気
+                    おすすめ
                   </span>
                 )}
                 <h3 className="text-xl font-bold text-text-primary">
@@ -115,7 +132,7 @@ export function PricingSection() {
                     variant={plan.popular ? "primary" : "outline"}
                     className="w-full"
                   >
-                    お問い合わせ
+                    {plan.price === "0円" ? "無料で試す" : "お問い合わせ"}
                   </Button>
                 </div>
               </Card>
@@ -124,7 +141,7 @@ export function PricingSection() {
         </div>
 
         <p className="text-center text-sm text-text-secondary mt-8">
-          ※ 料金は目安です。詳細はお問い合わせください。
+          ※ すべてのプランで解約はいつでも可能です。お試し採用はクレジットカード不要。
         </p>
       </Container>
     </section>

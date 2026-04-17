@@ -1,20 +1,26 @@
 export const services = [
   {
-    title: "設置",
+    title: "AI総務",
     description:
-      "屋外大型LED、店舗内ディスプレイ、車両搭載型など、あらゆる環境に最適なサイネージを設計・設置します。",
-    icon: "monitor",
+      "議事録作成、社内FAQ対応、日報集計。総務の仕事をSlackで指示するだけで完了します。",
+    icon: "soumu",
   },
   {
-    title: "運用",
+    title: "AI営業アシスタント",
     description:
-      "コンテンツの制作・更新からメンテナンスまで、設置後の運用をワンストップでサポートします。",
-    icon: "settings",
+      "リード情報の整理、提案書の下書き、フォローアップのリマインド。営業チームの右腕になります。",
+    icon: "sales",
   },
   {
-    title: "広告配信",
+    title: "AI経理アシスタント",
     description:
-      "独自ネットワークを活用し、ターゲットに最適な広告配信を実現。効果測定レポートも提供します。",
-    icon: "broadcast",
+      "請求書の読み取り・整理、経費精算の補助、月次レポート作成。数字の仕事を正確にこなします。",
+    icon: "accounting",
+  },
+  {
+    title: "AIカスタマーサポート",
+    description:
+      "問い合わせの一次対応、FAQ自動生成、エスカレーション判断。お客様対応を24時間体制に。",
+    icon: "support",
   },
 ] as const;

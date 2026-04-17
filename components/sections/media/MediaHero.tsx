@@ -9,16 +9,15 @@ export function MediaHero() {
         <MotionWrapper>
           <div className="text-center max-w-3xl mx-auto">
             <p className="text-accent text-sm tracking-[0.2em] uppercase mb-4 font-display">
-              For Advertisers
+              AI Employee Pricing
             </p>
             <h1 className="text-4xl font-bold text-text-primary sm:text-5xl">
-              広告を出したい
-              <span className="text-accent">企業様</span>へ
+              AI社員の
+              <span className="text-accent">採用プラン</span>
             </h1>
             <p className="mt-6 text-lg text-text-secondary leading-relaxed">
-              LIFE VISIONのデジタルサイネージネットワークを活用して、
-              北海道の消費者にダイレクトにリーチ。
-              高い視認性とターゲティング精度で、効果的な広告配信を実現します。
+              人間のパート社員を月10万円で雇うより安い。
+              月額9,800円から、あなたの会社にAI社員を迎えられます。
             </p>
           </div>
         </MotionWrapper>

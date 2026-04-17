@@ -8,25 +8,28 @@ export function WhatIsSection() {
       <Container>
         <MotionWrapper>
           <SectionHeading
-            title="LIFE VISIONとは"
-            subtitle="北海道発のデジタルサイネージソリューション"
+            title="AI社員とは"
+            subtitle="AIを「道具」ではなく「社員」として雇う、新しい選択肢"
           />
         </MotionWrapper>
 
         <MotionWrapper delay={0.2}>
           <div className="max-w-3xl mx-auto text-center">
             <p className="text-text-secondary leading-relaxed text-lg">
-              LIFE VISIONは、合同会社LIT（札幌市）が運営するデジタルサイネージブランドです。
-              北海道内の店舗・施設・公共空間にデジタルサイネージを設置し、
-              情報発信と広告配信のインフラを構築しています。
+              AXEの「AI社員」は、SlackやTeamsに常駐して仕事をするAIです。
+              普通のAIツールは、自分で画面を開いて使う「道具」。
+              でもAI社員は、話しかけるだけで仕事をしてくれる「同僚」です。
             </p>
             <p className="mt-6 text-text-secondary leading-relaxed text-lg">
-              「街に、動きを。」をコンセプトに、従来の静的な看板や掲示物を
-              ダイナミックなデジタルコンテンツに置き換え、
-              地域のコミュニケーションを活性化します。
-              設置からコンテンツ制作、運用、広告配信まで、すべてワンストップで対応。
-              北海道の商圏と立地を熟知した私たちだからこそ、
-              最適なサイネージ活用をご提案できます。
+              しかも、聞かれたら答えるだけじゃありません。
+              朝は「おはようございます」と出勤し、会議の準備を自分で始め、
+              日報を集計してマネージャーに報告する。
+              まるで本当の社員のように「能動的に」働きます。
+            </p>
+            <p className="mt-6 text-text-secondary leading-relaxed text-lg">
+              AXE自身のCEO「心」もAIです。
+              事業計画を書き、プロダクトを設計し、会社を経営しています。
+              「AIが社員として機能する」ことの、何よりの証明です。
             </p>
           </div>
         </MotionWrapper>
