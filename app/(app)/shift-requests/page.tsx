@@ -35,6 +35,17 @@ function getNextWeekDates(): string[] {
   return dates;
 }
 
+function getSubmittableDates(): string[] {
+  const dates: string[] = [];
+  const now = new Date();
+  for (let i = 1; i <= 14; i++) {
+    const d = new Date(now);
+    d.setDate(now.getDate() + i);
+    dates.push(d.toISOString().split("T")[0]);
+  }
+  return dates;
+}
+
 const DAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
 
 function GuardShiftRequestView({ guardId }: { guardId: string }) {
@@ -160,7 +171,7 @@ function GuardShiftRequestView({ guardId }: { guardId: string }) {
       {showForm && (
         <ShiftRequestFormModal
           guardId={guardId}
-          existingDates={requests.map((r) => r.date)}
+          existingDates={requests.filter((r) => r.status !== "rejected").map((r) => r.date)}
           onClose={() => setShowForm(false)}
           onDone={(count) => {
             setShowForm(false);
@@ -393,7 +404,7 @@ function ShiftRequestFormModal({
 }: {
   guardId: string; existingDates: string[]; onClose: () => void; onDone: (submittedCount: number) => void;
 }) {
-  const nextWeek = getNextWeekDates();
+  const availableDates = getSubmittableDates();
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
   const [shiftType, setShiftType] = useState<"day" | "night" | "both" | "custom">("day");
   const [startTime, setStartTime] = useState("09:00");
@@ -496,9 +507,9 @@ function ShiftRequestFormModal({
         </div>
 
         <div>
-          <label className="block text-base font-medium text-text-primary mb-2">希望日を選択</label>
+          <label className="block text-base font-medium text-text-primary mb-2">希望日を選択（2週間分）</label>
           <div className="grid grid-cols-7 gap-2">
-            {nextWeek.map((date) => {
+            {availableDates.map((date) => {
               const d = new Date(date + "T00:00:00");
               const dayIdx = d.getDay();
               const selected = selectedDates.has(date);
@@ -509,18 +520,18 @@ function ShiftRequestFormModal({
                   type="button"
                   disabled={alreadySubmitted}
                   onClick={() => toggleDate(date)}
-                  className={`flex flex-col items-center py-3 rounded-xl text-sm cursor-pointer transition-all active:scale-95 ${
+                  className={`flex flex-col items-center py-2.5 rounded-xl text-sm cursor-pointer transition-all active:scale-95 ${
                     alreadySubmitted ? "bg-sub-bg text-text-secondary/40 cursor-not-allowed" :
                     selected ? "bg-accent text-white" :
                     "border border-border text-text-primary hover:border-accent/30"
                   }`}
                 >
-                  <span className={`text-xs ${
+                  <span className={`text-[10px] ${
                     !selected && (dayIdx === 0 ? "text-danger" : dayIdx === 6 ? "text-accent" : "")
                   }`}>
                     {DAY_LABELS[dayIdx]}
                   </span>
-                  <span className="font-bold text-base">{d.getDate()}</span>
+                  <span className="font-bold text-sm">{d.getMonth() + 1}/{d.getDate()}</span>
                 </button>
               );
             })}
