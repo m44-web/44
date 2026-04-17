@@ -1,48 +1,46 @@
 name: Claude Auto Improve CRM
 
-# CRMを定期的に自動改善するワークフロー
-# - schedule: 6時間おきに自動実行
-# - workflow_dispatch: GitHubのActionsタブから手動実行
-# - issue_comment / PR review comment: @claude メンションで応答
+# CRMを継続的に自動改善するワークフロー
+# - schedule: 6時間おきに自動実行（改善1〜3件 → mainに直コミット）
+# - workflow_dispatch: Actionsタブから手動実行
+# - issue_comment / PR comment: @claude メンションで対話
 #
 # 必要なリポジトリ Secret: ANTHROPIC_API_KEY
+#   https://github.com/m44-web/44/settings/secrets/actions
 
 on:
   schedule:
-    # UTC時刻。日本時間 9:00 / 15:00 / 21:00 / 3:00 に実行
+    # UTC: 日本時間 9:00 / 15:00 / 21:00 / 3:00
     - cron: "0 0,6,12,18 * * *"
   workflow_dispatch:
     inputs:
       prompt:
-        description: "改善内容の指示（空欄なら汎用改善）"
+        description: "改善指示（空欄なら汎用改善）"
         required: false
         type: string
+
   issue_comment:
     types: [created]
   pull_request_review_comment:
     types: [created]
   issues:
     types: [opened, assigned]
+  pull_request:
+    types: [opened]
 
 jobs:
-  claude:
-    # @claudeメンション時 / スケジュール / 手動実行のいずれかでトリガ
-    if: |
-      github.event_name == 'schedule' ||
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+  # ── スケジュール / 手動実行: 汎用改善 ──
+  auto-improve:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
     permissions:
       contents: write
       pull-requests: write
       issues: write
       id-token: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -50,8 +48,31 @@ jobs:
         uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          # スケジュール実行時は汎用改善プロンプトを投入
           direct_prompt: |
-            ${{ github.event_name == 'schedule' && 'public/index.html のCRMアプリを1つ以上の小さく確実な改善で良くしてください。過去の実装履歴（git log）を確認して既存機能との重複を避け、新機能・UX改善・パフォーマンス改善・バグ修正のいずれかを実装してください。変更は main ブランチに直接コミット＆プッシュしてください。各回1〜3個の改善に絞り、動作を壊さないよう慎重に。' || github.event.inputs.prompt || '' }}
-          # ブランチ戦略: スケジュール時は main に直接コミット、それ以外はPR作成
+            ${{ github.event.inputs.prompt || 'public/index.html のCRMアプリを小さく確実な改善で良くしてください。過去のgit logとコード末尾のUX拡張ブロック（/* ── N. ... ── */で始まる番号付きセクション）を確認して既存機能との重複を避け、意味のある新機能・UX改善・パフォーマンス改善・バグ修正のいずれかを1〜3個実装してください。変更はmainブランチに直接コミット＆プッシュしてください。動作を壊さないよう慎重に、デバッグログは残さずに。' }}
           base_branch: main
+
+  # ── @claude メンション: 対話応答 ──
+  mention-respond:
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude'))) ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.body, '@claude'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Code (mention)
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # direct_prompt なし → Action が @claude メンション文脈を自動解釈
