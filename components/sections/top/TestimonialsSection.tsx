@@ -10,8 +10,8 @@ export function TestimonialsSection() {
       <Container>
         <MotionWrapper>
           <SectionHeading
-            title="お客様の声"
-            subtitle="AI社員を雇った企業から、実際の効果をいただいています"
+            title="想定ユースケース"
+            subtitle="AI社員が活きる企業像。ベータリリース後に実例と差し替え予定"
           />
         </MotionWrapper>
 
@@ -49,7 +49,7 @@ export function TestimonialsSection() {
         </div>
 
         <p className="text-center text-xs text-text-secondary mt-8">
-          ※ 導入事例はベータ採用企業（従業員5〜30名）のインタビューに基づきます
+          ※ 上記はAXE想定のユースケースです。実際の導入事例はベータリリース後に順次公開します。
         </p>
       </Container>
     </section>
