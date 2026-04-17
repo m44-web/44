@@ -68,6 +68,11 @@ export function SettingsPanel({
     deletableRecords: { gps: number; audit: number; audio: number; sessions?: number };
     retentionDays: { gps: number; audit: number; audio: number };
   } | null>(null);
+  const [healthInfo, setHealthInfo] = useState<{
+    db: { sizeMB: number };
+    counts: Record<string, number>;
+    uptime: number;
+  } | null>(null);
   const [cleanupResult, setCleanupResult] = useState<string | null>(null);
   const [cleaningUp, setCleaningUp] = useState(false);
   const [notifPrefs, setNotifPrefs] = useState<NotifPrefs>(DEFAULT_NOTIF_PREFS);
@@ -83,6 +88,10 @@ export function SettingsPanel({
 
   useEffect(() => {
     if (userRole !== "admin") return;
+    fetch("/api/admin/health")
+      .then((r) => r.json())
+      .then(setHealthInfo)
+      .catch(() => {});
     fetch("/api/admin/cleanup")
       .then((r) => r.json())
       .then(setCleanupInfo)
@@ -348,6 +357,47 @@ export function SettingsPanel({
             >
               古いデータを削除
             </Button>
+          </Card>
+        )}
+
+        {userRole === "admin" && healthInfo && (
+          <Card>
+            <h2 className="font-semibold mb-1">システム情報</h2>
+            <p className="text-xs text-text-muted mb-4">データベースの状態とレコード数</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+              <div className="bg-white/5 rounded-lg p-3">
+                <p className="text-xs text-text-muted">DBサイズ</p>
+                <p className="font-bold">{healthInfo.db.sizeMB} MB</p>
+              </div>
+              <div className="bg-white/5 rounded-lg p-3">
+                <p className="text-xs text-text-muted">ユーザー</p>
+                <p className="font-bold">{healthInfo.counts.activeUsers}名</p>
+              </div>
+              <div className="bg-white/5 rounded-lg p-3">
+                <p className="text-xs text-text-muted">GPSポイント</p>
+                <p className="font-bold">{healthInfo.counts.gpsPoints?.toLocaleString()}</p>
+              </div>
+              <div className="bg-white/5 rounded-lg p-3">
+                <p className="text-xs text-text-muted">録音数</p>
+                <p className="font-bold">{healthInfo.counts.recordings?.toLocaleString()}</p>
+              </div>
+              <div className="bg-white/5 rounded-lg p-3">
+                <p className="text-xs text-text-muted">シフト総数</p>
+                <p className="font-bold">{healthInfo.counts.shifts?.toLocaleString()}</p>
+              </div>
+              <div className="bg-white/5 rounded-lg p-3">
+                <p className="text-xs text-text-muted">稼働中シフト</p>
+                <p className="font-bold">{healthInfo.counts.activeShifts}</p>
+              </div>
+              <div className="bg-white/5 rounded-lg p-3">
+                <p className="text-xs text-text-muted">セッション</p>
+                <p className="font-bold">{healthInfo.counts.activeSessions}</p>
+              </div>
+              <div className="bg-white/5 rounded-lg p-3">
+                <p className="text-xs text-text-muted">稼働時間</p>
+                <p className="font-bold">{Math.floor(healthInfo.uptime / 3600)}h {Math.floor((healthInfo.uptime % 3600) / 60)}m</p>
+              </div>
+            </div>
           </Card>
         )}
 
