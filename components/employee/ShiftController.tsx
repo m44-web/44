@@ -151,10 +151,32 @@ export function ShiftController({ userName }: { userName: string }) {
     };
   }, []);
 
-  // Hydrate from current active shift (in case of page reload mid-shift)
+  // Auto-resume active shift on page reload
   useEffect(() => {
-    fetchMyStats();
-  }, [fetchMyStats]);
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/my");
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        setMyStats(data);
+        if (data.activeShift && !cancelled) {
+          const resumedShift: ShiftState = {
+            id: data.activeShift.id,
+            startedAt: data.activeShift.startedAt,
+          };
+          setShift(resumedShift);
+          startGps(resumedShift.id);
+          startRecording(resumedShift.id);
+          requestWakeLock();
+        }
+      } catch {
+        // ignore
+      }
+    })();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Check geolocation permission state
   useEffect(() => {
