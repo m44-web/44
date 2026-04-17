@@ -208,13 +208,13 @@ export default function ShiftsPage() {
         <div className="space-y-4">
           {/* Month navigation */}
           <div className="flex items-center justify-between">
-            <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-sub-bg transition-colors cursor-pointer text-text-secondary">
+            <button onClick={prevMonth} aria-label="前の月" className="p-2 rounded-lg hover:bg-sub-bg transition-colors cursor-pointer text-text-secondary">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
             </button>
             <h2 className="text-lg font-semibold">
               {currentMonth.year}年 {currentMonth.month + 1}月
             </h2>
-            <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-sub-bg transition-colors cursor-pointer text-text-secondary">
+            <button onClick={nextMonth} aria-label="次の月" className="p-2 rounded-lg hover:bg-sub-bg transition-colors cursor-pointer text-text-secondary">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
             </button>
           </div>

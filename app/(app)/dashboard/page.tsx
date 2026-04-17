@@ -93,7 +93,10 @@ function AdminDashboard() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-bold">ダッシュボード</h1>
+      <div className="flex items-start justify-between gap-3">
+        <h1 className="text-2xl font-bold">ダッシュボード</h1>
+        <LiveClock />
+      </div>
 
       {/* Alert banners */}
       {pendingRequests > 0 && (
@@ -978,6 +981,23 @@ function SurplusGuards({ activeGuards, shifts }: { activeGuards: Guard[]; shifts
           </Card>
         )}
       </div>
+    </div>
+  );
+}
+
+function LiveClock() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(interval);
+  }, []);
+  const dayLabels = ["日", "月", "火", "水", "木", "金", "土"];
+  const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  const date = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}(${dayLabels[now.getDay()]})`;
+  return (
+    <div className="text-right shrink-0">
+      <p className="text-2xl font-bold font-mono text-accent tabular-nums">{time}</p>
+      <p className="text-[10px] text-text-secondary">{date}</p>
     </div>
   );
 }
