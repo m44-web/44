@@ -7932,6 +7932,53 @@ window.importBackupJSON = function(){
   mo.observe(document.body,{childList:true,subtree:true});
 })();
 
+/* ── 56. 日付クイックフィルタ (今日/今週/今月/四半期) ── */
+(function(){
+  function fmt(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  function setRange(from,to){
+    var df=document.getElementById('dfrom'),dt=document.getElementById('dto');
+    if(df)df.value=from;
+    if(dt)dt.value=to;
+    if(typeof render==='function')render();
+  }
+  window.setDateRange=function(kind){
+    var now=new Date();
+    if(kind==='today'){var d=fmt(now);setRange(d,d);}
+    else if(kind==='week'){
+      var day=now.getDay(),diff=(day===0?6:day-1);
+      var mon=new Date(now);mon.setDate(now.getDate()-diff);
+      var sun=new Date(mon);sun.setDate(mon.getDate()+6);
+      setRange(fmt(mon),fmt(sun));
+    } else if(kind==='month'){
+      var f=new Date(now.getFullYear(),now.getMonth(),1);
+      var l=new Date(now.getFullYear(),now.getMonth()+1,0);
+      setRange(fmt(f),fmt(l));
+    } else if(kind==='quarter'){
+      var qm=Math.floor(now.getMonth()/3)*3;
+      var f2=new Date(now.getFullYear(),qm,1);
+      var l2=new Date(now.getFullYear(),qm+3,0);
+      setRange(fmt(f2),fmt(l2));
+    } else if(kind==='clear'){setRange('','');}
+  };
+
+  setTimeout(function(){
+    var sr=document.getElementById('searchrow');
+    if(!sr||document.getElementById('ux-qdate'))return;
+    var wrap=document.createElement('div');wrap.id='ux-qdate';
+    wrap.style.cssText='display:flex;gap:3px;flex-wrap:wrap;padding:4px 12px 0;background:#f7f6f3';
+    [['today','今日'],['week','今週'],['month','今月'],['quarter','四半期'],['clear','全期間']].forEach(function(o){
+      var b=document.createElement('button');b.type='button';
+      b.textContent=o[1];
+      b.style.cssText='padding:3px 8px;background:#fff;border:1px solid #e2e8f0;border-radius:4px;font-size:10px;color:#718096;cursor:pointer;font-family:inherit';
+      b.addEventListener('click',function(){window.setDateRange(o[0]);});
+      wrap.appendChild(b);
+    });
+    sr.parentNode.insertBefore(wrap,sr.nextSibling);
+    if(typeof setListTop==='function')setListTop();
+    if(typeof fixListHeight==='function')fixListHeight();
+  },500);
+})();
+
 })();
 </script>
 </body>
