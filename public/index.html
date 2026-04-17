@@ -8394,6 +8394,68 @@ window.importBackupJSON = function(){
   update();
 })();
 
+/* ── 66. パイプラインベロシティ (平均滞在日数) ── */
+(function(){
+  var _origDash=window.openDashboard;
+  if(typeof _origDash!=='function')return;
+  window.openDashboard=function(){
+    _origDash.apply(this,arguments);
+    setTimeout(function(){
+      var modal=document.querySelector('#ux-dash')||document.querySelector('[style*="z-index: 120"]')||document.querySelector('[style*="z-index:120"]');
+      if(!modal)return;
+      var body=modal.querySelector('[style*="overflow-y"]')||modal;
+      if(document.getElementById('ux-velocity'))return;
+
+      /* 成約案件の AP日→契約日 の日数を計算 */
+      var d=window.D||[],del=window.deletedIds||{};
+      var diffs=[];
+      d.forEach(function(r){
+        if(del[r[0]])return;
+        if(r[6]&&r[18]){
+          var ap=new Date(r[6]).getTime();
+          var c=new Date(r[18]).getTime();
+          if(!isNaN(ap)&&!isNaN(c)&&c>ap){
+            diffs.push(Math.floor((c-ap)/86400000));
+          }
+        }
+      });
+      if(diffs.length===0)return;
+      diffs.sort(function(a,b){return a-b;});
+      var avg=Math.round(diffs.reduce(function(a,b){return a+b;},0)/diffs.length);
+      var median=diffs[Math.floor(diffs.length/2)];
+      var min=diffs[0],max=diffs[diffs.length-1];
+
+      var sec=document.createElement('div');sec.id='ux-velocity';
+      sec.style.cssText='margin-top:16px;padding:14px;background:#fff;border-radius:10px;border:1.5px solid #e9e9e7';
+      var ti=document.createElement('div');
+      ti.textContent='⚡ パイプラインベロシティ (AP→契約)';
+      ti.style.cssText='font-size:13px;font-weight:800;color:#37352f;margin-bottom:10px';
+      sec.appendChild(ti);
+
+      var grid=document.createElement('div');
+      grid.style.cssText='display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center';
+      var items=[
+        {l:'平均',v:avg+'日',c:'#2383e2'},
+        {l:'中央値',v:median+'日',c:'#059669'},
+        {l:'最短',v:min+'日',c:'#f59e0b'},
+        {l:'最長',v:max+'日',c:'#dc2626'}
+      ];
+      items.forEach(function(it){
+        var b=document.createElement('div');
+        b.style.cssText='padding:8px 4px;background:#f7f6f3;border-radius:6px';
+        b.innerHTML='<div style="font-size:18px;font-weight:800;color:'+it.c+'">'+it.v+'</div><div style="font-size:9px;color:#9b9a97;margin-top:2px">'+it.l+'</div>';
+        grid.appendChild(b);
+      });
+      sec.appendChild(grid);
+      var note=document.createElement('div');
+      note.style.cssText='margin-top:8px;font-size:10px;color:#718096;text-align:center';
+      note.textContent=diffs.length+'件の成約データより算出';
+      sec.appendChild(note);
+      body.appendChild(sec);
+    },300);
+  };
+})();
+
 })();
 </script>
 </body>
