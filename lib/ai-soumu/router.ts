@@ -1,5 +1,6 @@
 import type { AiSoumuTask, SlackMessageEvent } from "./types";
 import { postSlackMessage } from "./slack-client";
+import { askClaude } from "./claude-client";
 
 export async function handleSlackEvent(event: SlackMessageEvent): Promise<void> {
   if (event.bot_id) return;
@@ -32,10 +33,22 @@ export function classifyTask(text: string): AiSoumuTask {
   return { kind: "unknown", text: normalized };
 }
 
+const FAQ_SYSTEM_PROMPT = `あなたはAXEが提供する「AI総務」です。企業のSlackに常駐し、社員からの社内業務に関する質問に丁寧に回答します。
+
+ルール:
+- 回答は2〜4文で簡潔にまとめる
+- 社内マニュアルに明確な答えがない場合は、「社内で確認が必要」と正直に伝える
+- 敬語を使うが、堅すぎない自然な日本語で
+- 人間の総務担当者のような温かみのある応対を心がける`;
+
 async function runTask(task: AiSoumuTask): Promise<string> {
   switch (task.kind) {
     case "faq":
-      return `ご質問を受け付けました。社内マニュアルを確認して回答します。\n> ${task.question}\n\n（MVP開発中：Week 3-4でFAQ応答を実装予定）`;
+      return askClaude({
+        system: FAQ_SYSTEM_PROMPT,
+        messages: [{ role: "user", content: task.question }],
+        maxTokens: 512,
+      });
     case "minutes":
       return "議事録作成を承りました。音声ファイルまたはメモを添付してください。\n（MVP開発中：Week 5-6で実装予定）";
     case "report":
