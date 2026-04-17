@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -164,6 +164,9 @@ export function EmployeeDetail({ userId }: { userId: string }) {
           </Card>
         </div>
 
+        {/* 14-day work hours chart */}
+        <WorkChart shifts={shifts} />
+
         {/* Shift history */}
         <Card>
           <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
@@ -247,5 +250,62 @@ export function EmployeeDetail({ userId }: { userId: string }) {
         </Card>
       </Container>
     </div>
+  );
+}
+
+function WorkChart({
+  shifts,
+}: {
+  shifts: Array<{ id: string; startedAt: number; endedAt: number | null; durationMs: number }>;
+}) {
+  const days = useMemo(() => {
+    const result: Array<{ date: string; label: string; ms: number }> = [];
+    const now = new Date();
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const dayShifts = shifts.filter((s) => {
+        const sd = new Date(s.startedAt).toISOString().slice(0, 10);
+        return sd === dateStr;
+      });
+      const totalMs = dayShifts.reduce((sum, s) => sum + s.durationMs, 0);
+      result.push({
+        date: dateStr,
+        label: `${d.getMonth() + 1}/${d.getDate()}`,
+        ms: totalMs,
+      });
+    }
+    return result;
+  }, [shifts]);
+
+  const maxMs = Math.max(...days.map((d) => d.ms), 3600000);
+
+  return (
+    <Card>
+      <h3 className="font-semibold mb-3">直近14日間の勤務時間</h3>
+      <div className="flex items-end gap-1 h-32">
+        {days.map((day) => {
+          const height = day.ms > 0 ? Math.max((day.ms / maxMs) * 100, 4) : 0;
+          const hours = (day.ms / 3600000).toFixed(1);
+          return (
+            <div
+              key={day.date}
+              className="flex-1 flex flex-col items-center justify-end h-full"
+            >
+              <div
+                className={`w-full rounded-t ${day.ms > 0 ? "bg-primary/60" : "bg-white/5"}`}
+                style={{ height: `${height}%` }}
+                title={`${day.date}: ${hours}h`}
+              />
+              <span className="text-[9px] text-text-muted mt-1">{day.label}</span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex justify-between text-[10px] text-text-muted mt-1 px-1">
+        <span>0h</span>
+        <span>{(maxMs / 3600000).toFixed(0)}h</span>
+      </div>
+    </Card>
   );
 }
