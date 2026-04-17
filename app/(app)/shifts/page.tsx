@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { getShifts, getGuards, getSites, getShiftsByGuard } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
@@ -221,11 +222,24 @@ export default function ShiftsPage() {
           {/* Selected date detail */}
           {selectedDate && (
             <div>
-              <h3 className="text-sm font-semibold text-text-secondary mb-2">
-                {formatDateLabel(selectedDate)} のシフト ({selectedShifts.length}件)
-              </h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-text-secondary">
+                  {formatDateLabel(selectedDate)} のシフト ({selectedShifts.length}件)
+                </h3>
+                {user?.role === "admin" && (
+                  <Link
+                    href={`/shifts/new?date=${selectedDate}`}
+                    className="text-xs px-2.5 py-1 rounded-lg bg-accent text-white font-medium hover:bg-accent-dark transition-colors inline-flex items-center gap-1"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                    追加
+                  </Link>
+                )}
+              </div>
               {selectedShifts.length === 0 ? (
-                <Card><p className="text-text-secondary text-center py-4">この日のシフトはありません</p></Card>
+                <Card>
+                  <p className="text-text-secondary text-center py-4">この日のシフトはありません</p>
+                </Card>
               ) : (
                 <div className="space-y-2">
                   {selectedShifts.map((shift) => {

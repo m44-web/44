@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useEffect, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getGuards, getSites, addShift, getShifts } from "@/lib/store";
 import type { Guard, Site, Shift, ShiftType } from "@/lib/types";
 import { SHIFT_PREFERENCE_LABELS } from "@/lib/types";
@@ -15,13 +15,23 @@ function todayStr() {
 }
 
 export default function NewShiftPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewShiftForm />
+    </Suspense>
+  );
+}
+
+function NewShiftForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialDate = searchParams.get("date") || todayStr();
   const [guards, setGuards] = useState<Guard[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
   const [allShifts, setAllShifts] = useState<Shift[]>([]);
   const [guardId, setGuardId] = useState("");
   const [siteId, setSiteId] = useState("");
-  const [date, setDate] = useState(todayStr());
+  const [date, setDate] = useState(initialDate);
   const [shiftType, setShiftType] = useState<ShiftType>("day");
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("18:00");
