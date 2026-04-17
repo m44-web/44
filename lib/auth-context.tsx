@@ -37,6 +37,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     setUser(null);
     setCurrentUser(null);
+    // Clean up any in-progress drafts and UI state keys that are tied to the session
+    if (typeof window !== "undefined") {
+      try {
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (key?.startsWith("lsecurity_report_draft_")) localStorage.removeItem(key);
+        }
+      } catch {}
+    }
   }, []);
 
   const value = useMemo(() => ({ user, loading, login, logout }), [user, loading, login, logout]);

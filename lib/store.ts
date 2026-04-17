@@ -556,6 +556,8 @@ export function importAllData(json: string): { ok: boolean; error?: string } {
   try {
     const parsed = JSON.parse(json);
     if (!parsed || typeof parsed !== "object") return { ok: false, error: "不正なファイル形式です" };
+    // Clear cache first to avoid stale reads
+    cache.clear();
     for (const [name, key] of Object.entries(STORAGE_KEYS)) {
       if (name === "currentUser") continue;
       if (name in parsed) setItem(key, parsed[name]);
