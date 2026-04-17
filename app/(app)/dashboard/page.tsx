@@ -632,6 +632,43 @@ function GuardDashboard({ guardId }: { guardId: string }) {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-secondary"><polyline points="9 18 15 12 9 6" /></svg>
         </Link>
       </div>
+
+      {/* Emergency contacts */}
+      <EmergencyContacts />
+    </div>
+  );
+}
+
+function EmergencyContacts() {
+  return (
+    <div>
+      <h2 className="text-sm font-semibold text-text-secondary mb-2">緊急連絡先</h2>
+      <div className="grid grid-cols-3 gap-2">
+        <a
+          href="tel:0120-000-000"
+          className="bg-card-bg border-2 border-accent/30 rounded-xl p-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg>
+          <p className="text-[11px] font-bold text-text-primary">管制センター</p>
+          <p className="text-[9px] text-text-secondary">24時間対応</p>
+        </a>
+        <a
+          href="tel:110"
+          className="bg-card-bg border-2 border-danger/30 rounded-xl p-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-danger"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z" /><circle cx="12" cy="10" r="3" /></svg>
+          <p className="text-[11px] font-bold text-text-primary">110</p>
+          <p className="text-[9px] text-text-secondary">警察</p>
+        </a>
+        <a
+          href="tel:119"
+          className="bg-card-bg border-2 border-danger/30 rounded-xl p-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-danger"><path d="M8.56 3.69a9 9 0 0 0-2.92 1.95" /><path d="M3.69 8.56A9 9 0 0 0 3 12" /><path d="M3.69 15.44a9 9 0 0 0 1.95 2.92" /><path d="M8.56 20.31A9 9 0 0 0 12 21" /><path d="M15.44 20.31a9 9 0 0 0 2.92-1.95" /><path d="M20.31 15.44A9 9 0 0 0 21 12" /><path d="M20.31 8.56a9 9 0 0 0-1.95-2.92" /><path d="M15.44 3.69A9 9 0 0 0 12 3" /><circle cx="12" cy="12" r="2" /></svg>
+          <p className="text-[11px] font-bold text-text-primary">119</p>
+          <p className="text-[9px] text-text-secondary">救急・消防</p>
+        </a>
+      </div>
     </div>
   );
 }

@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { getShifts, getGuards, getSites, getShiftsByGuard } from "@/lib/store";
+import { getShifts, getGuards, getSites, getShiftsByGuard, addShift, updateShift } from "@/lib/store";
+import { useToast } from "@/lib/toast";
+import { useConfirm } from "@/lib/confirm";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import type { Shift, Guard, Site } from "@/lib/types";
@@ -54,17 +56,52 @@ export default function ShiftsPage() {
     return { year: now.getFullYear(), month: now.getMonth() };
   });
   const [mounted, setMounted] = useState(false);
+  const { showToast } = useToast();
+  const { confirm } = useConfirm();
 
   useEffect(() => {
     setMounted(true);
     setGuards(getGuards());
     setSites(getSites());
-    if (user?.role === "admin") {
-      setShifts(getShifts());
-    } else if (user?.guardId) {
-      setShifts(getShiftsByGuard(user.guardId));
-    }
+    refreshShifts();
   }, [user]);
+
+  function refreshShifts() {
+    if (user?.role === "admin") setShifts(getShifts());
+    else if (user?.guardId) setShifts(getShiftsByGuard(user.guardId));
+  }
+
+  async function handleDuplicate(shift: Shift) {
+    const target = await confirm({
+      title: "シフトを複製",
+      message: `${shift.date} から何日後に複製しますか？\n翌日に複製する場合はOKを押してください。`,
+      confirmLabel: "翌日に複製",
+    });
+    if (!target) return;
+    const d = new Date(shift.date + "T00:00:00");
+    d.setDate(d.getDate() + 1);
+    const newDate = d.toISOString().split("T")[0];
+    addShift({
+      guardId: shift.guardId, siteId: shift.siteId, date: newDate,
+      startTime: shift.startTime, endTime: shift.endTime, shiftType: shift.shiftType,
+      status: "scheduled", notes: shift.notes,
+    });
+    refreshShifts();
+    showToast(`${newDate} にシフトを複製しました`, "success");
+  }
+
+  async function handleCancel(shift: Shift) {
+    const ok = await confirm({
+      title: "シフトをキャンセル",
+      message: `${shift.date} ${shift.startTime}〜${shift.endTime} のシフトをキャンセルしますか？`,
+      confirmLabel: "キャンセルする",
+      variant: "danger",
+    });
+    if (!ok) return;
+    updateShift(shift.id, { status: "cancelled" });
+    refreshShifts();
+    showToast("シフトをキャンセルしました", "info");
+  }
 
   if (!mounted) return null;
 
@@ -246,25 +283,45 @@ export default function ShiftsPage() {
                     const guard = guards.find((g) => g.id === shift.guardId);
                     const site = sites.find((s) => s.id === shift.siteId);
                     return (
-                      <Card key={shift.id} className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-text-primary">{guard?.name ?? "—"}</p>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                              shift.shiftType === "night" ? "bg-purple-500/10 text-purple-400" : "bg-warning/10 text-warning"
-                            }`}>
-                              {SHIFT_TYPE_LABELS[shift.shiftType ?? "day"]}
+                      <Card key={shift.id} className="space-y-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-text-primary">{guard?.name ?? "—"}</p>
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                                shift.shiftType === "night" ? "bg-purple-500/10 text-purple-400" : "bg-warning/10 text-warning"
+                              }`}>
+                                {SHIFT_TYPE_LABELS[shift.shiftType ?? "day"]}
+                              </span>
+                            </div>
+                            <p className="text-sm text-text-secondary truncate">{site?.name ?? "—"}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-sm font-mono">{shift.startTime}〜{shift.endTime}</p>
+                            <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${statusColors[shift.status]}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${dotColors[shift.status]}`} />
+                              {SHIFT_STATUS_LABELS[shift.status]}
                             </span>
                           </div>
-                          <p className="text-sm text-text-secondary truncate">{site?.name ?? "—"}</p>
                         </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-sm font-mono">{shift.startTime}〜{shift.endTime}</p>
-                          <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${statusColors[shift.status]}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${dotColors[shift.status]}`} />
-                            {SHIFT_STATUS_LABELS[shift.status]}
-                          </span>
-                        </div>
+                        {user?.role === "admin" && shift.status !== "completed" && shift.status !== "cancelled" && (
+                          <div className="flex gap-2 pt-2 border-t border-border">
+                            <button
+                              onClick={() => handleDuplicate(shift)}
+                              className="flex-1 text-xs py-1.5 rounded-lg border border-border text-text-secondary hover:text-accent hover:border-accent/30 transition-colors cursor-pointer inline-flex items-center justify-center gap-1"
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                              翌日に複製
+                            </button>
+                            <button
+                              onClick={() => handleCancel(shift)}
+                              className="flex-1 text-xs py-1.5 rounded-lg border border-border text-text-secondary hover:text-danger hover:border-danger/30 transition-colors cursor-pointer inline-flex items-center justify-center gap-1"
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>
+                              キャンセル
+                            </button>
+                          </div>
+                        )}
                       </Card>
                     );
                   })}
