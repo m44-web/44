@@ -378,6 +378,7 @@ function AdminDashboard() {
 }
 
 function GuardDashboard({ guardId }: { guardId: string }) {
+  const [refreshTick, setRefreshTick] = useState(0);
   const computed = useMemo(() => {
     const today = todayStr();
     const thisMonth = today.slice(0, 7);
@@ -413,7 +414,7 @@ function GuardDashboard({ guardId }: { guardId: string }) {
       monthlyPay: Math.round(monthlyHours * (guard?.hourlyRate ?? 1000)),
       hasNextWeekRequest: shiftRequests.some((r) => r.guardId === guardId && r.date >= nextWeekStart),
     };
-  }, [guardId]);
+  }, [guardId, refreshTick]);
 
   const { today, guard, sites, myShifts, myTodayShifts, todayAttendance, allAttendance,
     shiftRequests, myThisMonthShifts, myUpcoming, monthlyHours, monthlyPay, hasNextWeekRequest } = computed;
@@ -514,6 +515,7 @@ function GuardDashboard({ guardId }: { guardId: string }) {
                       shiftId={shift.id}
                       guardId={guardId}
                       isOnDuty={att?.status === "on_duty"}
+                      onDone={() => setRefreshTick((t) => t + 1)}
                     />
                   )}
                 </div>
@@ -980,7 +982,7 @@ function SurplusGuards({ activeGuards, shifts }: { activeGuards: Guard[]; shifts
   );
 }
 
-function QuickClockButton({ shiftId, guardId, isOnDuty }: { shiftId: string; guardId: string; isOnDuty: boolean }) {
+function QuickClockButton({ shiftId, guardId, isOnDuty, onDone }: { shiftId: string; guardId: string; isOnDuty: boolean; onDone: () => void }) {
   const { showToast } = useToast();
   const [working, setWorking] = useState(false);
 
@@ -1013,8 +1015,10 @@ function QuickClockButton({ shiftId, guardId, isOnDuty }: { shiftId: string; gua
       sendLocationOnClock("clock_in");
       showToast("上番しました。お気をつけて！", "success");
     }
-    // Trigger a page refresh after a short delay for the toast to show
-    setTimeout(() => window.location.reload(), 800);
+    setTimeout(() => {
+      setWorking(false);
+      onDone();
+    }, 300);
   }
 
   return (

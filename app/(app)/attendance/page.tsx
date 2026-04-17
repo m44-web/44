@@ -40,11 +40,24 @@ function AdminAttendance() {
 
   useEffect(() => {
     setMounted(true);
-    setGuards(getGuards());
-    setSites(getSites());
-    setShifts(getShifts());
-    setAllAttendance(getAttendance());
-    setLocations(getLocations());
+    function refresh() {
+      setGuards(getGuards());
+      setSites(getSites());
+      setShifts(getShifts());
+      setAllAttendance(getAttendance());
+      setLocations(getLocations());
+    }
+    refresh();
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const start = () => { if (interval == null) interval = setInterval(refresh, 30000); };
+    const stop = () => { if (interval != null) { clearInterval(interval); interval = null; } };
+    const onVis = () => { if (document.hidden) stop(); else { refresh(); start(); } };
+    if (!document.hidden) start();
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, []);
 
   const { attendance, dateShifts, onDuty, completed, absent, notYetClocked, locationsByGuard } = useMemo(() => {
