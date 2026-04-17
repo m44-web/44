@@ -6,6 +6,8 @@ import { RealtimeProvider, useRealtime } from "./RealtimeProvider";
 import { EmployeeMap } from "./EmployeeMap";
 import { EmployeeList } from "./EmployeeList";
 import { AudioPanel } from "./AudioPanel";
+import { StatsBar } from "./StatsBar";
+import { Toasts } from "./Toasts";
 import Link from "next/link";
 
 function ConnectionBadge() {
@@ -56,7 +58,8 @@ function DashboardContent({ userName }: { userName: string }) {
         </Container>
       </header>
 
-      <Container className="py-6">
+      <Container className="py-6 space-y-6">
+        <StatsBar />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <EmployeeMap />
@@ -67,6 +70,7 @@ function DashboardContent({ userName }: { userName: string }) {
           </div>
         </div>
       </Container>
+      <Toasts />
     </div>
   );
 }

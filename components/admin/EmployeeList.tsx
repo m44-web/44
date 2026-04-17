@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Card } from "@/components/ui/Card";
 import { useRealtime } from "./RealtimeProvider";
+import Link from "next/link";
 
 interface Employee {
   id: string;
@@ -12,16 +13,59 @@ interface Employee {
   currentShiftId: string | null;
 }
 
+interface Location {
+  userId: string;
+  activity: {
+    status: "active" | "idle" | "stale" | "no_gps";
+    message: string;
+    distanceLast10Min: number;
+  };
+}
+
+const statusStyles: Record<
+  Location["activity"]["status"],
+  { bg: string; dot: string; label: string }
+> = {
+  active: {
+    bg: "bg-success/10 border-success/20",
+    dot: "bg-success",
+    label: "text-success",
+  },
+  idle: {
+    bg: "bg-warning/10 border-warning/30",
+    dot: "bg-warning",
+    label: "text-warning",
+  },
+  stale: {
+    bg: "bg-danger/10 border-danger/30",
+    dot: "bg-danger",
+    label: "text-danger",
+  },
+  no_gps: {
+    bg: "bg-text-muted/10 border-text-muted/20",
+    dot: "bg-text-muted",
+    label: "text-text-muted",
+  },
+};
+
 export function EmployeeList() {
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
   const { lastEvent } = useRealtime();
 
-  const fetchEmployees = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const res = await fetch("/api/employees");
-      if (res.ok) {
-        const data = await res.json();
+      const [empRes, locRes] = await Promise.all([
+        fetch("/api/employees"),
+        fetch("/api/gps/latest"),
+      ]);
+      if (empRes.ok) {
+        const data = await empRes.json();
         setEmployees(data.employees);
+      }
+      if (locRes.ok) {
+        const data = await locRes.json();
+        setLocations(data.locations);
       }
     } catch {
       // ignore
@@ -29,16 +73,22 @@ export function EmployeeList() {
   }, []);
 
   useEffect(() => {
-    fetchEmployees();
-  }, [fetchEmployees]);
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
-  // Refresh on shift events
   useEffect(() => {
-    if (lastEvent?.type === "shift_start" || lastEvent?.type === "shift_end") {
-      fetchEmployees();
+    if (
+      lastEvent?.type === "shift_start" ||
+      lastEvent?.type === "shift_end" ||
+      lastEvent?.type === "gps_update"
+    ) {
+      fetchData();
     }
-  }, [lastEvent, fetchEmployees]);
+  }, [lastEvent, fetchData]);
 
+  const locMap = new Map(locations.map((l) => [l.userId, l.activity]));
   const onShift = employees.filter((e) => e.isOnShift);
   const offShift = employees.filter((e) => !e.isOnShift);
 
@@ -58,18 +108,35 @@ export function EmployeeList() {
             稼働中 ({onShift.length})
           </h3>
           <div className="space-y-2">
-            {onShift.map((emp) => (
-              <div
-                key={emp.id}
-                className="flex items-center gap-3 p-3 bg-success/10 rounded-lg border border-success/20"
-              >
-                <span className="w-2.5 h-2.5 bg-success rounded-full animate-pulse" />
-                <div>
-                  <p className="font-medium text-sm">{emp.name}</p>
-                  <p className="text-xs text-text-muted">{emp.email}</p>
-                </div>
-              </div>
-            ))}
+            {onShift.map((emp) => {
+              const activity = locMap.get(emp.id);
+              const style = activity ? statusStyles[activity.status] : statusStyles.no_gps;
+              const isWarning = activity?.status === "idle" || activity?.status === "stale";
+              return (
+                <Link
+                  key={emp.id}
+                  href={`/admin/employees/${emp.id}`}
+                  className={`flex items-center gap-3 p-3 rounded-lg border ${style.bg} hover:brightness-125 transition-all`}
+                >
+                  <span
+                    className={`w-2.5 h-2.5 ${style.dot} rounded-full flex-shrink-0 ${
+                      activity?.status === "active" ? "animate-pulse" : ""
+                    }`}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm truncate">{emp.name}</p>
+                      {isWarning && (
+                        <span className="text-xs">⚠️</span>
+                      )}
+                    </div>
+                    <p className={`text-xs ${style.label}`}>
+                      {activity?.message ?? "GPS待機中"}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       )}
@@ -81,16 +148,17 @@ export function EmployeeList() {
           </h3>
           <div className="space-y-2">
             {offShift.map((emp) => (
-              <div
+              <Link
                 key={emp.id}
-                className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/5"
+                href={`/admin/employees/${emp.id}`}
+                className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/5 hover:bg-white/10 transition-colors"
               >
-                <span className="w-2.5 h-2.5 bg-text-muted rounded-full" />
+                <span className="w-2.5 h-2.5 bg-text-muted rounded-full flex-shrink-0" />
                 <div>
                   <p className="font-medium text-sm">{emp.name}</p>
                   <p className="text-xs text-text-muted">{emp.email}</p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
