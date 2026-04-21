@@ -9584,6 +9584,55 @@ window.importBackupJSON = function(){
   },4000);
 })();
 
+/* ── 87. 印刷最適化 ── */
+(function(){
+  var sty=document.createElement('style');
+  sty.textContent=
+    '@media print{'+
+    '#menu,#ux-fab,#ux-totop,#ux-offline,#collapse-handle,#ux-compare-btn,#ux-kanban-btn,#ux-qdate,.ux-note-ic{display:none!important}'+
+    '#top-bar{position:relative!important}'+
+    '#list{position:relative!important;top:auto!important;height:auto!important;overflow:visible!important}'+
+    '#pnl,#epnl,#ov{display:none!important}'+
+    '.card{break-inside:avoid;page-break-inside:avoid;border:1px solid #ccc!important;margin-bottom:4px!important;box-shadow:none!important}'+
+    '#filters{display:none!important}'+
+    '#hdr{border-bottom:2px solid #000!important}'+
+    'body{background:#fff!important;padding:0!important}'+
+    '}';
+  document.head.appendChild(sty);
+})();
+
+/* ── 88. ダークモード自動切替 (OS設定連動) ── */
+(function(){
+  var AK='crm-dark-auto';
+  var auto=false;
+  try{auto=localStorage.getItem(AK)==='1';}catch(e){}
+
+  function applyAuto(){
+    if(!auto)return;
+    var prefersDark=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if(prefersDark&&!document.body.classList.contains('dark')){
+      if(typeof toggleDark==='function')toggleDark();
+    }else if(!prefersDark&&document.body.classList.contains('dark')){
+      if(typeof toggleDark==='function')toggleDark();
+    }
+  }
+
+  if(window.matchMedia){
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){
+      if(auto)applyAuto();
+    });
+  }
+
+  window.toggleDarkAuto=function(){
+    auto=!auto;
+    try{localStorage.setItem(AK,auto?'1':'0');}catch(e){}
+    if(auto)applyAuto();
+    if(typeof showToast==='function')showToast(auto?'🌗 ダークモード自動':'🌗 ダークモード手動');
+  };
+
+  setTimeout(applyAuto,500);
+})();
+
 })();
 </script>
 </body>
