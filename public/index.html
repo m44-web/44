@@ -8879,6 +8879,229 @@ window.importBackupJSON = function(){
   };
 })();
 
+/* ── 73. 案件メモ (クイック付箋) ── */
+(function(){
+  var NK='crm-notes';
+  function getNotes(){try{return JSON.parse(localStorage.getItem(NK)||'{}');}catch(e){return {};}}
+  function saveNotes(n){try{localStorage.setItem(NK,JSON.stringify(n));}catch(e){}}
+
+  var _origOpen=window.openPanel;
+  if(typeof _origOpen!=='function')return;
+  window.openPanel=function(rid){
+    var r=_origOpen.apply(this,arguments);
+    setTimeout(function(){
+      var pnlbd=document.getElementById('pnlbd');
+      if(!pnlbd||document.getElementById('ux-note-sec'))return;
+      var notes=getNotes();
+      var sec=document.createElement('div');sec.id='ux-note-sec';sec.className='psec';
+      sec.style.cssText='margin-top:14px';
+      var hd=document.createElement('div');
+      hd.style.cssText='font-size:10px;font-weight:700;color:#9b9a97;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px';
+      hd.textContent='📝 メモ';
+      sec.appendChild(hd);
+      var ta=document.createElement('textarea');
+      ta.value=notes[rid]||'';
+      ta.placeholder='この案件のメモを入力...';
+      ta.style.cssText='width:100%;min-height:60px;border:1.5px solid #e2e8f0;border-radius:6px;padding:8px;font-size:12px;font-family:inherit;resize:vertical;color:#37352f;line-height:1.5;box-sizing:border-box';
+      var timer=null;
+      ta.addEventListener('input',function(){
+        clearTimeout(timer);
+        timer=setTimeout(function(){
+          var n=getNotes();
+          if(ta.value.trim())n[rid]=ta.value;
+          else delete n[rid];
+          saveNotes(n);
+        },500);
+      });
+      sec.appendChild(ta);
+      pnlbd.appendChild(sec);
+    },120);
+    return r;
+  };
+
+  /* cardHTML にメモアイコン追加 — renderラップ */
+  var _origR=window.render;
+  window.render=function(){
+    var r=_origR.apply(this,arguments);
+    try{
+      var notes=getNotes();
+      var cards=document.querySelectorAll('#list .card[data-rid]');
+      for(var i=0;i<cards.length;i++){
+        var rid=parseInt(cards[i].getAttribute('data-rid'));
+        if(notes[rid]&&!cards[i].querySelector('.ux-note-ic')){
+          var ic=document.createElement('span');ic.className='ux-note-ic';
+          ic.style.cssText='position:absolute;top:4px;left:6px;font-size:10px;z-index:2;opacity:0.6';
+          ic.textContent='📝';
+          cards[i].style.position='relative';
+          cards[i].appendChild(ic);
+        }
+      }
+    }catch(e){}
+    return r;
+  };
+})();
+
+/* ── 74. 案件カラーラベル ── */
+(function(){
+  var CK='crm-colors';
+  var COLORS=['','#fef3c7','#dbeafe','#dcfce7','#fce7f3','#f3e8ff','#fee2e2'];
+  var LABELS=['なし','黄','青','緑','ピンク','紫','赤'];
+  function getColors(){try{return JSON.parse(localStorage.getItem(CK)||'{}');}catch(e){return {};}}
+  function saveColors(c){try{localStorage.setItem(CK,JSON.stringify(c));}catch(e){}}
+
+  window.setCardColor=function(rid,color){
+    var c=getColors();
+    if(color)c[rid]=color;
+    else delete c[rid];
+    saveColors(c);
+    if(typeof render==='function')render();
+  };
+
+  /* アクションシートにカラー選択を追加 */
+  var _origSheet=window.showCardActionSheet;
+  if(typeof _origSheet==='function'){
+    window.showCardActionSheet=function(rid){
+      _origSheet.apply(this,arguments);
+      setTimeout(function(){
+        var sheet=document.getElementById('ux-action-sheet');
+        if(!sheet)return;
+        var inner=sheet.querySelector('div');
+        if(!inner||inner.querySelector('#ux-color-row'))return;
+        var row=document.createElement('div');row.id='ux-color-row';
+        row.style.cssText='display:flex;align-items:center;gap:8px;padding:10px 4px;border-bottom:1px solid #f0f0ee';
+        var lbl=document.createElement('span');
+        lbl.textContent='🎨 カラー';
+        lbl.style.cssText='font-size:14px;width:72px;flex-shrink:0';
+        row.appendChild(lbl);
+        var curColors=getColors();
+        COLORS.forEach(function(c,i){
+          var dot=document.createElement('button');dot.type='button';
+          dot.style.cssText='width:24px;height:24px;border-radius:50%;border:2px solid '+(curColors[rid]===c?'#2383e2':'#e2e8f0')+';background:'+(c||'#f7f6f3')+';cursor:pointer;flex-shrink:0';
+          dot.title=LABELS[i];
+          dot.addEventListener('click',function(){
+            window.setCardColor(rid,c);
+            sheet.parentElement.remove();
+          });
+          row.appendChild(dot);
+        });
+        inner.insertBefore(row,inner.lastChild);
+      },50);
+    };
+  }
+
+  /* カード背景色反映 */
+  var _origR=window.render;
+  window.render=function(){
+    var r=_origR.apply(this,arguments);
+    try{
+      var colors=getColors();
+      var cards=document.querySelectorAll('#list .card[data-rid]');
+      for(var i=0;i<cards.length;i++){
+        var rid=parseInt(cards[i].getAttribute('data-rid'));
+        if(colors[rid])cards[i].style.backgroundColor=colors[rid];
+      }
+    }catch(e){}
+    return r;
+  };
+})();
+
+/* ── 75. 案件コピー (テキスト形式でクリップボード) ── */
+(function(){
+  window.copyCaseToClipboard=function(rid){
+    var d=window.D||[],r=null;
+    for(var i=0;i<d.length;i++){if(d[i][0]===rid){r=d[i];break;}}
+    if(!r){if(typeof showToast==='function')showToast('⚠ 案件が見つかりません');return;}
+    var st=(typeof gst==='function')?gst(r):(r[5]||'');
+    var sl=((window.ST||{})[st]||{}).l||st;
+    var text='【案件情報】\n'+
+      '顧客名: '+(r[1]||'')+'\n'+
+      'エリア: '+(r[3]||'')+'\n'+
+      '電話: '+(r[4]||'')+'\n'+
+      'ステータス: '+sl+'\n'+
+      'AP日: '+(r[6]||'')+'\n'+
+      'AP担当: '+(r[7]||'')+'\n'+
+      '施工内容: '+(r[8]||'')+'\n'+
+      '見積: '+(r[14]||'')+'\n'+
+      '住所: '+(r[15]||'')+'\n'+
+      '契約日: '+(r[18]||'');
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){
+        if(typeof showToast==='function')showToast('📋 案件情報をコピー');
+      });
+    }else{
+      var ta=document.createElement('textarea');ta.value=text;
+      document.body.appendChild(ta);ta.select();
+      try{document.execCommand('copy');if(typeof showToast==='function')showToast('📋 コピーしました');}catch(e){}
+      document.body.removeChild(ta);
+    }
+  };
+
+  /* 詳細パネルにコピーボタン追加 */
+  var _origOpen=window.openPanel;
+  if(typeof _origOpen!=='function')return;
+  window.openPanel=function(rid){
+    var r=_origOpen.apply(this,arguments);
+    setTimeout(function(){
+      var hdr=document.getElementById('pnlhdr');
+      if(!hdr||hdr.querySelector('#ux-copy-btn'))return;
+      var btn=document.createElement('button');btn.type='button';btn.id='ux-copy-btn';
+      btn.className='pbtn';
+      btn.textContent='📋';
+      btn.title='案件情報をコピー';
+      btn.addEventListener('click',function(){window.copyCaseToClipboard(rid);});
+      var btns=hdr.querySelector('div:last-child');
+      if(btns)btns.insertBefore(btn,btns.firstChild);
+    },100);
+    return r;
+  };
+})();
+
+/* ── 76. 類似案件サジェスト (詳細パネル) ── */
+(function(){
+  var _origOpen=window.openPanel;
+  if(typeof _origOpen!=='function')return;
+  window.openPanel=function(rid){
+    var r=_origOpen.apply(this,arguments);
+    setTimeout(function(){
+      var pnlbd=document.getElementById('pnlbd');
+      if(!pnlbd||document.getElementById('ux-similar'))return;
+      var rec=null,d=window.D||[],del=window.deletedIds||{};
+      for(var i=0;i<d.length;i++){if(d[i][0]===rid){rec=d[i];break;}}
+      if(!rec)return;
+      var area=(rec[3]||'').trim();
+      var work=(rec[8]||'').toLowerCase();
+      if(!area&&!work)return;
+      var similar=[];
+      for(var j=0;j<d.length;j++){
+        if(d[j][0]===rid||del[d[j][0]])continue;
+        var score=0;
+        if(area&&(d[j][3]||'').trim()===area)score+=2;
+        if(work&&d[j][8]&&d[j][8].toLowerCase().indexOf(work.split('\n')[0].slice(0,10))>=0)score+=3;
+        if(score>=2)similar.push({r:d[j],score:score});
+      }
+      if(similar.length===0)return;
+      similar.sort(function(a,b){return b.score-a.score;});
+      similar=similar.slice(0,3);
+
+      var sec=document.createElement('div');sec.id='ux-similar';sec.className='psec';
+      sec.style.cssText='margin-top:14px';
+      var ti=document.createElement('div');
+      ti.textContent='🔗 類似案件';
+      ti.style.cssText='font-size:10px;font-weight:700;color:#9b9a97;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px';
+      sec.appendChild(ti);
+      similar.forEach(function(s){
+        var row=document.createElement('div');
+        row.style.cssText='padding:6px 8px;background:#f7f6f3;border-radius:6px;margin-bottom:4px;cursor:pointer;font-size:11px;display:flex;justify-content:space-between;align-items:center';
+        row.innerHTML='<span style="font-weight:600;color:#37352f">'+String(s.r[1]||'').replace(/</g,'&lt;')+'</span><span style="color:#9b9a97;font-size:10px">'+String(s.r[3]||'').replace(/</g,'&lt;')+'</span>';
+        row.addEventListener('click',function(){if(typeof openPanel==='function')openPanel(s.r[0]);});
+        sec.appendChild(row);
+      });
+      pnlbd.appendChild(sec);
+    },150);
+    return r;
+  };
+})();
+
 })();
 </script>
 </body>
