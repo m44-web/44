@@ -2,9 +2,9 @@
 
 import { Suspense, useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getGuards, getSites, addShift, getShifts } from "@/lib/store";
+import { getGuards, getSites, addShift, getShifts, getShiftRequests } from "@/lib/store";
 import { BackButton } from "@/components/ui/BackButton";
-import type { Guard, Site, Shift, ShiftType } from "@/lib/types";
+import type { Guard, Site, Shift, ShiftType, ShiftRequest } from "@/lib/types";
 import { SHIFT_PREFERENCE_LABELS } from "@/lib/types";
 
 const inputClasses =
@@ -30,6 +30,7 @@ function NewShiftForm() {
   const [guards, setGuards] = useState<Guard[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
   const [allShifts, setAllShifts] = useState<Shift[]>([]);
+  const [shiftRequests, setShiftRequests] = useState<ShiftRequest[]>([]);
   const [guardId, setGuardId] = useState("");
   const [siteId, setSiteId] = useState("");
   const [date, setDate] = useState(initialDate);
@@ -48,6 +49,7 @@ function NewShiftForm() {
     setGuards(getGuards().filter((g) => g.status === "active"));
     setSites(getSites().filter((s) => s.status === "active"));
     setAllShifts(getShifts());
+    setShiftRequests(getShiftRequests().filter((r) => r.status === "pending" || r.status === "approved"));
   }, []);
 
   // Detect conflicts: same guard, same date, overlapping time
@@ -249,6 +251,41 @@ function NewShiftForm() {
                   })}
                 </div>
               )}
+            </div>
+          );
+        })()}
+
+        {/* Matching shift requests for the selected date */}
+        {!multiMode && date && (() => {
+          const matchingRequests = shiftRequests.filter((r) => r.date === date && r.status === "pending");
+          if (matchingRequests.length === 0) return null;
+          return (
+            <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 space-y-1.5">
+              <p className="text-xs font-medium text-accent flex items-center gap-1.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" /></svg>
+                {date} にシフト希望あり（{matchingRequests.length}件）
+              </p>
+              <div className="space-y-0.5">
+                {matchingRequests.map((r) => {
+                  const g = guards.find((gg) => gg.id === r.guardId);
+                  const isSelected = guardId === r.guardId;
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => { setGuardId(r.guardId); setStartTime(r.startTime); setEndTime(r.endTime); }}
+                      className={`w-full flex items-center gap-2 text-xs p-1.5 rounded-lg cursor-pointer transition-colors text-left ${
+                        isSelected ? "bg-accent/10 ring-1 ring-accent" : "hover:bg-accent/5"
+                      }`}
+                    >
+                      <span className="text-text-primary font-medium">{g?.name ?? "—"}</span>
+                      <span className="text-text-secondary font-mono">{r.startTime}〜{r.endTime}</span>
+                      {r.notes && <span className="text-text-secondary truncate">{r.notes}</span>}
+                      <span className="ml-auto text-accent text-[10px] shrink-0">選択</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           );
         })()}

@@ -88,7 +88,22 @@ export default function SalaryPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-bold">給与明細</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">給与明細</h1>
+        <button
+          onClick={() => window.print()}
+          className="text-sm px-3 py-1.5 rounded-lg border border-border text-text-secondary hover:text-accent hover:border-accent/30 cursor-pointer transition-colors no-print inline-flex items-center gap-1"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>
+          印刷
+        </button>
+      </div>
+
+      {/* Print-only header */}
+      <div className="hidden print:block text-center mb-4">
+        <h2 className="text-xl font-bold">Lsecurity 給与明細</h2>
+        <p className="text-sm">{guard.name}（{guard.nameKana}）/ {selectedMonth.replace("-", "年")}月</p>
+      </div>
 
       {/* Month selector */}
       <select

@@ -15,6 +15,7 @@ export default function SitesPage() {
   const [guards, setGuards] = useState<Guard[]>([]);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
+  const [expandedSite, setExpandedSite] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -293,6 +294,57 @@ export default function SitesPage() {
                   <span>配置警備員: <span className="text-text-primary font-medium">{uniqueGuardCount}名</span></span>
                   {site.phone && <span>{site.phone}</span>}
                 </div>
+
+                {/* Expandable upcoming shifts */}
+                <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setExpandedSite(expandedSite === site.id ? null : site.id); }}
+                  className="w-full text-xs text-accent flex items-center justify-center gap-1 pt-1 cursor-pointer hover:underline"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`transition-transform ${expandedSite === site.id ? "rotate-180" : ""}`}><polyline points="6 9 12 15 18 9" /></svg>
+                  {expandedSite === site.id ? "今後のシフトを閉じる" : "今後7日のシフトを見る"}
+                </button>
+
+                {expandedSite === site.id && (() => {
+                  const days: string[] = [];
+                  for (let i = 0; i <= 6; i++) {
+                    const d = new Date();
+                    d.setDate(d.getDate() + i);
+                    days.push(d.toISOString().split("T")[0]);
+                  }
+                  const dayLabels = ["日", "月", "火", "水", "木", "金", "土"];
+                  return (
+                    <div className="border-t border-border pt-2 space-y-1.5" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                      {days.map((ds) => {
+                        const dayShifts = shifts.filter((s) => s.siteId === site.id && s.date === ds && s.status !== "cancelled");
+                        const d = new Date(ds + "T00:00:00");
+                        const isToday = ds === today;
+                        return (
+                          <div key={ds} className={`flex items-start gap-2 text-xs p-1.5 rounded-lg ${isToday ? "bg-accent/5" : ""}`}>
+                            <span className={`w-12 shrink-0 font-medium ${isToday ? "text-accent" : d.getDay() === 0 ? "text-danger" : d.getDay() === 6 ? "text-accent" : "text-text-primary"}`}>
+                              {d.getMonth() + 1}/{d.getDate()}({dayLabels[d.getDay()]})
+                            </span>
+                            {dayShifts.length === 0 ? (
+                              <span className="text-text-secondary/40">—</span>
+                            ) : (
+                              <div className="flex flex-wrap gap-1">
+                                {dayShifts.map((s) => {
+                                  const g = guards.find((gg) => gg.id === s.guardId);
+                                  return (
+                                    <span key={s.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-sub-bg">
+                                      <span className={`w-1.5 h-1.5 rounded-full ${s.shiftType === "night" ? "bg-purple-400" : "bg-warning"}`} />
+                                      <span className="text-text-primary">{g?.name?.split(" ")[0] ?? "—"}</span>
+                                      <span className="text-text-secondary font-mono">{s.startTime}-{s.endTime}</span>
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </Card>
             </Link>
           );

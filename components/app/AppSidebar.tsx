@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { getAdminNotificationCounts, getGuardNotificationCounts, getChatUnreadCounts } from "@/lib/store";
+import { toggleDarkMode, initTheme } from "@/components/app/AppHeader";
 
 const adminNav = [
   { href: "/dashboard", label: "ダッシュボード", icon: "home" },
@@ -132,6 +133,12 @@ export function AppSidebar() {
   const { user, logout } = useAuth();
   const nav = user?.role === "admin" ? adminNav : guardNav;
   const [badges, setBadges] = useState<Record<string, number>>({});
+  const [dark, setDark] = useState(false);
+
+  useEffect(() => {
+    initTheme();
+    setDark(document.documentElement.classList.contains("dark"));
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -205,9 +212,22 @@ export function AppSidebar() {
       </nav>
 
       <div className="p-3 border-t border-border">
-        <div className="px-3 py-2 text-sm">
-          <p className="text-text-primary font-medium truncate">{user?.name}</p>
-          <p className="text-text-secondary text-xs">{user?.role === "admin" ? "管理者" : "警備員"}</p>
+        <div className="flex items-center justify-between px-3 py-2 text-sm">
+          <div>
+            <p className="text-text-primary font-medium truncate">{user?.name}</p>
+            <p className="text-text-secondary text-xs">{user?.role === "admin" ? "管理者" : "警備員"}</p>
+          </div>
+          <button
+            onClick={() => { toggleDarkMode(); setDark(!dark); }}
+            className="p-2 text-text-secondary hover:text-accent transition-colors cursor-pointer rounded-lg hover:bg-sub-bg"
+            aria-label="テーマ切替"
+          >
+            {dark ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" /></svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+            )}
+          </button>
         </div>
         <button
           onClick={logout}

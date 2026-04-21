@@ -173,6 +173,34 @@ export default function ShiftsPage() {
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">シフト管理</h1>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              const weekDays = ["日", "月", "火", "水", "木", "金", "土"];
+              const lines: string[] = ["【シフト予定】"];
+              const sorted = [...activeShifts].sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
+              const byDate: Record<string, typeof sorted> = {};
+              for (const s of sorted) {
+                if (!byDate[s.date]) byDate[s.date] = [];
+                byDate[s.date].push(s);
+              }
+              const sortedDates = Object.keys(byDate).sort().slice(0, 14);
+              for (const d of sortedDates) {
+                const dt = new Date(d + "T00:00:00");
+                lines.push(`\n${dt.getMonth() + 1}/${dt.getDate()}(${weekDays[dt.getDay()]})`);
+                for (const s of byDate[d]) {
+                  const g = guards.find((gg) => gg.id === s.guardId);
+                  const st = sites.find((ss) => ss.id === s.siteId);
+                  lines.push(`  ${s.startTime}-${s.endTime} ${g?.name ?? "—"} @ ${st?.name ?? "—"}`);
+                }
+              }
+              navigator.clipboard.writeText(lines.join("\n")).then(() => showToast("シフト予定をコピーしました", "success"));
+            }}
+            className="p-2 text-text-secondary hover:text-accent transition-colors cursor-pointer"
+            aria-label="テキスト共有"
+            title="シフト予定をテキストでコピー"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+          </button>
           <div className="flex rounded-lg border border-border overflow-hidden">
             <button
               onClick={() => setViewMode("calendar")}
@@ -310,6 +338,26 @@ export default function ShiftsPage() {
                 <h3 className="text-sm font-semibold text-text-secondary">
                   {formatDateLabel(selectedDate)} のシフト ({selectedShifts.length}件)
                 </h3>
+                <div className="flex items-center gap-1.5">
+                {user?.role === "admin" && (() => {
+                  const scheduledCount = selectedShifts.filter((s) => s.status === "scheduled").length;
+                  if (scheduledCount === 0) return null;
+                  return (
+                    <button
+                      onClick={() => {
+                        selectedShifts.filter((s) => s.status === "scheduled").forEach((s) => {
+                          updateShift(s.id, { status: "confirmed" });
+                        });
+                        refreshShifts();
+                        showToast(`${scheduledCount}件のシフトを一括確定しました`, "success");
+                      }}
+                      className="text-xs px-2.5 py-1 rounded-lg border border-accent/30 text-accent hover:bg-accent/10 transition-colors cursor-pointer inline-flex items-center gap-1"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
+                      全て確定({scheduledCount})
+                    </button>
+                  );
+                })()}
                 {user?.role === "admin" && (
                   <Link
                     href={`/shifts/new?date=${selectedDate}`}
@@ -319,6 +367,7 @@ export default function ShiftsPage() {
                     追加
                   </Link>
                 )}
+                </div>
               </div>
               {selectedShifts.length === 0 ? (
                 <Card>

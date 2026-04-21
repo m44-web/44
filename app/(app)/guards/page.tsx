@@ -229,11 +229,32 @@ export default function GuardsPage() {
                   </div>
                 )}
 
-                {/* Stats row */}
-                <div className="flex items-center gap-3 text-[11px] text-text-secondary">
-                  <span>今月シフト: <span className="text-text-primary font-medium">{thisMonthShifts.length}件</span></span>
-                  <span>貸出装備: <span className="text-text-primary font-medium">{activeLending.length}点</span></span>
-                  <span>登録: {guard.createdAt}</span>
+                {/* Stats row with utilization bar */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-3 text-[11px] text-text-secondary">
+                    <span>今月シフト: <span className="text-text-primary font-medium">{thisMonthShifts.length}件</span></span>
+                    <span>貸出装備: <span className="text-text-primary font-medium">{activeLending.length}点</span></span>
+                    <span>登録: {guard.createdAt}</span>
+                  </div>
+                  {thisMonthShifts.length > 0 && (() => {
+                    function calcH(s: { startTime: string; endTime: string }) {
+                      const [sh, sm] = s.startTime.split(":").map(Number);
+                      const [eh, em] = s.endTime.split(":").map(Number);
+                      let h = eh - sh + (em - sm) / 60; if (h < 0) h += 24; return h;
+                    }
+                    const hours = thisMonthShifts.reduce((sum, s) => sum + calcH(s), 0);
+                    const maxHours = 180;
+                    const pct = Math.min(100, (hours / maxHours) * 100);
+                    const color = pct > 80 ? "bg-danger" : pct > 50 ? "bg-warning" : "bg-accent";
+                    return (
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5 bg-sub-bg rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="text-[10px] text-text-secondary font-mono w-12 text-right">{hours.toFixed(0)}h</span>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Certifications & Licenses */}

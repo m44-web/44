@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import {
   getGuards, getSites, getShifts, getAttendance, getShiftsByGuard, getAttendanceByGuard,
   getEquipment, getLending, getReports, getShiftRequests, getLatestLocations, getInterviews,
-  clockIn, clockOut, addLocation,
+  clockIn, clockOut, addLocation, updateGuard,
 } from "@/lib/store";
 import { useToast } from "@/lib/toast";
 import { Card } from "@/components/ui/Card";
@@ -740,8 +740,104 @@ function GuardDashboard({ guardId }: { guardId: string }) {
         </Link>
       </div>
 
+      {/* My profile */}
+      <GuardProfileCard guard={guard} onUpdate={() => setRefreshTick((t) => t + 1)} />
+
       {/* Emergency contacts */}
       <EmergencyContacts />
+    </div>
+  );
+}
+
+function GuardProfileCard({ guard, onUpdate }: { guard: Guard | undefined; onUpdate: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [phone, setPhone] = useState(guard?.phone ?? "");
+  const [email, setEmail] = useState(guard?.email ?? "");
+  const { showToast } = useToast();
+
+  if (!guard) return null;
+
+  function handleSave() {
+    updateGuard(guard!.id, { phone: phone.trim(), email: email.trim() });
+    setEditing(false);
+    onUpdate();
+    showToast("プロフィールを更新しました", "success");
+  }
+
+  return (
+    <div>
+      <h2 className="text-lg font-bold mb-2">マイプロフィール</h2>
+      <div className="bg-card-bg border border-border rounded-2xl p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent font-bold">
+              {guard.name.charAt(0)}
+            </div>
+            <div>
+              <p className="font-medium text-text-primary">{guard.name}</p>
+              <p className="text-xs text-text-secondary">{guard.nameKana}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setPhone(guard.phone); setEmail(guard.email); setEditing(true); }}
+            className="text-xs px-3 py-1.5 rounded-lg border border-accent/30 text-accent hover:bg-accent/10 cursor-pointer transition-colors"
+          >
+            編集
+          </button>
+        </div>
+        <div className="grid grid-cols-1 gap-2 text-sm">
+          <div className="flex items-center gap-2 text-text-secondary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.86 19.86 0 0 1 3.09 5.18 2 2 0 0 1 5 3h3a2 2 0 0 1 2 1.72c.127.96.362 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 11.91a16 16 0 0 0 6 6l2.27-2.27a2 2 0 0 1 2.11-.45c.91.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" /></svg>
+            <span className="text-text-primary">{guard.phone || "未設定"}</span>
+          </div>
+          <div className="flex items-center gap-2 text-text-secondary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
+            <span className="text-text-primary">{guard.email || "未設定"}</span>
+          </div>
+          {guard.certifications.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {guard.certifications.map((c) => (
+                <span key={c} className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent">{c}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setEditing(false)} />
+          <div className="relative w-full max-w-md bg-card-bg border border-border rounded-t-xl sm:rounded-xl p-5 space-y-4">
+            <h2 className="text-lg font-bold">プロフィール編集</h2>
+            <div>
+              <label className="block text-xs font-medium text-text-primary mb-1">電話番号</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full rounded-lg border border-border bg-sub-bg px-4 py-3 text-text-primary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-text-primary mb-1">メールアドレス</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-lg border border-border bg-sub-bg px-4 py-3 text-text-primary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button onClick={() => setEditing(false)} className="flex-1 py-2.5 rounded-lg border border-border text-text-secondary hover:bg-sub-bg cursor-pointer">
+                キャンセル
+              </button>
+              <button onClick={handleSave} className="flex-1 py-2.5 rounded-lg bg-accent text-white font-medium hover:bg-accent-dark cursor-pointer">
+                保存
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

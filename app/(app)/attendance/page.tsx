@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getShifts, getGuards, getSites, getAttendance, getShiftsByGuard, getAttendanceByGuard, clockIn, clockOut, addLocation, getLocations, updateAttendance } from "@/lib/store";
 import { useToast } from "@/lib/toast";
+import { useConfirm } from "@/lib/confirm";
 import { Card } from "@/components/ui/Card";
 import type { Shift, Guard, Site, AttendanceRecord, LocationLog } from "@/lib/types";
 import { ATTENDANCE_STATUS_LABELS } from "@/lib/types";
@@ -37,15 +38,20 @@ function AdminAttendance() {
   const [editing, setEditing] = useState<AttendanceRecord | null>(null);
   const [mounted, setMounted] = useState(false);
   const { showToast } = useToast();
+  const { confirm } = useConfirm();
+
+  function refreshAll() {
+    setGuards(getGuards());
+    setSites(getSites());
+    setShifts(getShifts());
+    setAllAttendance(getAttendance());
+    setLocations(getLocations());
+  }
 
   useEffect(() => {
     setMounted(true);
     function refresh() {
-      setGuards(getGuards());
-      setSites(getSites());
-      setShifts(getShifts());
-      setAllAttendance(getAttendance());
-      setLocations(getLocations());
+      refreshAll();
     }
     refresh();
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -245,6 +251,40 @@ function AdminAttendance() {
             })}
           </div>
         </Card>
+      )}
+
+      {/* Batch clockout for missing clockouts */}
+      {anomalies.filter((a) => a.kind === "missing_clockout" || a.kind === "stuck_on_duty").length > 0 && (
+        <button
+          onClick={async () => {
+            const stuckIds = anomalies
+              .filter((a) => a.kind === "missing_clockout" || a.kind === "stuck_on_duty")
+              .map((a) => a.attId);
+            const ok = await confirm({
+              title: "一括下番処理",
+              message: `${stuckIds.length}名の下番忘れを、シフト終了時刻で一括処理しますか？`,
+              confirmLabel: "一括処理する",
+              variant: "danger",
+            });
+            if (!ok) return;
+            for (const attId of stuckIds) {
+              const att = allAttendance.find((a) => a.id === attId);
+              if (!att) continue;
+              const shift = shifts.find((s) => s.id === att.shiftId);
+              updateAttendance(attId, {
+                clockOut: shift?.endTime ?? "23:59",
+                status: "completed",
+                notes: (att.notes ? att.notes + " / " : "") + "一括下番処理",
+              });
+            }
+            refreshAll();
+            showToast(`${stuckIds.length}名の下番を一括処理しました`, "success");
+          }}
+          className="w-full py-2.5 rounded-lg border border-danger/30 text-danger text-sm font-medium hover:bg-danger/5 cursor-pointer transition-colors no-print inline-flex items-center justify-center gap-1.5"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
+          下番忘れを一括処理（{anomalies.filter((a) => a.kind === "missing_clockout" || a.kind === "stuck_on_duty").length}名）
+        </button>
       )}
 
       {/* Not yet clocked in */}
@@ -482,6 +522,32 @@ function GuardAttendance({ guardId }: { guardId?: string }) {
     setSites(getSites());
   }, [guardId]);
 
+  const monthlySummary = useMemo(() => {
+    if (!guardId) return null;
+    const thisMonth = todayStr().slice(0, 7);
+    const allAtt = getAttendanceByGuard(guardId).filter((a) => a.date.startsWith(thisMonth));
+    const completedCount = allAtt.filter((a) => a.status === "completed").length;
+    let totalHours = 0;
+    for (const a of allAtt) {
+      if (a.clockIn && a.clockOut) {
+        const [ih, im] = a.clockIn.split(":").map(Number);
+        const [oh, om] = a.clockOut.split(":").map(Number);
+        let h = oh - ih + (om - im) / 60;
+        if (h < 0) h += 24;
+        totalHours += h;
+      }
+    }
+    const lateCount = allAtt.filter((a) => {
+      if (!a.clockIn) return false;
+      const shift = getShiftsByGuard(guardId).find((s) => s.id === a.shiftId);
+      if (!shift) return false;
+      const [sh, sm] = shift.startTime.split(":").map(Number);
+      const [ih, im] = a.clockIn.split(":").map(Number);
+      return (ih * 60 + im) - (sh * 60 + sm) >= 10;
+    }).length;
+    return { completedCount, totalHours, lateCount, totalShifts: allAtt.length };
+  }, [guardId, mounted]);
+
   useEffect(() => {
     setMounted(true);
     refreshData();
@@ -632,6 +698,34 @@ function GuardAttendance({ guardId }: { guardId?: string }) {
                 </Card>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Monthly summary */}
+      {monthlySummary && monthlySummary.totalShifts > 0 && (
+        <div>
+          <h2 className="text-base font-bold text-text-primary mb-3">今月の勤怠サマリー</h2>
+          <div className="grid grid-cols-2 gap-2">
+            <Card className="text-center !py-3">
+              <p className="text-[10px] text-text-secondary">出勤日数</p>
+              <p className="text-2xl font-bold text-success">{monthlySummary.completedCount}<span className="text-xs text-text-secondary ml-1">日</span></p>
+            </Card>
+            <Card className="text-center !py-3">
+              <p className="text-[10px] text-text-secondary">合計勤務</p>
+              <p className="text-2xl font-bold text-accent">{monthlySummary.totalHours.toFixed(1)}<span className="text-xs text-text-secondary ml-1">h</span></p>
+            </Card>
+            <Card className="text-center !py-3">
+              <p className="text-[10px] text-text-secondary">遅刻回数</p>
+              <p className={`text-2xl font-bold ${monthlySummary.lateCount > 0 ? "text-danger" : "text-success"}`}>{monthlySummary.lateCount}<span className="text-xs text-text-secondary ml-1">回</span></p>
+            </Card>
+            <Card className="text-center !py-3">
+              <p className="text-[10px] text-text-secondary">平均勤務</p>
+              <p className="text-2xl font-bold text-text-primary">
+                {monthlySummary.completedCount > 0 ? (monthlySummary.totalHours / monthlySummary.completedCount).toFixed(1) : "0"}
+                <span className="text-xs text-text-secondary ml-1">h/日</span>
+              </p>
+            </Card>
           </div>
         </div>
       )}
