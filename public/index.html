@@ -9353,6 +9353,107 @@ window.importBackupJSON = function(){
   }
 })();
 
+/* ── 83. テンプレートメッセージ (SMS/LINE送信用) ── */
+(function(){
+  var TK='crm-msg-templates';
+  var DEFAULTS=[
+    {name:'初回ご挨拶',body:'{{name}}様\nお世話になっております。北海工務店の{{person}}です。\n先日はお時間をいただきありがとうございました。\nご不明な点がございましたらお気軽にご連絡ください。'},
+    {name:'見積送付',body:'{{name}}様\nお見積書を送付いたします。\n金額: {{estimate}}円\n内容をご確認の上、ご不明点がございましたらご連絡ください。'},
+    {name:'フォロー',body:'{{name}}様\n先日のお打ち合わせありがとうございました。\nその後いかがでしょうか？\nご検討状況をお聞かせいただけますと幸いです。'},
+    {name:'契約御礼',body:'{{name}}様\nこの度はご契約いただき誠にありがとうございます。\n今後ともよろしくお願いいたします。\n施工に関しましては改めてご連絡差し上げます。'}
+  ];
+  function getTemplates(){try{return JSON.parse(localStorage.getItem(TK))||DEFAULTS;}catch(e){return DEFAULTS;}}
+
+  window.showTemplateMenu=function(rid){
+    var old=document.getElementById('ux-tpl-modal');if(old)old.remove();
+    var d=window.D||[],rec=null;
+    for(var i=0;i<d.length;i++){if(d[i][0]===rid){rec=d[i];break;}}
+    if(!rec)return;
+    var templates=getTemplates();
+    var ov=document.createElement('div');ov.id='ux-tpl-modal';
+    ov.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:180;display:flex;align-items:flex-end;justify-content:center';
+    var sheet=document.createElement('div');
+    sheet.style.cssText='background:#fff;width:100%;max-width:400px;border-radius:16px 16px 0 0;padding:16px 16px 24px;max-height:70vh;overflow-y:auto';
+    sheet.innerHTML='<div style="font-size:14px;font-weight:800;color:#37352f;margin-bottom:12px">💬 テンプレート → '+(rec[1]||'')+'</div>';
+
+    function fill(body){
+      return body.replace(/\{\{name\}\}/g,rec[1]||'').replace(/\{\{person\}\}/g,rec[7]||'').replace(/\{\{estimate\}\}/g,rec[14]||'').replace(/\{\{area\}\}/g,rec[3]||'').replace(/\{\{work\}\}/g,rec[8]||'');
+    }
+    templates.forEach(function(t){
+      var card=document.createElement('div');
+      card.style.cssText='border:1.5px solid #e2e8f0;border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer';
+      card.innerHTML='<div style="font-weight:700;font-size:12px;color:#37352f;margin-bottom:4px">'+String(t.name).replace(/</g,'&lt;')+'</div><div style="font-size:11px;color:#718096;white-space:pre-line;max-height:60px;overflow:hidden">'+fill(t.body).replace(/</g,'&lt;')+'</div>';
+      card.addEventListener('click',function(){
+        var msg=fill(t.body);
+        if(navigator.clipboard&&navigator.clipboard.writeText){
+          navigator.clipboard.writeText(msg).then(function(){
+            if(typeof showToast==='function')showToast('📋 メッセージをコピー');
+          });
+        }
+        ov.remove();
+      });
+      sheet.appendChild(card);
+    });
+    var cl=document.createElement('button');cl.textContent='閉じる';cl.type='button';
+    cl.style.cssText='width:100%;padding:10px;background:#f7f6f3;border:none;border-radius:8px;margin-top:4px;cursor:pointer;font-size:13px;font-family:inherit';
+    cl.addEventListener('click',function(){ov.remove();});
+    sheet.appendChild(cl);
+    ov.appendChild(sheet);
+    ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+    document.body.appendChild(ov);
+  };
+
+  /* 詳細パネルにテンプレボタン追加 */
+  var _origOpen=window.openPanel;
+  if(typeof _origOpen!=='function')return;
+  window.openPanel=function(rid){
+    var r=_origOpen.apply(this,arguments);
+    setTimeout(function(){
+      var hdr=document.getElementById('pnlhdr');
+      if(!hdr||hdr.querySelector('#ux-tpl-btn'))return;
+      var btn=document.createElement('button');btn.type='button';btn.id='ux-tpl-btn';
+      btn.className='pbtn';btn.textContent='💬';btn.title='テンプレート';
+      btn.addEventListener('click',function(){window.showTemplateMenu(rid);});
+      var btns=hdr.querySelector('div:last-child');
+      if(btns)btns.insertBefore(btn,btns.firstChild);
+    },110);
+    return r;
+  };
+})();
+
+/* ── 84. 見積合計＋成約率サマリー (ヘッダー拡張) ── */
+(function(){
+  var _origR=window.render;
+  window.render=function(){
+    var r=_origR.apply(this,arguments);
+    try{
+      var d=window.D||[],del=window.deletedIds||{};
+      var totalEst=0,wonEst=0,salesCount=0,wonCount=0;
+      for(var i=0;i<d.length;i++){
+        if(del[d[i][0]])continue;
+        var st=(typeof gst==='function')?gst(d[i]):(d[i][5]||'new');
+        var s=(window.ST||{})[st]||{};
+        var est=parseInt(String(d[i][14]||'0').replace(/[^\d]/g,''))||0;
+        if(s.ph==='sales'){salesCount++;totalEst+=est;}
+        if(s.ph==='won'){wonCount++;wonEst+=est;}
+      }
+      var bar=document.getElementById('wp-warn');
+      if(!bar)return r;
+      var sum=document.getElementById('ux-est-sum');
+      if(!sum){
+        sum=document.createElement('div');sum.id='ux-est-sum';
+        sum.style.cssText='font-size:10px;color:#718096;padding:2px 16px 0;display:flex;gap:12px;flex-wrap:wrap';
+        bar.parentNode.insertBefore(sum,bar.nextSibling);
+      }
+      var rate=(salesCount+wonCount>0)?Math.round(wonCount/(salesCount+wonCount)*100):0;
+      sum.innerHTML='<span>📊 営業パイプ: <b>¥'+(totalEst>=10000?Math.round(totalEst/10000)+'万':totalEst.toLocaleString())+'</b></span>'+
+        '<span>✅ 成約: <b>¥'+(wonEst>=10000?Math.round(wonEst/10000)+'万':wonEst.toLocaleString())+'</b></span>'+
+        '<span>🎯 率: <b>'+rate+'%</b></span>';
+    }catch(e){}
+    return r;
+  };
+})();
+
 })();
 </script>
 </body>
