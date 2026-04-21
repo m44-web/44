@@ -9454,6 +9454,136 @@ window.importBackupJSON = function(){
   };
 })();
 
+/* ── 85. 案件比較モード ── */
+(function(){
+  var compareList=[];
+  window.addToCompare=function(rid){
+    if(compareList.indexOf(rid)>=0){
+      compareList=compareList.filter(function(x){return x!==rid;});
+      if(typeof showToast==='function')showToast('比較から除外');
+    }else{
+      if(compareList.length>=3){if(typeof showToast==='function')showToast('⚠ 比較は3件まで');return;}
+      compareList.push(rid);
+      if(typeof showToast==='function')showToast('📊 比較に追加 ('+compareList.length+'/3)');
+    }
+    if(compareList.length>=2)showCompareBtn();
+    else hideCompareBtn();
+  };
+
+  function showCompareBtn(){
+    var old=document.getElementById('ux-compare-btn');
+    if(old)return;
+    var btn=document.createElement('button');btn.id='ux-compare-btn';btn.type='button';
+    btn.textContent='📊 '+compareList.length+'件を比較';
+    btn.style.cssText='position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:#2383e2;color:#fff;border:none;border-radius:20px;padding:10px 20px;font-size:12px;font-weight:700;cursor:pointer;z-index:90;box-shadow:0 4px 16px rgba(35,131,226,0.4);font-family:inherit';
+    btn.addEventListener('click',openCompare);
+    document.body.appendChild(btn);
+  }
+  function hideCompareBtn(){
+    var old=document.getElementById('ux-compare-btn');if(old)old.remove();
+  }
+
+  function openCompare(){
+    if(compareList.length<2)return;
+    var d=window.D||[];
+    var recs=compareList.map(function(rid){
+      for(var i=0;i<d.length;i++){if(d[i][0]===rid)return d[i];}
+      return null;
+    }).filter(Boolean);
+    if(recs.length<2)return;
+
+    var old=document.getElementById('ux-compare');if(old)old.remove();
+    var ov=document.createElement('div');ov.id='ux-compare';
+    ov.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:180;display:flex;align-items:center;justify-content:center;padding:12px';
+    var panel=document.createElement('div');
+    panel.style.cssText='background:#fff;border-radius:12px;max-width:500px;width:100%;max-height:85vh;overflow-y:auto;padding:16px';
+    panel.innerHTML='<div style="font-size:14px;font-weight:800;margin-bottom:14px;display:flex;justify-content:space-between"><span>📊 案件比較</span><span style="cursor:pointer;color:#9b9a97" onclick="this.closest(\'#ux-compare\').remove()">✕</span></div>';
+    var fields=[
+      {l:'顧客名',f:function(r){return r[1]||'';}},
+      {l:'エリア',f:function(r){return r[3]||'';}},
+      {l:'ステータス',f:function(r){var st=(typeof gst==='function')?gst(r):(r[5]||'');return ((window.ST||{})[st]||{}).l||st;}},
+      {l:'AP日',f:function(r){return r[6]||'';}},
+      {l:'担当',f:function(r){return r[7]||'';}},
+      {l:'施工内容',f:function(r){return (r[8]||'').split('\n')[0];}},
+      {l:'見積',f:function(r){return r[14]?'¥'+r[14]:'';}},
+      {l:'経過日数',f:function(r){return (typeof days==='function')?days(r[6])+'日':'';}},
+      {l:'契約日',f:function(r){return r[18]||'未成約';}}
+    ];
+    var table='<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr><th style="text-align:left;padding:6px;border-bottom:2px solid #e2e8f0;font-size:10px;color:#9b9a97"></th>';
+    recs.forEach(function(r){table+='<th style="text-align:left;padding:6px;border-bottom:2px solid #e2e8f0;font-weight:700;color:#37352f">'+String(r[1]||'').replace(/</g,'&lt;').slice(0,8)+'</th>';});
+    table+='</tr></thead><tbody>';
+    fields.forEach(function(fld,idx){
+      table+='<tr style="background:'+(idx%2?'#f7f6f3':'#fff')+'"><td style="padding:5px 6px;color:#718096;font-weight:600;white-space:nowrap">'+fld.l+'</td>';
+      recs.forEach(function(r){table+='<td style="padding:5px 6px;color:#37352f">'+String(fld.f(r)).replace(/</g,'&lt;')+'</td>';});
+      table+='</tr>';
+    });
+    table+='</tbody></table>';
+    panel.innerHTML+=table;
+    var clBtn=document.createElement('button');clBtn.textContent='比較をクリア';clBtn.type='button';
+    clBtn.style.cssText='margin-top:12px;padding:8px;background:#f7f6f3;border:none;border-radius:6px;width:100%;cursor:pointer;font-size:12px;font-family:inherit';
+    clBtn.addEventListener('click',function(){compareList=[];hideCompareBtn();ov.remove();});
+    panel.appendChild(clBtn);
+    ov.appendChild(panel);
+    ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+    document.body.appendChild(ov);
+  }
+
+  /* アクションシートに「比較に追加」を入れる */
+  var _origSheet=window.showCardActionSheet;
+  if(typeof _origSheet==='function'){
+    window.showCardActionSheet=function(rid){
+      _origSheet.apply(this,arguments);
+      setTimeout(function(){
+        var sheet=document.getElementById('ux-action-sheet');
+        if(!sheet)return;
+        var inner=sheet.querySelector('div');
+        if(!inner||inner.querySelector('#ux-cmp-row'))return;
+        var b=document.createElement('button');b.type='button';b.id='ux-cmp-row';
+        b.style.cssText='display:flex;align-items:center;gap:12px;width:100%;padding:14px 4px;background:none;border:none;border-bottom:1px solid #f0f0ee;cursor:pointer;text-align:left;font-family:inherit;font-size:14px;color:#37352f';
+        var inList=compareList.indexOf(rid)>=0;
+        b.innerHTML='<span style="font-size:18px;width:24px;text-align:center;flex-shrink:0">📊</span><span>'+(inList?'比較から除外':'比較に追加')+'</span>';
+        b.addEventListener('click',function(){window.addToCompare(rid);sheet.parentElement.remove();});
+        inner.insertBefore(b,inner.lastChild);
+      },60);
+    };
+  }
+})();
+
+/* ── 86. 初回ユーザー向けヒントオーバーレイ ── */
+(function(){
+  var HK='crm-hints-seen';
+  try{if(localStorage.getItem(HK)==='1')return;}catch(e){return;}
+
+  setTimeout(function(){
+    var cards=document.querySelectorAll('#list .card');
+    if(cards.length===0)return;
+    var hint=document.createElement('div');hint.id='ux-hints';
+    hint.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;color:#fff;text-align:center';
+    hint.innerHTML=
+      '<div style="font-size:24px;margin-bottom:10px">👋</div>'+
+      '<div style="font-size:16px;font-weight:700;margin-bottom:16px">北海工務店 CRM へようこそ</div>'+
+      '<div style="font-size:13px;line-height:2;max-width:300px;text-align:left">'+
+      '👆 <b>タップ</b> → 案件詳細<br>'+
+      '👆👆 <b>ダブルタップ (バッジ)</b> → ステータス変更<br>'+
+      '👆⏱ <b>長押し</b> → アクションメニュー<br>'+
+      '👈👉 <b>左スワイプ</b> → ステータス変更<br>'+
+      '👉 <b>右スワイプ</b> → 電話発信<br>'+
+      '⌨ <b>1-5</b> → フェーズ切替<br>'+
+      '⌨ <b>Ctrl+K</b> → コマンドパレット<br>'+
+      '⌨ <b>↑↓</b> → カード選択'+
+      '</div>'+
+      '<button type="button" style="margin-top:20px;padding:12px 30px;background:#2383e2;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit" id="ux-hint-close">はじめる</button>';
+    document.body.appendChild(hint);
+    document.getElementById('ux-hint-close').addEventListener('click',function(){
+      hint.remove();
+      try{localStorage.setItem(HK,'1');}catch(e){}
+    });
+    hint.addEventListener('click',function(e){
+      if(e.target===hint){hint.remove();try{localStorage.setItem(HK,'1');}catch(e){}}
+    });
+  },4000);
+})();
+
 })();
 </script>
 </body>
